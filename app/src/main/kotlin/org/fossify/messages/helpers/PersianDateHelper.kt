@@ -1,11 +1,17 @@
 package org.fossify.messages.helpers
 
 import java.util.Calendar
+import java.util.Locale
 
 object PersianDateHelper {
     private val persianMonths = arrayOf(
         "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
         "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+    )
+
+    private val latinMonthAbbreviations = arrayOf(
+        "far", "ord", "kho", "tir", "mor", "sha",
+        "meh", "aba", "azr", "dey", "bah", "esf"
     )
 
     fun format(
@@ -35,7 +41,10 @@ object PersianDateHelper {
         }
     }
 
-    fun formatMonthName(timestampMillis: Long): String {
+    fun formatMonthName(
+        timestampMillis: Long,
+        locale: Locale = Locale.getDefault()
+    ): String {
         val calendar = Calendar.getInstance().apply {
             timeInMillis = timestampMillis
         }
@@ -44,10 +53,17 @@ object PersianDateHelper {
             calendar.get(Calendar.MONTH) + 1,
             calendar.get(Calendar.DAY_OF_MONTH)
         )
-        return "$day ${persianMonths[month - 1]} $year"
+        val monthName = if (locale.language == "fa") {
+            persianMonths[month - 1]
+        } else {
+            latinMonthAbbreviations[month - 1]
+        }
+        val value = "$day $monthName $year"
+        return if (locale.language == "fa") toPersianDigits(value) else value
     }
 
     fun toPersianDigits(value: String): String {
+        if (persianMonths.none { value.contains(it) }) return value
         return value.map {
             when (it) {
                 '0' -> '۰'; '1' -> '۱'; '2' -> '۲'; '3' -> '۳'; '4' -> '۴'
