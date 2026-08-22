@@ -8,8 +8,9 @@ permissions:
   contents: write
 
 jobs:
-  apply:
+  apply-test-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
@@ -17,85 +18,59 @@ jobs:
           ref: feature/persian-calendar
           fetch-depth: 0
 
-      - name: Patch Persian calendar integration
-        shell: python
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Run unit tests
+        run: ./gradlew test --stacktrace
+
+      - name: Run lint
+        run: ./gradlew lint --stacktrace
+
+      - name: Build Core debug APK
+        run: ./gradlew assembleCoreDebug --stacktrace
+
+      - name: Build Foss debug APK
+        run: ./gradlew assembleFossDebug --stacktrace
+
+      - name: Build GPlay debug APK
+        run: ./gradlew assembleGplayDebug --stacktrace
+
+      - name: Collect APKs
         run: |
-          from pathlib import Path
+          mkdir -p artifacts
+          find app/build/outputs/apk -type f -name '*.apk' -exec cp {} artifacts/ \;
+          test -n "$(find artifacts -type f -name '*.apk' -print -quit)"
+          ls -lh artifacts
 
-          def replace_once(path, old, new):
-              p = Path(path)
-              s = p.read_text()
-              if new in s:
-                  return False
-              if old not in s:
-                  raise SystemExit(f"Pattern not found in {path}: {old[:120]!r}")
-              p.write_text(s.replace(old, new, 1))
-              return True
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fossify-messages-persian-calendar-debug-apks
+          path: artifacts/*.apk
+          if-no-files-found: error
+          retention-days: 14
 
-          settings = 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
-          replace_once(settings,
-              'import android.os.Bundle\n',
-              'import android.os.Bundle\nimport android.view.ViewGroup\nimport com.google.android.material.materialswitch.MaterialSwitch\n')
-          replace_once(settings,
-              '        setupChangeDateTimeFormat()\n',
-              '        setupChangeDateTimeFormat()\n        setupPersianCalendar()\n')
-          replace_once(settings,
-              '    private fun setupFontSize() = binding.apply {\n',
-              '''    private fun setupPersianCalendar() {
-        val parent = binding.settingsHolder
-        val existing = parent.findViewWithTag<MaterialSwitch>("persian_calendar_switch")
-        val switch = existing ?: MaterialSwitch(this).apply {
-            tag = "persian_calendar_switch"
-            text = getString(R.string.use_persian_calendar)
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            setPadding(24, 0, 24, 0)
-            setOnClickListener {
-                config.usePersianCalendar = isChecked
-                refreshConversations()
-            }
-            val index = parent.indexOfChild(binding.settingsChangeDateTimeFormatHolder)
-            parent.addView(this, (index + 1).coerceAtMost(parent.childCount))
-        }
-        switch.isChecked = config.usePersianCalendar
-    }
-
-    private fun setupFontSize() = binding.apply {
-''')
-
-          thread = 'app/src/main/kotlin/org/fossify/messages/adapters/ThreadAdapter.kt'
-          replace_once(thread,
-              'import org.fossify.messages.helpers.EXTRA_VCARD_URI\n',
-              'import org.fossify.messages.helpers.EXTRA_VCARD_URI\nimport org.fossify.messages.helpers.PersianDateHelper\n')
-          replace_once(thread,
-              '                val format = "${activity.config.dateFormat}, ${activity.getTimeFormat()}"\n                val dateTime = DateTime(message.millis()).toString(format)\n',
-              '''                val dateTime = if (activity.config.usePersianCalendar) {
-                    PersianDateHelper.format(message.millis())
-                } else {
-                    val format = "${activity.config.dateFormat}, ${activity.getTimeFormat()}"
-                    DateTime(message.millis()).toString(format)
-                }
-''')
-          old = '''    private fun setupDateTime(view: View, item: ThreadDateTime) {
-        val binding = ItemThreadDateTimeBinding.bind(view)
-        binding.threadDateTime.text = formatDateOrTime(item.date, activity.config.dateFormat)
-    }
-'''
-          new = '''    private fun setupDateTime(view: View, item: ThreadDateTime) {
-        val binding = ItemThreadDateTimeBinding.bind(view)
-        binding.threadDateTime.text = if (activity.config.usePersianCalendar) {
-            PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(item.date))
-        } else {
-            formatDateOrTime(item.date, activity.config.dateFormat)
-        }
-    }
-'''
-          replace_once(thread, old, new)
-          print('Persian calendar integration patched')
-
-      - name: Commit integration changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt app/src/main/kotlin/org/fossify/messages/adapters/ThreadAdapter.kt
-          git commit -m "feat: add Persian calendar setting and chat dates" || exit 0
-          git push origin HEAD:feature/persian-calendar
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fossify-messages-persian-calendar-reports
+          path: |
+            app/build/reports/tests/**
+            app/build/reports/lint-results-*.html
+          if-no-files-found: ignore
+          retention-days: 14
