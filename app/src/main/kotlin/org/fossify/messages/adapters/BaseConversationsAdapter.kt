@@ -26,6 +26,7 @@ import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
+import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.models.Conversation
 
 @Suppress("LeakingThis")
@@ -40,25 +41,19 @@ abstract class BaseConversationsAdapter(
     diffUtil = ConversationDiffCallback(),
     itemClick = itemClick,
     onRefresh = onRefresh
-),
-    RecyclerViewFastScroller.OnPopupTextUpdate {
+), RecyclerViewFastScroller.OnPopupTextUpdate {
     private var fontSize = activity.getTextSize()
     private var drafts = HashMap<Long, String>()
-
     private var recyclerViewState: Parcelable? = null
 
     init {
         setupDragListener(true)
         setHasStableIds(true)
         updateDrafts()
-
         registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onChanged() = restoreRecyclerViewState()
-            override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) =
-                restoreRecyclerViewState()
-
-            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) =
-                restoreRecyclerViewState()
+            override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) = restoreRecyclerViewState()
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = restoreRecyclerViewState()
         })
     }
 
@@ -68,10 +63,7 @@ abstract class BaseConversationsAdapter(
         notifyDataSetChanged()
     }
 
-    fun updateConversations(
-        newConversations: ArrayList<Conversation>,
-        commitCallback: (() -> Unit)? = null,
-    ) {
+    fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) {
         saveRecyclerViewState()
         submitList(newConversations.toList(), commitCallback)
     }
@@ -91,19 +83,11 @@ abstract class BaseConversationsAdapter(
     }
 
     override fun getSelectableItemCount() = itemCount
-
-    protected fun getSelectedItems() = currentList.filter {
-        selectedKeys.contains(it.hashCode())
-    } as ArrayList<Conversation>
-
+    protected fun getSelectedItems() = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
     override fun getIsItemSelectable(position: Int) = true
-
     override fun getItemSelectionKey(position: Int) = currentList.getOrNull(position)?.hashCode()
-
     override fun getItemKeyPosition(key: Int) = currentList.indexOfFirst { it.hashCode() == key }
-
     override fun onActionModeCreated() {}
-
     override fun onActionModeDestroyed() {}
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -113,13 +97,7 @@ abstract class BaseConversationsAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val conversation = getItem(position)
-        holder.bindView(
-            conversation,
-            allowSingleClick = true,
-            allowLongClick = true
-        ) { itemView, _ ->
-            setupView(itemView, conversation)
-        }
+        holder.bindView(conversation, allowSingleClick = true, allowLongClick = true) { itemView, _ -> setupView(itemView, conversation) }
         bindViewHolder(holder)
     }
 
@@ -135,9 +113,7 @@ abstract class BaseConversationsAdapter(
 
     private fun fetchDrafts(drafts: HashMap<Long, String>) {
         drafts.clear()
-        for ((threadId, draft) in activity.getAllDrafts()) {
-            drafts[threadId] = draft
-        }
+        for ((threadId, draft) in activity.getAllDrafts()) drafts[threadId] = draft
     }
 
     private fun setupView(view: View, conversation: Conversation) {
@@ -146,31 +122,28 @@ abstract class BaseConversationsAdapter(
             val smsDraft = drafts[conversation.threadId]
             draftIndicator.beVisibleIf(!smsDraft.isNullOrEmpty())
             draftIndicator.setTextColor(properPrimaryColor)
-
-            pinIndicator.beVisibleIf(
-                activity.config.pinnedConversations.contains(conversation.threadId.toString())
-            )
+            pinIndicator.beVisibleIf(activity.config.pinnedConversations.contains(conversation.threadId.toString()))
             pinIndicator.applyColorFilter(textColor)
-
             conversationFrame.isSelected = selectedKeys.contains(conversation.hashCode())
 
             conversationAddress.apply {
                 text = conversation.title
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
             }
-
             conversationBodyShort.apply {
                 text = smsDraft ?: conversation.snippet
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
             }
-
             conversationDate.apply {
-                text = (conversation.date * 1000L).formatDateOrTime(
-                    context = context,
-                    hideTimeOnOtherDays = true,
-                    showCurrentYear = false
-                )
-
+                text = if (activity.config.usePersianCalendar) {
+                    PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(conversation.date * 1000L))
+                } else {
+                    (conversation.date * 1000L).formatDateOrTime(
+                        context = context,
+                        hideTimeOnOtherDays = true,
+                        showCurrentYear = false
+                    )
+                }
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
             }
 
@@ -186,19 +159,10 @@ abstract class BaseConversationsAdapter(
             conversationAddress.setTypeface(customTypeface, style)
             conversationBodyShort.setTypeface(customTypeface, style)
             conversationDate.setTypeface(customTypeface, style)
-
-            arrayListOf(conversationAddress, conversationBodyShort, conversationDate).forEach {
-                it.setTextColor(textColor)
-            }
+            arrayListOf(conversationAddress, conversationBodyShort, conversationDate).forEach { it.setTextColor(textColor) }
 
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
-            // at group conversations we use an icon as the placeholder, not any letter
-            val placeholder = if (conversation.isGroupConversation) {
-                SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title)
-            } else {
-                null
-            }
-
+            val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
             SimpleContactsHelper(activity).loadContactImage(
                 path = conversation.photoUri,
                 imageView = conversationImage,
@@ -225,25 +189,13 @@ abstract class BaseConversationsAdapter(
 
     override fun onChange(position: Int) = currentList.getOrNull(position)?.title ?: ""
 
-    private fun saveRecyclerViewState() {
-        recyclerViewState = recyclerView.layoutManager?.onSaveInstanceState()
-    }
-
-    private fun restoreRecyclerViewState() {
-        recyclerView.layoutManager?.onRestoreInstanceState(recyclerViewState)
-    }
+    private fun saveRecyclerViewState() { recyclerViewState = recyclerView.layoutManager?.onSaveInstanceState() }
+    private fun restoreRecyclerViewState() { recyclerView.layoutManager?.onRestoreInstanceState(recyclerViewState) }
 
     private class ConversationDiffCallback : DiffUtil.ItemCallback<Conversation>() {
-        override fun areItemsTheSame(oldItem: Conversation, newItem: Conversation): Boolean {
-            return Conversation.areItemsTheSame(oldItem, newItem)
-        }
-
-        override fun areContentsTheSame(oldItem: Conversation, newItem: Conversation): Boolean {
-            return Conversation.areContentsTheSame(oldItem, newItem)
-        }
+        override fun areItemsTheSame(oldItem: Conversation, newItem: Conversation) = Conversation.areItemsTheSame(oldItem, newItem)
+        override fun areContentsTheSame(oldItem: Conversation, newItem: Conversation) = Conversation.areContentsTheSame(oldItem, newItem)
     }
 
-    companion object {
-        private const val MAX_UNREAD_BADGE_COUNT = 99
-    }
+    companion object { private const val MAX_UNREAD_BADGE_COUNT = 99 }
 }
