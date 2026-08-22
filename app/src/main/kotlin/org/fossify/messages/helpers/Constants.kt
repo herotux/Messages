@@ -54,6 +54,7 @@ private const val PATH = "org.fossify.org.fossify.messages.action."
 const val MARK_AS_READ = PATH + "mark_as_read"
 const val REPLY = PATH + "reply"
 
+// view types for the thread list view
 const val THREAD_DATE_TIME = 1
 const val THREAD_RECEIVED_MESSAGE = 2
 const val THREAD_SENT_MESSAGE = 3
@@ -65,10 +66,12 @@ const val THREAD_KEY_BITS = Long.SIZE_BITS - THREAD_TYPE_BITS
 const val THREAD_TYPE_SHIFT = THREAD_KEY_BITS
 const val THREAD_KEY_MASK = (1L shl THREAD_KEY_BITS) - 1
 
+// view types for attachment list
 const val ATTACHMENT_DOCUMENT = 7
 const val ATTACHMENT_MEDIA = 8
 const val ATTACHMENT_VCARD = 9
 
+// lock screen visibility constants
 const val LOCK_SCREEN_SENDER_MESSAGE = 1
 const val LOCK_SCREEN_SENDER = 2
 const val LOCK_SCREEN_NOTHING = 3
@@ -84,6 +87,7 @@ const val FILE_SIZE_2_MB = 2_097_152L
 const val MESSAGES_LIMIT = 50
 const val MAX_MESSAGE_LENGTH = 5000
 
+// intent launch request codes
 const val PICK_PHOTO_INTENT = 42
 const val PICK_VIDEO_INTENT = 49
 const val PICK_SAVE_FILE_INTENT = 43
@@ -97,9 +101,15 @@ const val PICK_SAVE_DIR_INTENT = 50
 const val BLOCKED_KEYWORDS_EXPORT_DELIMITER = ","
 const val BLOCKED_KEYWORDS_EXPORT_EXTENSION = ".txt"
 
-fun refreshMessages() { EventBus.getDefault().post(Events.RefreshMessages()) }
-fun refreshConversations() { EventBus.getDefault().post(Events.RefreshConversations()) }
+fun refreshMessages() {
+    EventBus.getDefault().post(Events.RefreshMessages())
+}
 
+fun refreshConversations() {
+    EventBus.getDefault().post(Events.RefreshConversations())
+}
+
+/** Not to be used with real messages persisted in the telephony db. This is for internal use only (e.g. scheduled messages, notification ids etc). */
 fun generateRandomId(length: Int = 9): Long {
     val millis = DateTime.now(DateTimeZone.UTC).millis
     val random = abs(Random(millis).nextLong())
