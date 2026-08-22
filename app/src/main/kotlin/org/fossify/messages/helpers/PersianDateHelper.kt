@@ -62,16 +62,13 @@ object PersianDateHelper {
         return if (locale.language == "fa") toPersianDigits(value) else value
     }
 
-    fun toPersianDigits(value: String): String {
-        if (persianMonths.none { value.contains(it) }) return value
-        return value.map {
-            when (it) {
-                '0' -> '۰'; '1' -> '۱'; '2' -> '۲'; '3' -> '۳'; '4' -> '۴'
-                '5' -> '۵'; '6' -> '۶'; '7' -> '۷'; '8' -> '۸'; '9' -> '۹'
-                else -> it
-            }
-        }.joinToString("")
-    }
+    fun toPersianDigits(value: String): String = value.map {
+        when (it) {
+            '0' -> '۰'; '1' -> '۱'; '2' -> '۲'; '3' -> '۳'; '4' -> '۴'
+            '5' -> '۵'; '6' -> '۶'; '7' -> '۷'; '8' -> '۸'; '9' -> '۹'
+            else -> it
+        }
+    }.joinToString("")
 
     private fun gregorianToJalali(gy: Int, gm: Int, gd: Int): Triple<Int, Int, Int> {
         val gregorianMonthDays = intArrayOf(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
