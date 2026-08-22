@@ -2,7 +2,9 @@ name: Android CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - test/foss-release-signed
   pull_request:
   workflow_dispatch:
 
