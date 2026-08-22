@@ -35,7 +35,7 @@ jobs:
           settings = 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
           replace_once(settings,
               'import android.os.Bundle\n',
-              'import android.os.Bundle\nimport com.google.android.material.materialswitch.MaterialSwitch\nimport android.view.ViewGroup\n')
+              'import android.os.Bundle\nimport android.view.ViewGroup\nimport com.google.android.material.materialswitch.MaterialSwitch\n')
           replace_once(settings,
               '        setupChangeDateTimeFormat()\n',
               '        setupChangeDateTimeFormat()\n        setupPersianCalendar()\n')
@@ -47,8 +47,8 @@ jobs:
         val switch = existing ?: MaterialSwitch(this).apply {
             tag = "persian_calendar_switch"
             text = getString(R.string.use_persian_calendar)
-            setPadding(resources.getDimensionPixelSize(org.fossify.commons.R.dimen.settings_holder_padding), 0, resources.getDimensionPixelSize(org.fossify.commons.R.dimen.settings_holder_padding), 0)
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setPadding(24, 0, 24, 0)
             setOnClickListener {
                 config.usePersianCalendar = isChecked
                 refreshConversations()
@@ -75,8 +75,6 @@ jobs:
                     DateTime(message.millis()).toString(format)
                 }
 ''')
-
-          # Replace the date separator formatter if present.
           old = '''    private fun setupDateTime(view: View, item: ThreadDateTime) {
         val binding = ItemThreadDateTimeBinding.bind(view)
         binding.threadDateTime.text = formatDateOrTime(item.date, activity.config.dateFormat)
@@ -92,7 +90,6 @@ jobs:
     }
 '''
           replace_once(thread, old, new)
-
           print('Persian calendar integration patched')
 
       - name: Commit integration changes
