@@ -1,0 +1,104 @@
+name: Complete Persian Calendar Integration
+
+on:
+  push:
+    branches: [ feature/persian-calendar ]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/persian-calendar
+          fetch-depth: 0
+
+      - name: Patch Persian calendar integration
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              s = p.read_text()
+              if new in s:
+                  return False
+              if old not in s:
+                  raise SystemExit(f"Pattern not found in {path}: {old[:120]!r}")
+              p.write_text(s.replace(old, new, 1))
+              return True
+
+          settings = 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
+          replace_once(settings,
+              'import android.os.Bundle\n',
+              'import android.os.Bundle\nimport com.google.android.material.materialswitch.MaterialSwitch\nimport android.view.ViewGroup\n')
+          replace_once(settings,
+              '        setupChangeDateTimeFormat()\n',
+              '        setupChangeDateTimeFormat()\n        setupPersianCalendar()\n')
+          replace_once(settings,
+              '    private fun setupFontSize() = binding.apply {\n',
+              '''    private fun setupPersianCalendar() {
+        val parent = binding.settingsHolder
+        val existing = parent.findViewWithTag<MaterialSwitch>("persian_calendar_switch")
+        val switch = existing ?: MaterialSwitch(this).apply {
+            tag = "persian_calendar_switch"
+            text = getString(R.string.use_persian_calendar)
+            setPadding(resources.getDimensionPixelSize(org.fossify.commons.R.dimen.settings_holder_padding), 0, resources.getDimensionPixelSize(org.fossify.commons.R.dimen.settings_holder_padding), 0)
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setOnClickListener {
+                config.usePersianCalendar = isChecked
+                refreshConversations()
+            }
+            val index = parent.indexOfChild(binding.settingsChangeDateTimeFormatHolder)
+            parent.addView(this, (index + 1).coerceAtMost(parent.childCount))
+        }
+        switch.isChecked = config.usePersianCalendar
+    }
+
+    private fun setupFontSize() = binding.apply {
+''')
+
+          thread = 'app/src/main/kotlin/org/fossify/messages/adapters/ThreadAdapter.kt'
+          replace_once(thread,
+              'import org.fossify.messages.helpers.EXTRA_VCARD_URI\n',
+              'import org.fossify.messages.helpers.EXTRA_VCARD_URI\nimport org.fossify.messages.helpers.PersianDateHelper\n')
+          replace_once(thread,
+              '                val format = "${activity.config.dateFormat}, ${activity.getTimeFormat()}"\n                val dateTime = DateTime(message.millis()).toString(format)\n',
+              '''                val dateTime = if (activity.config.usePersianCalendar) {
+                    PersianDateHelper.format(message.millis())
+                } else {
+                    val format = "${activity.config.dateFormat}, ${activity.getTimeFormat()}"
+                    DateTime(message.millis()).toString(format)
+                }
+''')
+
+          # Replace the date separator formatter if present.
+          old = '''    private fun setupDateTime(view: View, item: ThreadDateTime) {
+        val binding = ItemThreadDateTimeBinding.bind(view)
+        binding.threadDateTime.text = formatDateOrTime(item.date, activity.config.dateFormat)
+    }
+'''
+          new = '''    private fun setupDateTime(view: View, item: ThreadDateTime) {
+        val binding = ItemThreadDateTimeBinding.bind(view)
+        binding.threadDateTime.text = if (activity.config.usePersianCalendar) {
+            PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(item.date))
+        } else {
+            formatDateOrTime(item.date, activity.config.dateFormat)
+        }
+    }
+'''
+          replace_once(thread, old, new)
+
+          print('Persian calendar integration patched')
+
+      - name: Commit integration changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt app/src/main/kotlin/org/fossify/messages/adapters/ThreadAdapter.kt
+          git commit -m "feat: add Persian calendar setting and chat dates" || exit 0
+          git push origin HEAD:feature/persian-calendar
