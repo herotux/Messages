@@ -5,6 +5,7 @@ import android.telephony.SubscriptionInfo
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.BasePropertiesDialog
 import org.fossify.commons.extensions.getAlertDialogBuilder
+import org.fossify.commons.extensions.getTimeFormat
 import org.fossify.commons.extensions.getTimeFormatWithSeconds
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.messages.R
@@ -32,23 +33,44 @@ class MessageDetailsDialog(val activity: BaseSimpleActivity, val message: Messag
             }
     }
 
-    private fun Message.getSenderOrReceiverLabel(): Int = if (isReceivedMessage()) R.string.message_details_sender else R.string.message_details_receiver
+    private fun Message.getSenderOrReceiverLabel(): Int {
+        return if (isReceivedMessage()) {
+            R.string.message_details_sender
+        } else {
+            R.string.message_details_receiver
+        }
+    }
 
     private fun Message.getSenderOrReceiverPhoneNumbers(): String {
         return if (isReceivedMessage()) {
             formatContactInfo(senderName, senderPhoneNumber)
         } else {
-            participants.joinToString(", ") { formatContactInfo(it.name, it.phoneNumbers.first().value) }
+            participants.joinToString(", ") {
+                formatContactInfo(it.name, it.phoneNumbers.first().value)
+            }
         }
     }
 
-    private fun formatContactInfo(name: String, phoneNumber: String): String = if (name != phoneNumber) "$name ($phoneNumber)" else phoneNumber
+    private fun formatContactInfo(name: String, phoneNumber: String): String {
+        return if (name != phoneNumber) {
+            "$name ($phoneNumber)"
+        } else {
+            phoneNumber
+        }
+    }
 
-    private fun Message.getSIM(availableSIMs: List<SubscriptionInfo>): String =
-        availableSIMs.firstOrNull { it.subscriptionId == subscriptionId }?.displayName?.toString()
+    private fun Message.getSIM(availableSIMs: List<SubscriptionInfo>): String {
+        return availableSIMs.firstOrNull { it.subscriptionId == subscriptionId }?.displayName?.toString()
             ?: activity.getString(org.fossify.commons.R.string.unknown)
+    }
 
-    private fun Message.getSentOrReceivedAtLabel(): Int = if (isReceivedMessage()) R.string.message_details_received_at else R.string.message_details_sent_at
+    private fun Message.getSentOrReceivedAtLabel(): Int {
+        return if (isReceivedMessage()) {
+            R.string.message_details_received_at
+        } else {
+            R.string.message_details_sent_at
+        }
+    }
 
     private fun Message.getSentOrReceivedAt(): String {
         return if (activity.config.usePersianCalendar) {
