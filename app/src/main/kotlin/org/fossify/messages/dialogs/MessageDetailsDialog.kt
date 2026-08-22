@@ -74,7 +74,9 @@ class MessageDetailsDialog(val activity: BaseSimpleActivity, val message: Messag
 
     private fun Message.getSentOrReceivedAt(): String {
         return if (activity.config.usePersianCalendar) {
-            PersianDateHelper.toPersianDigits(PersianDateHelper.format(date * 1000L))
+            PersianDateHelper.toPersianDigits(
+                PersianDateHelper.format(date * 1000L, includeSeconds = true)
+            )
         } else {
             DateTime(date * 1000L).toString("${activity.config.dateFormat} ${activity.getTimeFormatWithSeconds()}")
         }
