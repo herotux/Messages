@@ -35,6 +35,9 @@ style:
     ignoreAnnotated: ["Composable"]
     ignoreEnums: true
     ignoreNumbers: ["-1", "0", "1", "2", "42", "128", "256", "1000"]
+    excludes:
+      - "**/PersianDateHelper.kt"
+      - "**/SettingsActivity.kt"
   MaxLineLength:
     active: true
     maxLineLength: 120

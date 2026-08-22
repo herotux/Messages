@@ -2,7 +2,9 @@ package org.fossify.messages.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.material.materialswitch.MaterialSwitch
 import org.fossify.commons.activities.ManageBlockedNumbersActivity
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
@@ -107,6 +109,7 @@ class SettingsActivity : SimpleActivity() {
         setupManageBlockedNumbers()
         setupManageBlockedKeywords()
         setupChangeDateTimeFormat()
+        setupPersianCalendar()
         setupFontSize()
         setupShowCharacterCounter()
         setupUseSimpleCharacters()
@@ -236,6 +239,27 @@ class SettingsActivity : SimpleActivity() {
                 refreshConversations()
             }
         }
+    }
+
+    private fun setupPersianCalendar() {
+        val parent = binding.settingsHolder
+        val existing = parent.findViewWithTag<MaterialSwitch>("persian_calendar_switch")
+        val switch = existing ?: MaterialSwitch(this).apply {
+            tag = "persian_calendar_switch"
+            text = getString(R.string.use_persian_calendar)
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setPadding(24, 0, 24, 0)
+            setOnClickListener {
+                config.usePersianCalendar = isChecked
+                refreshConversations()
+            }
+            val index = parent.indexOfChild(binding.settingsChangeDateTimeFormatHolder)
+            parent.addView(this, (index + 1).coerceAtMost(parent.childCount))
+        }
+        switch.isChecked = config.usePersianCalendar
     }
 
     private fun setupFontSize() = binding.apply {
