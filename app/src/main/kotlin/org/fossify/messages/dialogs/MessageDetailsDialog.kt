@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.telephony.SubscriptionInfo
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.BasePropertiesDialog
-import org.fossify.commons.dialogs.getAlertDialogBuilder
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.getTimeFormatWithSeconds
 import org.fossify.commons.extensions.setupDialogStuff
