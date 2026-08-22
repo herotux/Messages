@@ -121,18 +121,15 @@ class Config(context: Context) : BaseConfig(context) {
 
     var lastRecycleBinCheck: Long
         get() = prefs.getLong(LAST_RECYCLE_BIN_CHECK, 0L)
-        set(lastRecycleBinCheck) = prefs.edit().putLong(LAST_RECYCLE_BIN_CHECK, lastRecycleBinCheck)
-            .apply()
+        set(lastRecycleBinCheck) = prefs.edit().putLong(LAST_RECYCLE_BIN_CHECK, lastRecycleBinCheck).apply()
 
     var isArchiveAvailable: Boolean
         get() = prefs.getBoolean(IS_ARCHIVE_AVAILABLE, true)
-        set(isArchiveAvailable) = prefs.edit().putBoolean(IS_ARCHIVE_AVAILABLE, isArchiveAvailable)
-            .apply()
+        set(isArchiveAvailable) = prefs.edit().putBoolean(IS_ARCHIVE_AVAILABLE, isArchiveAvailable).apply()
 
     var customNotifications: Set<String>
         get() = prefs.getStringSet(CUSTOM_NOTIFICATIONS, HashSet<String>())!!
-        set(customNotifications) = prefs.edit()
-            .putStringSet(CUSTOM_NOTIFICATIONS, customNotifications).apply()
+        set(customNotifications) = prefs.edit().putStringSet(CUSTOM_NOTIFICATIONS, customNotifications).apply()
 
     fun addCustomNotificationsByThreadId(threadId: Long) {
         customNotifications = customNotifications.plus(threadId.toString())
@@ -151,4 +148,9 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(KEEP_CONVERSATIONS_ARCHIVED, false)
         set(keepConversationsArchived) = prefs.edit()
             .putBoolean(KEEP_CONVERSATIONS_ARCHIVED, keepConversationsArchived).apply()
+
+    var usePersianCalendar: Boolean
+        get() = prefs.getBoolean(USE_PERSIAN_CALENDAR, false)
+        set(usePersianCalendar) = prefs.edit()
+            .putBoolean(USE_PERSIAN_CALENDAR, usePersianCalendar).apply()
 }
