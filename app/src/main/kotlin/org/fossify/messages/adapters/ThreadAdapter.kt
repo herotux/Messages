@@ -71,6 +71,7 @@ import org.fossify.messages.extensions.launchViewIntent
 import org.fossify.messages.extensions.startContactDetailsIntent
 import org.fossify.messages.extensions.subscriptionManagerCompat
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
+import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.helpers.THREAD_DATE_TIME
 import org.fossify.messages.helpers.THREAD_RECEIVED_MESSAGE
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE
@@ -229,8 +230,12 @@ class ThreadAdapter(
             selectedMessages.first().body
         } else {
             selectedMessages.filter { it.body.isNotEmpty() }.joinToString("\n\n") { message ->
-                val format = "${activity.config.dateFormat}, ${activity.getTimeFormat()}"
-                val dateTime = DateTime(message.millis()).toString(format)
+                val dateTime = if (activity.config.usePersianCalendar) {
+                    PersianDateHelper.format(message.millis())
+                } else {
+                    val format = "${activity.config.dateFormat}, ${activity.getTimeFormat()}"
+                    DateTime(message.millis()).toString(format)
+                }
                 val sender = if (message.isReceivedMessage()) message.senderName else activity.getString(R.string.me)
                 "[$dateTime] $sender: ${message.body}"
             }
@@ -273,7 +278,6 @@ class ThreadAdapter(
     private fun askConfirmDelete() {
         val itemsCnt = selectedKeys.size
 
-        // not sure how we can get UnknownFormatConversionException here, so show the error and hope that someone reports it
         val items = try {
             resources.getQuantityString(R.plurals.delete_messages, itemsCnt, itemsCnt)
         } catch (e: Exception) {
@@ -302,7 +306,6 @@ class ThreadAdapter(
     private fun askConfirmRestore() {
         val itemsCnt = selectedKeys.size
 
-        // not sure how we can get UnknownFormatConversionException here, so show the error and hope that someone reports it
         val items = try {
             resources.getQuantityString(R.plurals.delete_messages, itemsCnt, itemsCnt)
         } catch (e: Exception) {
@@ -586,11 +589,15 @@ class ThreadAdapter(
     private fun setupDateTime(view: View, dateTime: ThreadDateTime) {
         ItemThreadDateTimeBinding.bind(view).apply {
             threadDateTime.apply {
-                text = (dateTime.date * 1000L).formatDateOrTime(
-                    context = context,
-                    hideTimeOnOtherDays = false,
-                    showCurrentYear = false
-                )
+                text = if (activity.config.usePersianCalendar) {
+                    PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(dateTime.date * 1000L))
+                } else {
+                    (dateTime.date * 1000L).formatDateOrTime(
+                        context = context,
+                        hideTimeOnOtherDays = false,
+                        showCurrentYear = false
+                    )
+                }
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
             }
             threadDateTime.setTextColor(textColor)

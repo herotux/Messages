@@ -26,6 +26,7 @@ import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
+import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.models.Conversation
 
 @Suppress("LeakingThis")
@@ -165,11 +166,17 @@ abstract class BaseConversationsAdapter(
             }
 
             conversationDate.apply {
-                text = (conversation.date * 1000L).formatDateOrTime(
-                    context = context,
-                    hideTimeOnOtherDays = true,
-                    showCurrentYear = false
-                )
+                text = if (activity.config.usePersianCalendar) {
+                    PersianDateHelper.toPersianDigits(
+                        PersianDateHelper.formatMonthName(conversation.date * 1000L)
+                    )
+                } else {
+                    (conversation.date * 1000L).formatDateOrTime(
+                        context = context,
+                        hideTimeOnOtherDays = true,
+                        showCurrentYear = false
+                    )
+                }
 
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
             }

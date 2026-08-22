@@ -11,6 +11,7 @@ import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.messages.R
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.subscriptionManagerCompat
+import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.models.Message
 import org.joda.time.DateTime
 
@@ -72,6 +73,12 @@ class MessageDetailsDialog(val activity: BaseSimpleActivity, val message: Messag
     }
 
     private fun Message.getSentOrReceivedAt(): String {
-        return DateTime(date * 1000L).toString("${activity.config.dateFormat} ${activity.getTimeFormatWithSeconds()}")
+        return if (activity.config.usePersianCalendar) {
+            PersianDateHelper.toPersianDigits(
+                PersianDateHelper.format(date * 1000L, includeSeconds = true)
+            )
+        } else {
+            DateTime(date * 1000L).toString("${activity.config.dateFormat} ${activity.getTimeFormatWithSeconds()}")
+        }
     }
 }
