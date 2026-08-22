@@ -10,7 +10,11 @@ object PersianDateHelper {
         "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
     )
 
-    fun format(timestampMillis: Long, includeTime: Boolean = true): String {
+    fun format(
+        timestampMillis: Long,
+        includeTime: Boolean = true,
+        includeSeconds: Boolean = false
+    ): String {
         val calendar = PersianCalendar(Locale("fa", "IR")).apply {
             timeInMillis = timestampMillis
         }
@@ -19,8 +23,12 @@ object PersianDateHelper {
         val day = calendar.get(Calendar.DAY_OF_MONTH)
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val minute = calendar.get(Calendar.MINUTE)
+        val second = calendar.get(Calendar.SECOND)
         val date = "$year/$month/$day"
-        return if (includeTime) "$date ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}" else date
+        if (!includeTime) return date
+
+        val time = "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+        return if (includeSeconds) "$date $time:${second.toString().padStart(2, '0')}" else "$date $time"
     }
 
     fun formatMonthName(timestampMillis: Long): String {
