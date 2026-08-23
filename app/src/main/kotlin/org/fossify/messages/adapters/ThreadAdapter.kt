@@ -71,8 +71,8 @@ import org.fossify.messages.extensions.launchViewIntent
 import org.fossify.messages.extensions.startContactDetailsIntent
 import org.fossify.messages.extensions.subscriptionManagerCompat
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
-import org.fossify.messages.helpers.IranianBankLogoResolver
 import org.fossify.messages.helpers.BankSmsDetector
+import org.fossify.messages.helpers.IranianBankLogoResolver
 import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.helpers.THREAD_DATE_TIME
 import org.fossify.messages.helpers.THREAD_RECEIVED_MESSAGE
@@ -123,10 +123,7 @@ class ThreadAdapter(
         val isOneItemSelected = isOneItemSelected()
         val selectedMessages = getSelectedItems().filterIsInstance<Message>()
         val hasText = selectedMessages.any { it.body.isNotEmpty() }
-        val showSaveAs = getSelectedItems().all {
-            it is Message && (it.attachment?.attachments?.size ?: 0) > 0
-        } && getSelectedAttachments().isNotEmpty()
-
+        val showSaveAs = getSelectedItems().all { it is Message && (it.attachment?.attachments?.size ?: 0) > 0 } && getSelectedAttachments().isNotEmpty()
         menu.apply {
             findItem(R.id.cab_copy_to_clipboard).isVisible = hasText
             findItem(R.id.cab_save_as).isVisible = showSaveAs
@@ -187,38 +184,27 @@ class ThreadAdapter(
         bindViewHolder(holder)
     }
 
-    override fun getItemId(position: Int): Long {
-        return when (val item = getItem(position)) {
-            is Message -> item.getStableId()
-            is ThreadDateTime -> {
-                val sim = (item.simID.hashCode().toLong() and SIM_MASK)
-                val key = (item.date.toLong() shl SIM_BITS) or sim
-                generateStableId(THREAD_DATE_TIME, key)
-            }
-            is ThreadError -> generateStableId(THREAD_SENT_MESSAGE_ERROR, item.messageId)
-            is ThreadSending -> generateStableId(THREAD_SENT_MESSAGE_SENDING, item.messageId)
-            is ThreadSent -> generateStableId(THREAD_SENT_MESSAGE_SENT, item.messageId)
-        }
+    override fun getItemId(position: Int): Long = when (val item = getItem(position)) {
+        is Message -> item.getStableId()
+        is ThreadDateTime -> { val sim = (item.simID.hashCode().toLong() and SIM_MASK); val key = (item.date.toLong() shl SIM_BITS) or sim; generateStableId(THREAD_DATE_TIME, key) }
+        is ThreadError -> generateStableId(THREAD_SENT_MESSAGE_ERROR, item.messageId)
+        is ThreadSending -> generateStableId(THREAD_SENT_MESSAGE_SENDING, item.messageId)
+        is ThreadSent -> generateStableId(THREAD_SENT_MESSAGE_SENT, item.messageId)
     }
 
-    override fun getItemViewType(position: Int): Int {
-        return when (val item = getItem(position)) {
-            is ThreadDateTime -> THREAD_DATE_TIME
-            is ThreadError -> THREAD_SENT_MESSAGE_ERROR
-            is ThreadSent -> THREAD_SENT_MESSAGE_SENT
-            is ThreadSending -> THREAD_SENT_MESSAGE_SENDING
-            is Message -> if (item.isReceivedMessage()) THREAD_RECEIVED_MESSAGE else THREAD_SENT_MESSAGE
-        }
+    override fun getItemViewType(position: Int): Int = when (val item = getItem(position)) {
+        is ThreadDateTime -> THREAD_DATE_TIME
+        is ThreadError -> THREAD_SENT_MESSAGE_ERROR
+        is ThreadSent -> THREAD_SENT_MESSAGE_SENT
+        is ThreadSending -> THREAD_SENT_MESSAGE_SENDING
+        is Message -> if (item.isReceivedMessage()) THREAD_RECEIVED_MESSAGE else THREAD_SENT_MESSAGE
     }
 
     private fun copyToClipboard() {
         val selectedMessages = getSelectedItems().filterIsInstance<Message>()
         if (selectedMessages.isEmpty()) return
         val textToCopy = if (selectedMessages.size == 1) selectedMessages.first().body else selectedMessages.filter { it.body.isNotEmpty() }.joinToString("\n\n") { message ->
-            val dateTime = if (activity.config.usePersianCalendar) PersianDateHelper.format(message.millis()) else {
-                val format = "${activity.config.dateFormat}, ${activity.getTimeFormat()}"
-                DateTime(message.millis()).toString(format)
-            }
+            val dateTime = if (activity.config.usePersianCalendar) PersianDateHelper.format(message.millis()) else DateTime(message.millis()).toString("${activity.config.dateFormat}, ${activity.getTimeFormat()}")
             val sender = if (message.isReceivedMessage()) message.senderName else activity.getString(R.string.me)
             "[$dateTime] $sender: ${message.body}"
         }
@@ -226,163 +212,82 @@ class ThreadAdapter(
     }
 
     private fun getSelectedAttachments(): List<Attachment> = getSelectedItems().filterIsInstance<Message>().flatMap { it.attachment?.attachments.orEmpty() }
-
-    private fun saveAs() {
-        val attachments = getSelectedAttachments()
-        if (attachments.isNotEmpty()) (activity as ThreadActivity).saveMMS(attachments)
-    }
-
-    private fun shareText() {
-        val firstItem = getSelectedItems().firstOrNull() as? Message ?: return
-        activity.shareTextIntent(firstItem.body)
-    }
-
-    private fun selectText() {
-        val firstItem = getSelectedItems().firstOrNull() as? Message ?: return
-        if (firstItem.body.trim().isNotEmpty()) SelectTextDialog(activity, firstItem.body)
-    }
-
-    private fun showMessageDetails() {
-        val message = getSelectedItems().firstOrNull() as? Message ?: return
-        MessageDetailsDialog(activity, message)
-    }
+    private fun saveAs() { val attachments = getSelectedAttachments(); if (attachments.isNotEmpty()) (activity as ThreadActivity).saveMMS(attachments) }
+    private fun shareText() { (getSelectedItems().firstOrNull() as? Message)?.let { activity.shareTextIntent(it.body) } }
+    private fun selectText() { (getSelectedItems().firstOrNull() as? Message)?.let { if (it.body.trim().isNotEmpty()) SelectTextDialog(activity, it.body) } }
+    private fun showMessageDetails() { (getSelectedItems().firstOrNull() as? Message)?.let { MessageDetailsDialog(activity, it) } }
 
     private fun askConfirmDelete() {
         val itemsCnt = selectedKeys.size
-        val items = try { resources.getQuantityString(R.plurals.delete_messages, itemsCnt, itemsCnt) } catch (e: Exception) {
-            activity.showErrorToast(e)
-            return
-        }
+        val items = try { resources.getQuantityString(R.plurals.delete_messages, itemsCnt, itemsCnt) } catch (e: Exception) { activity.showErrorToast(e); return }
         val baseString = if (activity.config.useRecycleBin && !isRecycleBin) org.fossify.commons.R.string.move_to_recycle_bin_confirmation else org.fossify.commons.R.string.deletion_confirmation
         val question = String.format(resources.getString(baseString), items)
         DeleteConfirmationDialog(activity, question, activity.config.useRecycleBin && !isRecycleBin) { skipRecycleBin ->
             ensureBackgroundThread {
                 val messagesToRemove = getSelectedItems()
-                if (messagesToRemove.isNotEmpty()) {
-                    val toRecycleBin = !skipRecycleBin && activity.config.useRecycleBin && !isRecycleBin
-                    deleteMessages(messagesToRemove.filterIsInstance<Message>(), toRecycleBin, false)
-                }
+                if (messagesToRemove.isNotEmpty()) deleteMessages(messagesToRemove.filterIsInstance<Message>(), !skipRecycleBin && activity.config.useRecycleBin && !isRecycleBin, false)
             }
         }
     }
 
     private fun askConfirmRestore() {
         val itemsCnt = selectedKeys.size
-        val items = try { resources.getQuantityString(R.plurals.delete_messages, itemsCnt, itemsCnt) } catch (e: Exception) {
-            activity.showErrorToast(e)
-            return
-        }
-        val question = String.format(resources.getString(R.string.restore_confirmation), items)
-        ConfirmationDialog(activity, question) {
-            ensureBackgroundThread {
-                val messagesToRestore = getSelectedItems()
-                if (messagesToRestore.isNotEmpty()) deleteMessages(messagesToRestore.filterIsInstance<Message>(), false, true)
-            }
+        val items = try { resources.getQuantityString(R.plurals.delete_messages, itemsCnt, itemsCnt) } catch (e: Exception) { activity.showErrorToast(e); return }
+        ConfirmationDialog(activity, String.format(resources.getString(R.string.restore_confirmation), items)) {
+            ensureBackgroundThread { val messagesToRestore = getSelectedItems(); if (messagesToRestore.isNotEmpty()) deleteMessages(messagesToRestore.filterIsInstance<Message>(), false, true) }
         }
     }
 
     private fun forwardMessage() {
         val message = getSelectedItems().firstOrNull() as? Message ?: return
         val attachment = message.attachment?.attachments?.firstOrNull()
-        Intent(activity, NewConversationActivity::class.java).apply {
-            action = Intent.ACTION_SEND
-            putExtra(Intent.EXTRA_TEXT, message.body)
-            if (attachment != null) putExtra(Intent.EXTRA_STREAM, attachment.getUri())
-            activity.startActivity(this)
-        }
+        Intent(activity, NewConversationActivity::class.java).apply { action = Intent.ACTION_SEND; putExtra(Intent.EXTRA_TEXT, message.body); if (attachment != null) putExtra(Intent.EXTRA_STREAM, attachment.getUri()); activity.startActivity(this) }
     }
 
     private fun getSelectedItems(): ArrayList<ThreadItem> = currentList.filter { selectedKeys.contains((it as? Message)?.getSelectionKey() ?: 0) } as ArrayList<ThreadItem>
     private fun isThreadDateTime(position: Int) = currentList.getOrNull(position) is ThreadDateTime
 
     fun updateMessages(newMessages: List<ThreadItem>, scrollPosition: Int = -1, smoothScroll: Boolean = false) {
-        val latestMessages = newMessages.toMutableList()
-        submitList(latestMessages) {
-            if (scrollPosition != -1) {
-                if (smoothScroll) recyclerView.smoothScrollToPosition(scrollPosition) else recyclerView.scrollToPosition(scrollPosition)
-            }
-        }
+        submitList(newMessages.toMutableList()) { if (scrollPosition != -1) { if (smoothScroll) recyclerView.smoothScrollToPosition(scrollPosition) else recyclerView.scrollToPosition(scrollPosition) } }
     }
 
     private fun setupView(holder: ViewHolder, view: View, message: Message) {
         ItemMessageBinding.bind(view).apply {
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
             threadMessageBody.apply {
-                text = message.body
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-                beVisibleIf(message.body.isNotEmpty())
-                setOnLongClickListener { holder.viewLongClicked(); true }
-                setOnClickListener { holder.viewClicked(message) }
+                text = message.body; setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize); beVisibleIf(message.body.isNotEmpty())
+                setOnLongClickListener { holder.viewLongClicked(); true }; setOnClickListener { holder.viewClicked(message) }
             }
-            if (message.isReceivedMessage()) setupReceivedMessageView(messageBinding = this, message = message) else setupSentMessageView(messageBinding = this, message = message)
-
+            if (message.isReceivedMessage()) setupReceivedMessageView(this, message) else setupSentMessageView(this, message)
             if (message.attachment?.attachments?.isNotEmpty() == true) {
-                threadMessageAttachmentsHolder.beVisible()
-                threadMessageAttachmentsHolder.removeAllViews()
+                threadMessageAttachmentsHolder.beVisible(); threadMessageAttachmentsHolder.removeAllViews()
                 for (attachment in message.attachment.attachments) {
-                    val mimetype = attachment.mimetype
-                    when {
-                        mimetype.isImageMimeType() || mimetype.isVideoMimeType() -> setupImageView(holder, binding = this, message, attachment)
-                        mimetype.isVCardMimeType() -> setupVCardView(holder, threadMessageAttachmentsHolder, message, attachment)
-                        else -> setupFileView(holder, threadMessageAttachmentsHolder, message, attachment)
-                    }
-                    threadMessagePlayOutline.beVisibleIf(mimetype.startsWith("video/"))
+                    when { attachment.mimetype.isImageMimeType() || attachment.mimetype.isVideoMimeType() -> setupImageView(holder, this, message, attachment); attachment.mimetype.isVCardMimeType() -> setupVCardView(holder, threadMessageAttachmentsHolder, message, attachment); else -> setupFileView(holder, threadMessageAttachmentsHolder, message, attachment) }
+                    threadMessagePlayOutline.beVisibleIf(attachment.mimetype.startsWith("video/"))
                 }
-            } else {
-                threadMessageAttachmentsHolder.beGone()
-                threadMessagePlayOutline.beGone()
-            }
+            } else { threadMessageAttachmentsHolder.beGone(); threadMessagePlayOutline.beGone() }
         }
     }
 
     private fun setupReceivedMessageView(messageBinding: ItemMessageBinding, message: Message) {
         messageBinding.apply {
-            with(ConstraintSet()) {
-                clone(threadMessageHolder)
-                clear(threadMessageWrapper.id, ConstraintSet.END)
-                connect(threadMessageWrapper.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
-                applyTo(threadMessageHolder)
-            }
-
+            with(ConstraintSet()) { clone(threadMessageHolder); clear(threadMessageWrapper.id, ConstraintSet.END); connect(threadMessageWrapper.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START); applyTo(threadMessageHolder) }
             threadMessageSenderPhoto.beVisible()
             threadMessageSenderPhoto.setOnClickListener {
                 val contact = message.getSender()!!
-                activity.getContactFromAddress(contact.phoneNumbers.first().normalizedNumber) {
-                    if (it != null) activity.startContactDetailsIntent(it)
-                }
+                activity.getContactFromAddress(contact.phoneNumbers.first().normalizedNumber) { if (it != null) activity.startContactDetailsIntent(it) }
             }
-
-            threadMessageBody.apply {
-                background = AppCompatResources.getDrawable(activity, R.drawable.item_received_background)
-                setTextColor(textColor)
-                setLinkTextColor(activity.getProperPrimaryColor())
-            }
-
+            threadMessageBody.apply { background = AppCompatResources.getDrawable(activity, R.drawable.item_received_background); setTextColor(textColor); setLinkTextColor(activity.getProperPrimaryColor()) }
             if (!activity.isFinishing && !activity.isDestroyed) {
                 val detection = BankSmsDetector.detect(message.senderPhoneNumber, message.body)
                 val bankLogoRes = detection?.let { IranianBankLogoResolver.resolve(activity, it.bank) }
                 val contactLetterIcon = SimpleContactsHelper(activity).getContactLetterIcon(message.senderName)
                 val placeholder = contactLetterIcon.toDrawable(activity.resources)
-
-                if (bankLogoRes != null && detection?.confidence != BankSmsDetector.Confidence.LOW) {
-                    Glide.with(activity)
-                        .load(bankLogoRes)
-                        .placeholder(placeholder)
-                        .error(placeholder)
-                        .apply(RequestOptions.circleCropTransform())
-                        .into(threadMessageSenderPhoto)
+                if (bankLogoRes != null) {
+                    Glide.with(activity).load(bankLogoRes).placeholder(placeholder).error(placeholder).apply(RequestOptions.circleCropTransform()).into(threadMessageSenderPhoto)
                 } else {
-                    val options = RequestOptions()
-                        .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-                        .error(placeholder)
-                        .centerCrop()
-
-                    Glide.with(activity)
-                        .load(message.senderPhotoUri)
-                        .placeholder(placeholder)
-                        .apply(options)
-                        .apply(RequestOptions.circleCropTransform())
-                        .into(threadMessageSenderPhoto)
+                    val options = RequestOptions().diskCacheStrategy(DiskCacheStrategy.RESOURCE).error(placeholder).centerCrop()
+                    Glide.with(activity).load(message.senderPhotoUri).placeholder(placeholder).apply(options).apply(RequestOptions.circleCropTransform()).into(threadMessageSenderPhoto)
                 }
             }
         }
@@ -390,53 +295,27 @@ class ThreadAdapter(
 
     private fun setupSentMessageView(messageBinding: ItemMessageBinding, message: Message) {
         messageBinding.apply {
-            with(ConstraintSet()) {
-                clone(threadMessageHolder)
-                clear(threadMessageWrapper.id, ConstraintSet.START)
-                connect(threadMessageWrapper.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
-                applyTo(threadMessageHolder)
-            }
-            val primaryColor = activity.getProperPrimaryColor()
-            val contrastColor = primaryColor.getContrastColor()
+            with(ConstraintSet()) { clone(threadMessageHolder); clear(threadMessageWrapper.id, ConstraintSet.START); connect(threadMessageWrapper.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END); applyTo(threadMessageHolder) }
+            val primaryColor = activity.getProperPrimaryColor(); val contrastColor = primaryColor.getContrastColor()
             threadMessageBody.apply {
-                updateLayoutParams<RelativeLayout.LayoutParams> {
-                    removeRule(RelativeLayout.END_OF)
-                    addRule(RelativeLayout.ALIGN_PARENT_END)
-                }
-                background = AppCompatResources.getDrawable(activity, R.drawable.item_sent_background)
-                background.applyColorFilter(primaryColor)
-                setTextColor(contrastColor)
-                setLinkTextColor(contrastColor)
+                updateLayoutParams<RelativeLayout.LayoutParams> { removeRule(RelativeLayout.END_OF); addRule(RelativeLayout.ALIGN_PARENT_END) }
+                background = AppCompatResources.getDrawable(activity, R.drawable.item_sent_background); background.applyColorFilter(primaryColor); setTextColor(contrastColor); setLinkTextColor(contrastColor)
                 if (message.isScheduled) {
                     typeface = Typeface.create(FontHelper.getTypeface(activity), Typeface.ITALIC)
-                    val scheduledDrawable = AppCompatResources.getDrawable(activity, org.fossify.commons.R.drawable.ic_clock_vector)?.apply {
-                        applyColorFilter(contrastColor)
-                        val size = lineHeight
-                        setBounds(0, 0, size, size)
-                    }
+                    val scheduledDrawable = AppCompatResources.getDrawable(activity, org.fossify.commons.R.drawable.ic_clock_vector)?.apply { applyColorFilter(contrastColor); val size = lineHeight; setBounds(0, 0, size, size) }
                     setCompoundDrawables(null, null, scheduledDrawable, null)
-                } else {
-                    typeface = FontHelper.getTypeface(activity)
-                    setCompoundDrawables(null, null, null, null)
-                }
+                } else { typeface = FontHelper.getTypeface(activity); setCompoundDrawables(null, null, null, null) }
             }
         }
     }
 
     private fun setupImageView(holder: ViewHolder, binding: ItemMessageBinding, message: Message, attachment: Attachment) = binding.apply {
-        val mimetype = attachment.mimetype
-        val uri = attachment.getUri()
-        val imageView = ItemAttachmentImageBinding.inflate(layoutInflater)
-        threadMessageAttachmentsHolder.addView(imageView.root)
-        val placeholderDrawable = Color.TRANSPARENT.toDrawable()
-        val options = RequestOptions().diskCacheStrategy(DiskCacheStrategy.RESOURCE).placeholder(placeholderDrawable).transform(FitCenter())
-        Glide.with(root.context).load(uri).apply(options).dontAnimate().override(maxChatBubbleWidth, maxChatBubbleWidth * MAX_MEDIA_HEIGHT_RATIO).downsample(DownsampleStrategy.AT_MOST)
-            .listener(object : RequestListener<Drawable> {
-                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
-                    threadMessagePlayOutline.beGone(); threadMessageAttachmentsHolder.removeView(imageView.root); return false
-                }
-                override fun onResourceReady(dr: Drawable, a: Any, t: Target<Drawable>, d: DataSource, i: Boolean) = false
-            }).into(imageView.attachmentImage)
+        val mimetype = attachment.mimetype; val uri = attachment.getUri(); val imageView = ItemAttachmentImageBinding.inflate(layoutInflater); threadMessageAttachmentsHolder.addView(imageView.root)
+        val placeholderDrawable = Color.TRANSPARENT.toDrawable(); val options = RequestOptions().diskCacheStrategy(DiskCacheStrategy.RESOURCE).placeholder(placeholderDrawable).transform(FitCenter())
+        Glide.with(root.context).load(uri).apply(options).dontAnimate().override(maxChatBubbleWidth, maxChatBubbleWidth * MAX_MEDIA_HEIGHT_RATIO).downsample(DownsampleStrategy.AT_MOST).listener(object : RequestListener<Drawable> {
+            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean { threadMessagePlayOutline.beGone(); threadMessageAttachmentsHolder.removeView(imageView.root); return false }
+            override fun onResourceReady(dr: Drawable, a: Any, t: Target<Drawable>, d: DataSource, i: Boolean) = false
+        }).into(imageView.attachmentImage)
         imageView.attachmentImage.updateLayoutParams<ViewGroup.LayoutParams> { width = maxChatBubbleWidth; height = ViewGroup.LayoutParams.WRAP_CONTENT }
         imageView.attachmentImage.setOnClickListener { if (actModeCallback.isSelectable) holder.viewClicked(message) else activity.launchViewIntent(uri, mimetype, attachment.filename) }
         imageView.root.setOnLongClickListener { holder.viewLongClicked(); true }
@@ -444,63 +323,27 @@ class ThreadAdapter(
 
     private fun setupVCardView(holder: ViewHolder, parent: LinearLayout, message: Message, attachment: Attachment) {
         val uri = attachment.getUri()
-        val vCardView = ItemAttachmentVcardBinding.inflate(layoutInflater).apply {
-            setupVCardPreview(activity = activity, uri = uri, onClick = {
-                if (actModeCallback.isSelectable) holder.viewClicked(message) else {
-                    val intent = Intent(activity, VCardViewerActivity::class.java).also { it.putExtra(EXTRA_VCARD_URI, uri) }
-                    activity.startActivity(intent)
-                }
-            }, onLongClick = { holder.viewLongClicked() })
-        }.root
+        val vCardView = ItemAttachmentVcardBinding.inflate(layoutInflater).apply { setupVCardPreview(activity = activity, uri = uri, onClick = { if (actModeCallback.isSelectable) holder.viewClicked(message) else activity.startActivity(Intent(activity, VCardViewerActivity::class.java).also { it.putExtra(EXTRA_VCARD_URI, uri) }) }, onLongClick = { holder.viewLongClicked() }) }.root
         parent.addView(vCardView)
     }
 
     private fun setupFileView(holder: ViewHolder, parent: LinearLayout, message: Message, attachment: Attachment) {
-        val mimetype = attachment.mimetype
-        val uri = attachment.getUri()
-        val attachmentView = ItemAttachmentDocumentBinding.inflate(layoutInflater).apply {
-            setupDocumentPreview(uri = uri, title = attachment.filename, mimeType = attachment.mimetype, onClick = {
-                if (actModeCallback.isSelectable) holder.viewClicked(message) else activity.launchViewIntent(uri, mimetype, attachment.filename)
-            }, onLongClick = { holder.viewLongClicked() })
-        }.root
+        val mimetype = attachment.mimetype; val uri = attachment.getUri()
+        val attachmentView = ItemAttachmentDocumentBinding.inflate(layoutInflater).apply { setupDocumentPreview(uri = uri, title = attachment.filename, mimeType = attachment.mimetype, onClick = { if (actModeCallback.isSelectable) holder.viewClicked(message) else activity.launchViewIntent(uri, mimetype, attachment.filename) }, onLongClick = { holder.viewLongClicked() }) }.root
         parent.addView(attachmentView)
     }
 
     private fun setupDateTime(view: View, dateTime: ThreadDateTime) {
         ItemThreadDateTimeBinding.bind(view).apply {
-            threadDateTime.apply {
-                text = if (activity.config.usePersianCalendar) PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(dateTime.date * 1000L)) else (dateTime.date * 1000L).formatDateOrTime(context = context, hideTimeOnOtherDays = false, showCurrentYear = false)
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-            }
-            threadDateTime.setTextColor(textColor)
-            threadSimIcon.beVisibleIf(hasMultipleSIMCards)
-            threadSimNumber.beVisibleIf(hasMultipleSIMCards)
-            if (hasMultipleSIMCards) {
-                threadSimNumber.text = dateTime.simID
-                threadSimNumber.setTextColor(textColor.getContrastColor())
-                threadSimIcon.applyColorFilter(textColor)
-            }
+            threadDateTime.apply { text = if (activity.config.usePersianCalendar) PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(dateTime.date * 1000L)) else (dateTime.date * 1000L).formatDateOrTime(context = context, hideTimeOnOtherDays = false, showCurrentYear = false); setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize) }
+            threadDateTime.setTextColor(textColor); threadSimIcon.beVisibleIf(hasMultipleSIMCards); threadSimNumber.beVisibleIf(hasMultipleSIMCards)
+            if (hasMultipleSIMCards) { threadSimNumber.text = dateTime.simID; threadSimNumber.setTextColor(textColor.getContrastColor()); threadSimIcon.applyColorFilter(textColor) }
         }
     }
 
-    private fun setupThreadSuccess(view: View, isDelivered: Boolean) {
-        ItemThreadSuccessBinding.bind(view).apply {
-            threadSuccess.setImageResource(if (isDelivered) R.drawable.ic_check_double_vector else org.fossify.commons.R.drawable.ic_check_vector)
-            threadSuccess.applyColorFilter(textColor)
-        }
-    }
-
-    private fun setupThreadError(view: View) {
-        val binding = ItemThreadErrorBinding.bind(view)
-        binding.threadError.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize - 4)
-    }
-
-    private fun setupThreadSending(view: View) {
-        ItemThreadSendingBinding.bind(view).threadSending.apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-            setTextColor(textColor)
-        }
-    }
+    private fun setupThreadSuccess(view: View, isDelivered: Boolean) { ItemThreadSuccessBinding.bind(view).apply { threadSuccess.setImageResource(if (isDelivered) R.drawable.ic_check_double_vector else org.fossify.commons.R.drawable.ic_check_vector); threadSuccess.applyColorFilter(textColor) } }
+    private fun setupThreadError(view: View) { ItemThreadErrorBinding.bind(view).threadError.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize - 4) }
+    private fun setupThreadSending(view: View) { ItemThreadSendingBinding.bind(view).threadSending.apply { setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize); setTextColor(textColor) } }
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
