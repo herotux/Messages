@@ -31,46 +31,35 @@ object BankSmsDetector {
     private val nonTransactionTerms = listOf(
         "پویش", "کمک", "حمایت", "خیریه", "جامعه هدف", "آسیب دیده", "جنگ تحمیلی",
         "مشارکت", "کمک های نقدی", "درگاه", "کد دستوری", "تبلیغ", "تخفیف", "قرعه کشی",
-        "برنده", "فروش ویژه", "اهدای", "نذری", "اطعام", "مهمانی", "نیکوکاری"
+        "برنده", "فروش ویژه", "اهدای", "نذری", "اطعام", "مهمانی", "نیکوکاری",
+        "فروشگاه", "خدمتتون ارسال", "اطلاع دهید"
     )
 
     fun detect(sender: String, body: String): Detection? {
+        // A verified bank sender is sufficient because the sender itself identifies the bank.
         IranianBankRegistry.findBySmsSender(sender)?.let {
             return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
         }
+
         val normalizedBody = normalizeDigits(body)
         val negativeHits = nonTransactionTerms.count { normalizedBody.contains(it, ignoreCase = true) }
         val termHits = transactionTerms.count { normalizedBody.contains(it, ignoreCase = true) }
         val structureHits = transactionStructure.count { it.containsMatchIn(normalizedBody) }
 
-        // Payment/donation/advertising messages often contain a perfectly valid
-        // bank card. A card number is not proof that the message was sent by a bank.
-        // Require transaction context and reject clearly promotional content.
-        findIban(normalizedBody)?.let { iban ->
-            if (IranianBankRegistry.isValidIban(iban) && negativeHits == 0 && (termHits >= 2 || structureHits >= 2)) {
-                IranianBankRegistry.findByIban(iban)?.let {
-                    return Detection(it, Confidence.HIGH, Reason.IBAN, 100, listOf(Reason.IBAN, Reason.TRANSACTION_CONTEXT))
-                }
-            }
-        }
+        // Card numbers and IBANs are common in merchant/payment-request messages.
+        // They are supporting evidence only and MUST NOT identify a bank by themselves.
+        // Without a verified sender or explicit bank name, an unknown conversation is not a bank.
+        val bankMatch = findExplicitBankName(normalizedBody)
+        if (bankMatch == null) return null
 
-        findCardNumbers(normalizedBody).forEach { cardNumber ->
-            if (IranianBankRegistry.isValidCardNumber(cardNumber) && negativeHits == 0 && (termHits >= 2 || structureHits >= 2)) {
-                IranianBankRegistry.findByCard(cardNumber)?.let {
-                    return Detection(it, Confidence.HIGH, Reason.CARD_NUMBER, 100, listOf(Reason.CARD_NUMBER, Reason.TRANSACTION_CONTEXT))
-                }
-            }
-        }
-
-        return detectFromTransactionText(normalizedBody, termHits, structureHits, negativeHits)
-    }
-
-    private fun detectFromTransactionText(body: String, termHits: Int, structureHits: Int, negativeHits: Int): Detection? {
         if (termHits < 2 && structureHits < 2) return null
         if (negativeHits > 0) return null
-        val bankMatch = findExplicitBankName(body) ?: return null
+
+        // If a card/IBAN is present, it can support the explicit bank identity, but the
+        // bank name + transaction context remains the required identity signal.
         val score = termHits * 20 + structureHits * 25 + 30
         if (score < 70) return null
+
         return Detection(
             bankMatch.bank,
             if (score >= 100) Confidence.HIGH else Confidence.MEDIUM,
@@ -79,12 +68,6 @@ object BankSmsDetector {
             listOf(Reason.TRANSACTION_CONTEXT, Reason.EXPLICIT_BANK_NAME)
         )
     }
-
-    private fun findIban(body: String): String? = Regex("IR\\d{24}", RegexOption.IGNORE_CASE)
-        .find(body.replace(" ", "").replace("-", ""))?.value
-
-    private fun findCardNumbers(body: String): Sequence<String> = Regex("\\d{4}(?:[ -]?\\d{4}){3}")
-        .findAll(body).map { it.value.filter(Char::isDigit) }
 
     private fun findExplicitBankName(body: String): BankNameCandidate? {
         val candidates = IranianBankRegistry.allBanks().flatMap { bank ->
