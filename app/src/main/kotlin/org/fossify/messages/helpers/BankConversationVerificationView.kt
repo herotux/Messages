@@ -8,14 +8,11 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.isVisible
-import org.fossify.messages.R
 import org.fossify.messages.helpers.THREAD_ID
 
 /**
  * Small confirmation banner shown at the top of a conversation when the
  * detector has medium confidence that the conversation is a bank SMS thread.
- * The user can confirm or reject the suggestion; the answer is persisted per
- * thread so the same question is not repeatedly shown.
  */
 class BankConversationVerificationView @JvmOverloads constructor(
     context: Context,
@@ -82,9 +79,10 @@ class BankConversationVerificationView @JvmOverloads constructor(
 
     private fun showSuggestion(threadId: Long, detection: BankSmsDetector.Detection) {
         removeAllViews()
+        val bankName = detection.bank.persianName
 
         val title = TextView(context).apply {
-            text = "آیا این پیام مربوط به ${detection.bank.name} است؟"
+            text = "آیا این پیام مربوط به $bankName است؟"
             textSize = 15f
             setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface))
         }
@@ -103,7 +101,7 @@ class BankConversationVerificationView @JvmOverloads constructor(
             }
         }
         val yesButton = Button(context).apply {
-            text = "بله، ${detection.bank.name}"
+            text = "بله، $bankName"
             setOnClickListener {
                 prefs.edit().putBoolean(key(threadId), true).apply()
                 isVisible = false
@@ -119,7 +117,6 @@ class BankConversationVerificationView @JvmOverloads constructor(
     }
 
     private fun key(threadId: Long) = "confirmed_$threadId"
-
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun resolveColor(attr: Int): Int {
@@ -127,9 +124,7 @@ class BankConversationVerificationView @JvmOverloads constructor(
         context.theme.resolveAttribute(attr, typed, true)
         return if (typed.resourceId != 0) {
             androidx.core.content.ContextCompat.getColor(context, typed.resourceId)
-        } else {
-            typed.data
-        }
+        } else typed.data
     }
 
     companion object {
