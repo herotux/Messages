@@ -108,7 +108,11 @@ object IranianBankRegistry {
         var remainder = 0
         for (char in rearranged) {
             val value = if (char.isDigit()) char - '0' else char - 'A' + 10
-            remainder = (remainder * 10 + value) % 97
+            remainder = if (char.isDigit()) {
+                (remainder * 10 + value) % 97
+            } else {
+                (remainder * 100 + value) % 97
+            }
         }
         return remainder == 1
     }
