@@ -81,11 +81,25 @@ class IranianBankRegistryTest {
     }
 
     @Test
-    fun bankSmsDetectorRecognizesExplicitBankNameAsMediumConfidence() {
-        val detection = BankSmsDetector.detect("1000", "بانک ملت: تراکنش با موفقیت انجام شد")
+    fun bankSmsDetectorRequiresTransactionContextForExplicitBankName() {
+        val detection = BankSmsDetector.detect(
+            "1000",
+            "بانک ملت\nمبلغ: 6000000\nمانده: 6035959\nزمان: 1405/05/29\nواریز"
+        )
         assertEquals(IranianBankRegistry.BankId.MELLAT, detection?.bank?.id)
-        assertEquals(BankSmsDetector.Confidence.MEDIUM, detection?.confidence)
-        assertEquals(BankSmsDetector.Reason.EXPLICIT_BANK_NAME, detection?.reason)
+        assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
+        assertEquals(BankSmsDetector.Reason.TRANSACTION_CONTEXT, detection?.reason)
+    }
+
+    @Test
+    fun bankSmsDetectorRejectsBankNameWithoutTransactionContext() {
+        assertNull(BankSmsDetector.detect("1000", "من امروز به بانک ملت مراجعه کردم"))
+    }
+
+    @Test
+    fun bankSmsDetectorRejectsPromotionalMessageContainingBankName() {
+        val body = "هموطن گرامی برای مشارکت در پویش بنای مهربانی و حمایت از جامعه هدف سازمان بهزیستی، کمک های نقدی خود را از طریق درگاه واریز نمائید. بانک مهر ایران"
+        assertNull(BankSmsDetector.detect("1000", body))
     }
 
     @Test
