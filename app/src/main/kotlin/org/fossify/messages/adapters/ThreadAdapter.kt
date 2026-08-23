@@ -72,6 +72,7 @@ import org.fossify.messages.extensions.startContactDetailsIntent
 import org.fossify.messages.extensions.subscriptionManagerCompat
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
 import org.fossify.messages.helpers.BankSmsDetector
+import org.fossify.messages.helpers.IranianBankLogoImageHelper
 import org.fossify.messages.helpers.IranianBankLogoResolver
 import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.helpers.THREAD_DATE_TIME
@@ -285,7 +286,10 @@ class ThreadAdapter(
                 val contactLetterIcon = SimpleContactsHelper(activity).getContactLetterIcon(message.senderName)
                 val placeholder = contactLetterIcon.toDrawable(activity.resources)
                 if (bankLogoRes != null) {
-                    Glide.with(activity).load(bankLogoRes).placeholder(placeholder).error(placeholder).apply(RequestOptions.circleCropTransform()).into(threadMessageSenderPhoto)
+                    Glide.with(activity).clear(threadMessageSenderPhoto)
+                    if (!IranianBankLogoImageHelper.setBankLogo(threadMessageSenderPhoto, bankLogoRes)) {
+                        threadMessageSenderPhoto.setImageDrawable(placeholder)
+                    }
                 } else {
                     val options = RequestOptions().diskCacheStrategy(DiskCacheStrategy.RESOURCE).error(placeholder).centerCrop()
                     Glide.with(activity).load(message.senderPhotoUri).placeholder(placeholder).apply(options).apply(RequestOptions.circleCropTransform()).into(threadMessageSenderPhoto)
