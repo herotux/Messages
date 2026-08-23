@@ -166,7 +166,7 @@ object IranianBankRegistry {
         return normalized.takeIf { it.matches(Regex("IR\\d{24}")) }
     }
 
-    private fun normalizeSender(value: String): String = value.trim().uppercase().replace(" ", "").replace("-", "")
+    private fun normalizeSender(value: String): String = normalizeDigits(value.trim()).uppercase().replace(" ", "").replace("-", "")
 
     private fun normalizeDigits(value: String): String = buildString(value.length) {
         value.forEach { char ->
