@@ -2,21 +2,11 @@ package org.fossify.messages.helpers
 
 /**
  * Conservative offline detector for Iranian bank transaction SMS messages.
- *
- * A bank name by itself is never enough. Text-based detection requires
- * transaction context and multiple independent signals. Verified sender IDs,
- * valid IBANs and valid card numbers remain high-confidence signals.
+ * A card/IBAN/name alone is not enough when the message looks promotional.
  */
 object BankSmsDetector {
     enum class Confidence { HIGH, MEDIUM }
-
-    enum class Reason {
-        VERIFIED_SENDER,
-        IBAN,
-        CARD_NUMBER,
-        TRANSACTION_CONTEXT,
-        EXPLICIT_BANK_NAME,
-    }
+    enum class Reason { VERIFIED_SENDER, IBAN, CARD_NUMBER, TRANSACTION_CONTEXT, EXPLICIT_BANK_NAME }
 
     data class Detection(
         val bank: IranianBankRegistry.BankInfo,
@@ -33,91 +23,75 @@ object BankSmsDetector {
         "مبلغ", "مانده", "موجودی", "تراکنش", "شماره پیگیری", "پیگیری", "کد پیگیری",
         "شماره مرجع", "مرجع", "رسید", "خرید", "شارژ", "اعتبار", "بستانکار", "بدهکار"
     )
-
     private val transactionStructure = listOf(
-        Regex("(?i)(?:مبلغ|amount)\\s*[:：]"),
-        Regex("(?i)(?:مانده|موجودی|balance)\\s*[:：]"),
-        Regex("(?i)(?:حساب|شماره حساب|card|کارت)\\s*[:：]"),
-        Regex("(?i)(?:زمان|تاریخ|تاریخ تراکنش)\\s*[:：]"),
-        Regex("(?i)(?:شماره پیگیری|کد پیگیری|شماره مرجع|مرجع)\\s*[:：]"),
+        Regex("(?i)(?:مبلغ|amount)\\s*[:：]"), Regex("(?i)(?:مانده|موجودی|balance)\\s*[:：]"),
+        Regex("(?i)(?:حساب|شماره حساب|card|کارت)\\s*[:：]"), Regex("(?i)(?:زمان|تاریخ|تاریخ تراکنش)\\s*[:：]"),
+        Regex("(?i)(?:شماره پیگیری|کد پیگیری|شماره مرجع|مرجع)\\s*[:：]")
     )
-
     private val nonTransactionTerms = listOf(
         "پویش", "کمک", "حمایت", "خیریه", "جامعه هدف", "آسیب دیده", "جنگ تحمیلی",
         "مشارکت", "کمک های نقدی", "درگاه", "کد دستوری", "تبلیغ", "تخفیف", "قرعه کشی",
-        "برنده", "فروش ویژه"
+        "برنده", "فروش ویژه", "اهدای", "نذری", "اطعام", "مهمانی", "نیکوکاری"
     )
 
     fun detect(sender: String, body: String): Detection? {
         IranianBankRegistry.findBySmsSender(sender)?.let {
             return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
         }
-
         val normalizedBody = normalizeDigits(body)
+        val negativeHits = nonTransactionTerms.count { normalizedBody.contains(it, ignoreCase = true) }
+        val termHits = transactionTerms.count { normalizedBody.contains(it, ignoreCase = true) }
+        val structureHits = transactionStructure.count { it.containsMatchIn(normalizedBody) }
 
+        // Payment/donation/advertising messages often contain a perfectly valid
+        // bank card. A card number is not proof that the message was sent by a bank.
+        // Require transaction context and reject clearly promotional content.
         findIban(normalizedBody)?.let { iban ->
-            if (IranianBankRegistry.isValidIban(iban)) {
+            if (IranianBankRegistry.isValidIban(iban) && negativeHits == 0 && (termHits >= 2 || structureHits >= 2)) {
                 IranianBankRegistry.findByIban(iban)?.let {
-                    return Detection(it, Confidence.HIGH, Reason.IBAN, 100, listOf(Reason.IBAN))
+                    return Detection(it, Confidence.HIGH, Reason.IBAN, 100, listOf(Reason.IBAN, Reason.TRANSACTION_CONTEXT))
                 }
             }
         }
 
         findCardNumbers(normalizedBody).forEach { cardNumber ->
-            if (IranianBankRegistry.isValidCardNumber(cardNumber)) {
+            if (IranianBankRegistry.isValidCardNumber(cardNumber) && negativeHits == 0 && (termHits >= 2 || structureHits >= 2)) {
                 IranianBankRegistry.findByCard(cardNumber)?.let {
-                    return Detection(it, Confidence.HIGH, Reason.CARD_NUMBER, 100, listOf(Reason.CARD_NUMBER))
+                    return Detection(it, Confidence.HIGH, Reason.CARD_NUMBER, 100, listOf(Reason.CARD_NUMBER, Reason.TRANSACTION_CONTEXT))
                 }
             }
         }
 
-        return detectFromTransactionText(normalizedBody)
+        return detectFromTransactionText(normalizedBody, termHits, structureHits, negativeHits)
     }
 
-    private fun detectFromTransactionText(body: String): Detection? {
-        val termHits = transactionTerms.count { body.contains(it, ignoreCase = true) }
-        val structureHits = transactionStructure.count { it.containsMatchIn(body) }
-        val negativeHits = nonTransactionTerms.count { body.contains(it, ignoreCase = true) }
-
-        // Bank names without transaction context are never enough.
+    private fun detectFromTransactionText(body: String, termHits: Int, structureHits: Int, negativeHits: Int): Detection? {
         if (termHits < 2 && structureHits < 2) return null
-
-        // Promotional/charity messages are rejected unless they contain a real
-        // transaction structure such as مبلغ/مانده/حساب/تاریخ with a value.
-        if (negativeHits >= 2 && structureHits == 0) return null
-
+        if (negativeHits > 0) return null
         val bankMatch = findExplicitBankName(body) ?: return null
-        val score = termHits * 20 + structureHits * 25 + 30 - negativeHits * 25
+        val score = termHits * 20 + structureHits * 25 + 30
         if (score < 70) return null
-
         return Detection(
-            bank = bankMatch.bank,
-            confidence = if (score >= 100) Confidence.HIGH else Confidence.MEDIUM,
-            reason = Reason.TRANSACTION_CONTEXT,
-            score = score,
-            reasons = listOf(Reason.TRANSACTION_CONTEXT, Reason.EXPLICIT_BANK_NAME),
+            bankMatch.bank,
+            if (score >= 100) Confidence.HIGH else Confidence.MEDIUM,
+            Reason.TRANSACTION_CONTEXT,
+            score,
+            listOf(Reason.TRANSACTION_CONTEXT, Reason.EXPLICIT_BANK_NAME)
         )
     }
 
-    private fun findIban(body: String): String? =
-        Regex("IR\\d{24}", RegexOption.IGNORE_CASE)
-            .find(body.replace(" ", "").replace("-", ""))?.value
+    private fun findIban(body: String): String? = Regex("IR\\d{24}", RegexOption.IGNORE_CASE)
+        .find(body.replace(" ", "").replace("-", ""))?.value
 
-    private fun findCardNumbers(body: String): Sequence<String> =
-        Regex("\\d{4}(?:[ -]?\\d{4}){3}").findAll(body).map { match ->
-            match.value.filter(Char::isDigit)
-        }
+    private fun findCardNumbers(body: String): Sequence<String> = Regex("\\d{4}(?:[ -]?\\d{4}){3}")
+        .findAll(body).map { it.value.filter(Char::isDigit) }
 
     private fun findExplicitBankName(body: String): BankNameCandidate? {
-        val candidates = IranianBankRegistry.allBanks()
-            .flatMap { bank ->
-                bank.aliases.filter { it.length >= 3 }.map { BankNameCandidate(bank, it) }
-            }
-            .sortedByDescending { it.alias.length }
-
+        val candidates = IranianBankRegistry.allBanks().flatMap { bank ->
+            bank.aliases.filter { it.length >= 3 }.map { BankNameCandidate(bank, it) }
+        }.sortedByDescending { it.alias.length }
         val matches = candidates.filter { hasExplicitInstitutionName(body, it.alias) }.toList()
         if (matches.isEmpty()) return null
-
         val bestLength = matches.maxOf { it.alias.length }
         val best = matches.filter { it.alias.length == bestLength }
         val distinctBanks = best.map { it.bank.id }.distinct()
@@ -126,21 +100,17 @@ object BankSmsDetector {
 
     private fun hasExplicitInstitutionName(body: String, alias: String): Boolean {
         val escapedAlias = Regex.escape(alias.trim())
-        val pattern = Regex(
-            "(?:بانک|بانکِ|موسسه اعتباری|موسسه|مؤسسه اعتباری|مؤسسه)\\s+$escapedAlias(?=$|[^آ-ی])"
-        )
-        return pattern.containsMatchIn(body)
+        return Regex("(?:بانک|بانکِ|موسسه اعتباری|موسسه|مؤسسه اعتباری|مؤسسه)\\s+$escapedAlias(?=$|[^آ-ی])")
+            .containsMatchIn(body)
     }
 
     private fun normalizeDigits(value: String): String = buildString(value.length) {
         value.forEach { char ->
-            append(
-                when (char) {
-                    in '۰'..'۹' -> ('0'.code + (char - '۰')).toChar()
-                    in '٠'..'٩' -> ('0'.code + (char - '٠')).toChar()
-                    else -> char
-                }
-            )
+            append(when (char) {
+                in '۰'..'۹' -> ('0'.code + (char - '۰')).toChar()
+                in '٠'..'٩' -> ('0'.code + (char - '٠')).toChar()
+                else -> char
+            })
         }
     }
 }
