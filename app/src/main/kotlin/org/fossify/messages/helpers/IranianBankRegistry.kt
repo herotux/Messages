@@ -31,7 +31,7 @@ object IranianBankRegistry {
     )
 
     private val banks = listOf(
-        BankInfo(BankId.MELLI, "بانک ملی ایران", "Melli Bank", "017", listOf("603799", "636214"), listOf("062"), listOf("ملی", "بانک ملی", "آینده", "بانک آینده"), "bank_melli"),
+        BankInfo(BankId.MELLI, "بانک ملی ایران", "Melli Bank", "017", listOf("603799", "636214"), listOf("062"), listOf("ملی", "بانک ملی"), "bank_melli"),
         BankInfo(BankId.MELLAT, "بانک ملت", "Mellat Bank", "012", listOf("610433", "991975"), aliases = listOf("ملت", "بانک ملت"), logoResourceName = "bank_mellat"),
         BankInfo(BankId.TEJARAT, "بانک تجارت", "Tejarat Bank", "018", listOf("627353", "585983"), aliases = listOf("تجارت", "بانک تجارت"), logoResourceName = "bank_tejarat"),
         BankInfo(BankId.SADERAT, "بانک صادرات ایران", "Saderat Bank", "019", listOf("603769"), aliases = listOf("صادرات", "بانک صادرات"), logoResourceName = "bank_saderat"),
@@ -43,7 +43,7 @@ object IranianBankRegistry {
         BankInfo(BankId.POST, "پست بانک ایران", "Post Bank", "021", listOf("627760"), aliases = listOf("پست بانک"), logoResourceName = "bank_post"),
         BankInfo(BankId.TOSEE_SADERAT, "بانک توسعه صادرات ایران", "Export Development Bank", "020", listOf("627648", "207177"), aliases = listOf("توسعه صادرات"), logoResourceName = "bank_tosee_saderat"),
         BankInfo(BankId.TOSEE_TAAVON, "بانک توسعه تعاون", "Tosee Taavon Bank", "022", listOf("502908"), aliases = listOf("توسعه تعاون"), logoResourceName = "bank_tosee_taavon"),
-        BankInfo(BankId.TOSEE, "موسسه اعتباری توسعه", "Tosee Credit Institution", "051", listOf("628157"), aliases = listOf("توسعه")),
+        BankInfo(BankId.TOSEE, "موسسه اعتباری توسعه", "Tosee Credit Institution", "051", listOf("628157"), aliases = listOf("موسسه اعتباری توسعه")),
         BankInfo(BankId.PARSIAN, "بانک پارسیان", "Parsian Bank", "054", listOf("622106", "639194", "627884"), aliases = listOf("پارسیان"), logoResourceName = "bank_parsian"),
         BankInfo(BankId.PASARGAD, "بانک پاسارگاد", "Pasargad Bank", "057", listOf("502229", "639347"), aliases = listOf("پاسارگاد"), logoResourceName = "bank_pasargad"),
         BankInfo(BankId.KARAFARIN, "بانک کارآفرین", "Karafarin Bank", "053", listOf("627488", "502910"), aliases = listOf("کارآفرین"), logoResourceName = "bank_karafarin"),
@@ -65,6 +65,45 @@ object IranianBankRegistry {
     )
 
     private val byId = banks.associateBy { it.id }
+
+    // Publicly documented/common Iranian bank SMS sender IDs. Keep this list conservative.
+    private val smsSenders = mapOf(
+        "1000700" to BankId.TOSEE_TAAVON,
+        "100070007" to BankId.TOSEE_TAAVON,
+        "1000900" to BankId.PASARGAD,
+        "50009000" to BankId.PASARGAD,
+        "20000" to BankId.SAMAN,
+        "200020" to BankId.SEPAH,
+        "200021" to BankId.SEPAH,
+        "200022" to BankId.SEPAH,
+        "200033" to BankId.MELLAT,
+        "200030" to BankId.MELLAT,
+        "2000333" to BankId.MELLAT,
+        "200038" to BankId.SINA,
+        "200050" to BankId.EGHTESAD_NOVIN,
+        "200060" to BankId.SADERAT,
+        "200070" to BankId.TEJARAT,
+        "20007010" to BankId.TEJARAT,
+        "2000911" to BankId.KESHAVARZI,
+        "200093" to BankId.KESHAVARZI,
+        "300054" to BankId.PARSIAN,
+        "50001099" to BankId.PARSIAN,
+        "300055" to BankId.PARSIAN,
+        "30007" to BankId.PARSIAN,
+        "300066" to BankId.REFAH,
+        "300044" to BankId.REFAH,
+        "100088" to BankId.SARMAYEH,
+        "300014" to BankId.MASKAN,
+        "300017" to BankId.MELLI,
+        "BANKMELLAT" to BankId.MELLAT,
+        "MELLATBANK" to BankId.MELLAT,
+        "BANKMELLI" to BankId.MELLI,
+        "BANKSAMAN" to BankId.SAMAN,
+        "BANKTEJARAT" to BankId.TEJARAT,
+        "BANKSADERAT" to BankId.SADERAT,
+        "BANKPASARGAD" to BankId.PASARGAD,
+    )
+
     private val knownNonBankSenders = setOf("V.REFAH", "V.MASKAN")
 
     fun allBanks(): List<BankInfo> = banks
@@ -108,19 +147,15 @@ object IranianBankRegistry {
         var remainder = 0
         for (char in rearranged) {
             val value = if (char.isDigit()) char - '0' else char - 'A' + 10
-            remainder = if (char.isDigit()) {
-                (remainder * 10 + value) % 97
-            } else {
-                (remainder * 100 + value) % 97
-            }
+            remainder = if (char.isDigit()) (remainder * 10 + value) % 97 else (remainder * 100 + value) % 97
         }
         return remainder == 1
     }
 
-    /** Conservative: sender IDs are added only after explicit verification. */
     fun findBySmsSender(sender: String): BankInfo? {
         val normalized = normalizeSender(sender)
         if (normalized.isEmpty() || normalized in knownNonBankSenders) return null
+        smsSenders[normalized]?.let { return byId[it] }
         return null
     }
 
@@ -131,7 +166,7 @@ object IranianBankRegistry {
         return normalized.takeIf { it.matches(Regex("IR\\d{24}")) }
     }
 
-    private fun normalizeSender(value: String): String = value.trim().uppercase().replace(" ", "")
+    private fun normalizeSender(value: String): String = value.trim().uppercase().replace(" ", "").replace("-", "")
 
     private fun normalizeDigits(value: String): String = buildString(value.length) {
         value.forEach { char ->
