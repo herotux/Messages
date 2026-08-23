@@ -65,7 +65,8 @@ object BankSmsDetector {
     }
 
     private fun findIban(body: String): String? =
-        Regex("IR\\d{24}", RegexOption.IGNORE_CASE).find(body.replace(" ", "").replace("-", ""))?.value
+        Regex("IR\\d{24}", RegexOption.IGNORE_CASE)
+            .find(body.replace(" ", "").replace("-", ""))?.value
 
     private fun findCardNumbers(body: String): Sequence<String> =
         Regex("\\d{4}(?:[ -]?\\d{4}){3}").findAll(body).map { match ->
@@ -77,17 +78,20 @@ object BankSmsDetector {
             .flatMap { bank ->
                 bank.aliases
                     .filter { alias -> alias.length >= 3 }
-                    .map { BankNameCandidate(bank, alias) }
+                    .map { alias -> BankNameCandidate(bank, alias) }
             }
-            .sortedByDescending { it.alias.length }
+            .sortedByDescending { candidate -> candidate.alias.length }
 
-        val matches = candidates.filter { body.contains(it.alias, ignoreCase = true) }.toList()
+        val matches = candidates.filter { candidate ->
+            body.contains(candidate.alias, ignoreCase = true)
+        }.toList()
         if (matches.isEmpty()) return null
 
         val bestLength = matches.first().alias.length
-        val best = matches.takeWhile { it.alias.length == bestLength }
-        val distinctBanks = best.map { it.bank.id }.distinct()
-        return best.firstOrNull()?.takeIf { distinctBanks.size == 1 }
+        val best = matches.takeWhile { candidate -> candidate.alias.length == bestLength }
+        val distinctBanks = best.map { candidate -> candidate.bank.id }.distinct()
+        val bestCandidate = best.firstOrNull() ?: return null
+        return bestCandidate.takeIf { distinctBanks.size == 1 }
     }
 
     private fun normalizeDigits(value: String): String = buildString(value.length) {
