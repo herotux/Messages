@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
-"""Import 64px Iranian bank logos into the Android resources.
+"""Import 64px Iranian bank logos into Android resources.
 
-The runtime app never accesses the network. This script is a development-time
-importer: it downloads the public sprite once, crops the individual 64x64
-logos using the published sprite coordinates, and writes PNG resources.
+Development-time only: the app never accesses the network. The generated PNG
+files are committed into the APK resources.
 
-Source: amastaneh/IranianBankLogos, src/ibls64.png
-The source project states that its logos are free for commercial and
-non-commercial use.
+Source: amastaneh/IranianBankLogos, src/ibls64.png.
 """
-
 from __future__ import annotations
 
 import io
@@ -22,8 +18,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "app/src/main/res/drawable"
 SPRITE_URL = "https://raw.githubusercontent.com/amastaneh/IranianBankLogos/master/src/ibls64.png"
 
-# Coordinates come from the source project's published ibl.css.
-# (column, row) in the 64px sprite.
+# Exact 64px positions from IranianBankLogos/src/ibl.css.
 LOGOS = {
     "bank_saderat": (0, 0),
     "bank_mellat": (1, 0),
@@ -43,27 +38,26 @@ LOGOS = {
     "bank_ghavamin_legacy": (0, 3),
     "bank_tosee_taavon": (1, 3),
     "bank_shahr": (2, 3),
-    "bank_bank_ayandeh_legacy": (3, 3),
+    "bank_ayandeh_legacy": (3, 3),
     "bank_sarmayeh": (4, 3),
     "bank_dey": (0, 4),
     "bank_khavar_mianeh": (1, 4),
     "bank_iran_zamin": (2, 4),
     "bank_karafarin": (3, 4),
     "bank_gardeshgari": (4, 4),
-    "bank_central": (0, 5),
+    "bank_sanat_madan": (0, 5),
     "bank_tosee_saderat": (1, 5),
-    "bank_mehr_iran": (2, 5),
-    "bank_tosee": (3, 5),
+    "bank_khavar_mianeh_alt": (2, 5),
+    "bank_iran_venezuela": (3, 5),
     "bank_resalat": (4, 5),
-    "bank_mehr_eghte­sad_legacy": (0, 6),
+    "bank_iran": (0, 6),
     "bank_melal": (1, 6),
-    "bank_iran_venezuela": (2, 6),
+    "bank_refah_alt": (2, 6),
 }
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading {SPRITE_URL}")
     with urllib.request.urlopen(SPRITE_URL, timeout=30) as response:
         sprite = Image.open(io.BytesIO(response.read())).convert("RGBA")
 
@@ -71,10 +65,10 @@ def main() -> None:
         raise RuntimeError(f"Unexpected sprite size: {sprite.size}")
 
     for name, (column, row) in LOGOS.items():
-        left = column * 64
-        top = row * 64
-        image = sprite.crop((left, top, left + 64, top + 64))
-        image.save(OUT / f"{name}.png", optimize=True)
+        left, top = column * 64, row * 64
+        sprite.crop((left, top, left + 64, top + 64)).save(
+            OUT / f"{name}.png", optimize=True
+        )
         print(f"created {name}.png")
 
 
