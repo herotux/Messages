@@ -5,7 +5,6 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
-import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -16,7 +15,6 @@ import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.messages.BuildConfig
-import org.fossify.messages.R
 
 class HerotuxAboutActivity : SimpleActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +33,7 @@ class HerotuxAboutActivity : SimpleActivity() {
         val toolbar = Toolbar(this).apply {
             title = "About"
             setTitleTextColor(textColor)
-            navigationIcon = androidx.appcompat.R.drawable.abc_ic_ab_back_material
+            navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
             setNavigationOnClickListener { finish() }
             elevation = dp(2).toFloat()
         }
@@ -129,7 +127,7 @@ class HerotuxAboutActivity : SimpleActivity() {
         }
         content.addView(footer, LinearLayout.LayoutParams(-1, -2))
 
-        scroll.addView(content, ScrollView.LayoutParams(-1, -2))
+        scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         setContentView(root)
