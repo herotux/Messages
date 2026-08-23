@@ -26,7 +26,7 @@ object IranianBankRegistry {
         val cardPrefixes: List<String>,
         val legacyIbanCodes: List<String> = emptyList(),
         val aliases: List<String> = emptyList(),
-        /** Android drawable name; assets are bundled separately. */
+        /** Android drawable name; null means the logo still needs a source asset. */
         val logoResourceName: String? = null,
     )
 
@@ -43,16 +43,16 @@ object IranianBankRegistry {
         BankInfo(BankId.POST, "پست بانک ایران", "Post Bank", "021", listOf("627760"), aliases = listOf("پست بانک"), logoResourceName = "bank_post"),
         BankInfo(BankId.TOSEE_SADERAT, "بانک توسعه صادرات ایران", "Export Development Bank", "020", listOf("627648", "207177"), aliases = listOf("توسعه صادرات"), logoResourceName = "bank_tosee_saderat"),
         BankInfo(BankId.TOSEE_TAAVON, "بانک توسعه تعاون", "Tosee Taavon Bank", "022", listOf("502908"), aliases = listOf("توسعه تعاون"), logoResourceName = "bank_tosee_taavon"),
-        BankInfo(BankId.TOSEE, "موسسه اعتباری توسعه", "Tosee Credit Institution", "051", listOf("628157"), aliases = listOf("توسعه"), logoResourceName = "bank_tosee"),
+        BankInfo(BankId.TOSEE, "موسسه اعتباری توسعه", "Tosee Credit Institution", "051", listOf("628157"), aliases = listOf("توسعه")),
         BankInfo(BankId.PARSIAN, "بانک پارسیان", "Parsian Bank", "054", listOf("622106", "639194", "627884"), aliases = listOf("پارسیان"), logoResourceName = "bank_parsian"),
         BankInfo(BankId.PASARGAD, "بانک پاسارگاد", "Pasargad Bank", "057", listOf("502229", "639347"), aliases = listOf("پاسارگاد"), logoResourceName = "bank_pasargad"),
         BankInfo(BankId.KARAFARIN, "بانک کارآفرین", "Karafarin Bank", "053", listOf("627488", "502910"), aliases = listOf("کارآفرین"), logoResourceName = "bank_karafarin"),
         BankInfo(BankId.SAMAN, "بانک سامان", "Saman Bank", "056", listOf("621986"), aliases = listOf("سامان"), logoResourceName = "bank_saman"),
-        BankInfo(BankId.BLUBANK, "بلوبانک", "BluBank", "056", listOf("62198618", "62198619"), aliases = listOf("بلو", "بلوبانک"), logoResourceName = "bank_blu"),
+        BankInfo(BankId.BLUBANK, "بلوبانک", "BluBank", "056", listOf("62198618", "62198619"), aliases = listOf("بلو", "بلوبانک")),
         BankInfo(BankId.EGHTESAD_NOVIN, "بانک اقتصاد نوین", "Eghtesad Novin Bank", "055", listOf("627412"), aliases = listOf("اقتصاد نوین"), logoResourceName = "bank_eghtesad_novin"),
         BankInfo(BankId.SARMAYEH, "بانک سرمایه", "Sarmayeh Bank", "058", listOf("639607"), aliases = listOf("سرمایه"), logoResourceName = "bank_sarmayeh"),
         BankInfo(BankId.SINA, "بانک سینا", "Sina Bank", "059", listOf("639346"), aliases = listOf("سینا"), logoResourceName = "bank_sina"),
-        BankInfo(BankId.MEHR_IRAN, "بانک قرض الحسنه مهر ایران", "Mehr Iran Bank", "060", listOf("606373"), aliases = listOf("مهر ایران", "مهر"), logoResourceName = "bank_mehr_iran"),
+        BankInfo(BankId.MEHR_IRAN, "بانک قرض الحسنه مهر ایران", "Mehr Iran Bank", "060", listOf("606373"), aliases = listOf("مهر ایران", "مهر")),
         BankInfo(BankId.SHAHR, "بانک شهر", "Shahr Bank", "061", listOf("502806", "504706"), aliases = listOf("شهر"), logoResourceName = "bank_shahr"),
         BankInfo(BankId.GARDESHGARI, "بانک گردشگری", "Gardeshgari Bank", "064", listOf("505416", "505426"), aliases = listOf("گردشگری"), logoResourceName = "bank_gardeshgari"),
         BankInfo(BankId.DEY, "بانک دی", "Dey Bank", "066", listOf("502938"), aliases = listOf("دی"), logoResourceName = "bank_dey"),
@@ -61,7 +61,7 @@ object IranianBankRegistry {
         BankInfo(BankId.MELAL, "موسسه اعتباری ملل", "Melal Credit Institution", "075", listOf("606256"), aliases = listOf("ملل"), logoResourceName = "bank_melal"),
         BankInfo(BankId.KHAVAR_MIANEH, "بانک خاورمیانه", "Middle East Bank", "078", listOf("585947"), aliases = listOf("خاورمیانه"), logoResourceName = "bank_khavar_mianeh"),
         BankInfo(BankId.IRAN_VENEZUELA, "بانک ایران و ونزوئلا", "Iran-Venezuela Bank", "095", emptyList(), aliases = listOf("ایران و ونزوئلا"), logoResourceName = "bank_iran_venezuela"),
-        BankInfo(BankId.CENTRAL_BANK, "بانک مرکزی جمهوری اسلامی ایران", "Central Bank of Iran", "010", listOf("636795"), aliases = listOf("بانک مرکزی"), logoResourceName = "bank_central"),
+        BankInfo(BankId.CENTRAL_BANK, "بانک مرکزی جمهوری اسلامی ایران", "Central Bank of Iran", "010", listOf("636795"), aliases = listOf("بانک مرکزی")),
     )
 
     private val byId = banks.associateBy { it.id }
