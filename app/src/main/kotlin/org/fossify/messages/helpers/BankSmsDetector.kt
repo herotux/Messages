@@ -3,12 +3,13 @@ package org.fossify.messages.helpers
 /**
  * Detects an Iranian bank from an incoming SMS without network access.
  *
- * The detector is intentionally conservative:
+ * Detection is intentionally conservative:
  * - verified sender IDs are HIGH confidence;
  * - a valid IBAN or valid 16-digit card number is HIGH confidence;
- * - an explicit, unambiguous bank name is MEDIUM confidence.
+ * - an explicit bank/institution name is MEDIUM confidence.
  *
- * Weak aliases and arbitrary numeric fragments are not enough to identify a bank.
+ * Generic words such as "مهر", "ملی", "ملت", "شهر" and "دی" must not
+ * identify a bank when they merely occur as normal Persian words in an SMS.
  */
 object BankSmsDetector {
     enum class Confidence {
@@ -73,6 +74,11 @@ object BankSmsDetector {
             match.value.filter(Char::isDigit)
         }
 
+    /**
+     * Only accept a bank alias when it is explicitly introduced as a bank or
+     * credit institution name. This prevents ordinary words such as
+     * "مهر" inside "مهربانی" from being treated as a bank.
+     */
     private fun findExplicitBankName(body: String): BankNameCandidate? {
         val candidates = IranianBankRegistry.allBanks()
             .flatMap { bank ->
@@ -83,15 +89,23 @@ object BankSmsDetector {
             .sortedByDescending { candidate -> candidate.alias.length }
 
         val matches = candidates.filter { candidate ->
-            body.contains(candidate.alias, ignoreCase = true)
+            hasExplicitInstitutionName(body, candidate.alias)
         }.toList()
+
         if (matches.isEmpty()) return null
 
-        val bestLength = matches.first().alias.length
-        val best = matches.takeWhile { candidate -> candidate.alias.length == bestLength }
-        val distinctBanks = best.map { candidate -> candidate.bank.id }.distinct()
-        val bestCandidate = best.firstOrNull() ?: return null
-        return bestCandidate.takeIf { distinctBanks.size == 1 }
+        val bestLength = matches.maxOf { it.alias.length }
+        val best = matches.filter { it.alias.length == bestLength }
+        val distinctBanks = best.map { it.bank.id }.distinct()
+        return best.firstOrNull()?.takeIf { distinctBanks.size == 1 }
+    }
+
+    private fun hasExplicitInstitutionName(body: String, alias: String): Boolean {
+        val escapedAlias = Regex.escape(alias.trim())
+        val institutionPrefix = Regex(
+            "(?:بانک|بانکِ|موسسه اعتباری|موسسه|مؤسسه اعتباری|مؤسسه)\\s+${escapedAlias}(?=$|[^آ-ی])"
+        )
+        return institutionPrefix.containsMatchIn(body)
     }
 
     private fun normalizeDigits(value: String): String = buildString(value.length) {
