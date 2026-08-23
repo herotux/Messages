@@ -274,8 +274,9 @@ class ThreadAdapter(
             with(ConstraintSet()) { clone(threadMessageHolder); clear(threadMessageWrapper.id, ConstraintSet.END); connect(threadMessageWrapper.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START); applyTo(threadMessageHolder) }
             threadMessageSenderPhoto.beVisible()
             threadMessageSenderPhoto.setOnClickListener {
-                val contact = message.getSender()!!
-                activity.getContactFromAddress(contact.phoneNumbers.first().normalizedNumber) { if (it != null) activity.startContactDetailsIntent(it) }
+                val contact = message.getSender() ?: return@setOnClickListener
+                val number = contact.phoneNumbers.firstOrNull()?.normalizedNumber ?: return@setOnClickListener
+                activity.getContactFromAddress(number) { if (it != null) activity.startContactDetailsIntent(it) }
             }
             threadMessageBody.apply { background = AppCompatResources.getDrawable(activity, R.drawable.item_received_background); setTextColor(textColor); setLinkTextColor(activity.getProperPrimaryColor()) }
             if (!activity.isFinishing && !activity.isDestroyed) {
