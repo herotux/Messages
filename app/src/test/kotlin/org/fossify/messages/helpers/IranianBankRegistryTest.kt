@@ -9,40 +9,30 @@ import org.junit.Test
 class IranianBankRegistryTest {
     @Test
     fun cardPrefixLookupUsesLongestPrefix() {
-        assertEquals(
-            IranianBankRegistry.BankId.BLUBANK,
-            IranianBankRegistry.findByCard("6219861900000000")?.id,
-        )
-        assertEquals(
-            IranianBankRegistry.BankId.BLUBANK,
-            IranianBankRegistry.findByCard("6219861800000000")?.id,
-        )
-        assertEquals(
-            IranianBankRegistry.BankId.SAMAN,
-            IranianBankRegistry.findByCard("6219860099999999")?.id,
-        )
+        assertEquals(IranianBankRegistry.BankId.BLUBANK, IranianBankRegistry.findByCard("6219861900000000")?.id)
+        assertEquals(IranianBankRegistry.BankId.BLUBANK, IranianBankRegistry.findByCard("6219861800000000")?.id)
+        assertEquals(IranianBankRegistry.BankId.SAMAN, IranianBankRegistry.findByCard("6219860099999999")?.id)
     }
 
     @Test
     fun cardLookupNormalizesPersianDigits() {
         assertEquals(
             IranianBankRegistry.BankId.MELLI,
-            IranianBankRegistry.findByCard("۶۰۳۷۹۹۰۰۰۰۰۰۰۰۰۰")?.id,
+            IranianBankRegistry.findByCard("۶۰۳۷۹۹۰۰۰۰۰۰۰۰۰۶")?.id,
         )
     }
 
     @Test
     fun cardLuhnValidationWorks() {
-        assertTrue(IranianBankRegistry.isValidCardNumber("6037997512345675"))
-        assertFalse(IranianBankRegistry.isValidCardNumber("6037997512345676"))
+        assertTrue(IranianBankRegistry.isValidCardNumber("6037990000000006"))
+        assertFalse(IranianBankRegistry.isValidCardNumber("6037990000000007"))
     }
 
     @Test
-    fun ibanLookupUsesBankCode() {
-        assertEquals(
-            IranianBankRegistry.BankId.MELLAT,
-            IranianBankRegistry.findByIban("IR000120000000000000000000")?.id,
-        )
+    fun ibanLookupAndValidationUseBankCode() {
+        val iban = "IR700120000000000000000000"
+        assertEquals(IranianBankRegistry.BankId.MELLAT, IranianBankRegistry.findByIban(iban)?.id)
+        assertTrue(IranianBankRegistry.isValidIban(iban))
         assertNull(IranianBankRegistry.findByIban("123"))
     }
 
