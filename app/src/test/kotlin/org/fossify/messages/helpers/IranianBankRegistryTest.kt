@@ -2,6 +2,7 @@ package org.fossify.messages.helpers
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,5 +42,12 @@ class IranianBankRegistryTest {
         assertTrue(IranianBankRegistry.isKnownNonBankSender("v.refah"))
         assertTrue(IranianBankRegistry.isKnownNonBankSender("V.MASKAN"))
         assertNull(IranianBankRegistry.findBySmsSender("V.REFAH"))
+    }
+
+    @Test
+    fun banksWithBundledLogosExposeTheirDrawableName() {
+        assertEquals("bank_melli", IranianBankRegistry.findById(IranianBankRegistry.BankId.MELLI)?.logoResourceName)
+        assertEquals("bank_mehr_iran", IranianBankRegistry.findById(IranianBankRegistry.BankId.MEHR_IRAN)?.logoResourceName)
+        assertNotNull(IranianBankRegistry.findById(IranianBankRegistry.BankId.MELLAT)?.logoResourceName)
     }
 }
