@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">ڕێکخستنەکان</string>
+    <string name="color_customization">گۆڕینی ڕەنگ و فۆنت</string>
+    <string name="customize_colors">گۆڕینی ڕەنگەکان</string>
+    <string name="general_settings">ڕێکخستنە گشتییەکان</string>
+    <string name="use_english_language">بەکارهێنانی زمانی ئینگلیزی</string>
+    <string name="language">زمان</string>
+    <string name="change_date_and_time_format">گۆڕینی شێوازی بەروار و کات</string>
+    <string name="font_size">قەبارەی دەق</string>
+    <string name="small">بچووک</string>
+    <string name="medium">مامناوەند</string>
+    <string name="large">گەورە</string>
+    <string name="extra_large">زۆر گەورە</string>
+    <string name="notifications">ئاگادارکردنەوەکان</string>
+    <string name="customize_notifications">ڕێکخستنی ئاگادارکردنەوەکان</string>
+    <string name="nothing">هیچکام</string>
+    <string name="recycle_bin">سەبەتەی پاشماوە</string>
+    <string name="move_items_into_recycle_bin">گواستنەوەی بابەتەکان بۆ سەبەتەی پاشماوە</string>
+    <string name="empty_recycle_bin">بەتاڵکردنەوەی سەبەتەی پاشماوە</string>
+    <string name="security">پاراستن</string>
+    <string name="password_protect_whole_app">پاراستنی هەموو بەرنامەکە بە وشەی نهێنی</string>
+    <string name="migrating">گواستنەوەی داتا</string>
+    <string name="yes">بەڵێ</string>
+    <string name="no">نەخێر</string>
+    <string name="ok">باشە</string>
+    <string name="cancel">هەڵوەشاندنەوە</string>
+    <string name="exporting">هەناردە دەکرێت…</string>
+    <string name="manage_blocked_numbers">بەڕێوەبردنی ژمارە قەدەغەکراوەکان</string>
+    <string name="font_family_format">فۆنت: %1$s</string>
+    <string name="font_vazirmatn">وەزیرمەتن</string>
+    <string name="font_system_default">فۆنتی بنەڕەتی سیستەم</string>
+    <string name="font_size_value">%1$dsp</string>
+    <string name="font_preview_sample">Aa ۱۲۳۴۵۶ • دەقی نموونە</string>
+    <string name="color_and_font">گۆڕینی ڕەنگ و فۆنت</string>
+</resources>
