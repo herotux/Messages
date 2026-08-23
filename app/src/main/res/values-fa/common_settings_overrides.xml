@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">تنظیمات</string>
+    <string name="color_customization">تغییر رنگ و فونت</string>
+    <string name="customize_colors">تغییر رنگ‌ها</string>
+    <string name="general_settings">تنظیمات عمومی</string>
+    <string name="use_english_language">استفاده از زبان انگلیسی</string>
+    <string name="language">زبان</string>
+    <string name="change_date_and_time_format">تغییر قالب تاریخ و زمان</string>
+    <string name="font_size">اندازه متن</string>
+    <string name="small">کوچک</string>
+    <string name="medium">متوسط</string>
+    <string name="large">بزرگ</string>
+    <string name="extra_large">خیلی بزرگ</string>
+    <string name="notifications">اعلان‌ها</string>
+    <string name="customize_notifications">سفارشی‌سازی اعلان‌ها</string>
+    <string name="nothing">هیچ‌کدام</string>
+    <string name="recycle_bin">سطل بازیافت</string>
+    <string name="move_items_into_recycle_bin">انتقال موارد به سطل بازیافت</string>
+    <string name="empty_recycle_bin">خالی کردن سطل بازیافت</string>
+    <string name="security">امنیت</string>
+    <string name="password_protect_whole_app">محافظت از کل برنامه با رمز عبور</string>
+    <string name="migrating">انتقال داده‌ها</string>
+    <string name="yes">بله</string>
+    <string name="no">خیر</string>
+    <string name="ok">تأیید</string>
+    <string name="cancel">لغو</string>
+    <string name="exporting">در حال برون‌بری…</string>
+    <string name="manage_blocked_numbers">مدیریت شماره‌های مسدودشده</string>
+    <string name="font_family_format">فونت: %1$s</string>
+    <string name="font_vazirmatn">وزیرمتن</string>
+    <string name="font_system_default">فونت پیش‌فرض سیستم</string>
+    <string name="font_size_value">%1$dsp</string>
+    <string name="font_preview_sample">Aa ۱۲۳۴۵۶ • متن نمونه</string>
+    <string name="color_and_font">تغییر رنگ و فونت</string>
+</resources>
