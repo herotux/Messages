@@ -36,7 +36,6 @@ object BankSmsDetector {
     )
 
     fun detect(sender: String, body: String): Detection? {
-        // A verified bank sender is sufficient because the sender itself identifies the bank.
         IranianBankRegistry.findBySmsSender(sender)?.let {
             return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
         }
@@ -46,27 +45,48 @@ object BankSmsDetector {
         val termHits = transactionTerms.count { normalizedBody.contains(it, ignoreCase = true) }
         val structureHits = transactionStructure.count { it.containsMatchIn(normalizedBody) }
 
-        // Card numbers and IBANs are common in merchant/payment-request messages.
-        // They are supporting evidence only and MUST NOT identify a bank by themselves.
-        // Without a verified sender or explicit bank name, an unknown conversation is not a bank.
-        val bankMatch = findExplicitBankName(normalizedBody)
-        if (bankMatch == null) return null
+        // An unknown sender must explicitly identify the bank in the message.
+        // A card or IBAN is only corroborating evidence after that identity is known.
+        val bankMatch = findExplicitBankName(normalizedBody) ?: return null
 
         if (termHits < 2 && structureHits < 2) return null
         if (negativeHits > 0) return null
 
-        // If a card/IBAN is present, it can support the explicit bank identity, but the
-        // bank name + transaction context remains the required identity signal.
-        val score = termHits * 20 + structureHits * 25 + 30
+        val matchingCard = findMatchingValidCard(normalizedBody, bankMatch.bank)
+        val matchingIban = findMatchingValidIban(normalizedBody, bankMatch.bank)
+
+        var score = termHits * 20 + structureHits * 25 + 30
+        if (matchingCard) score += 30
+        if (matchingIban) score += 30
         if (score < 70) return null
+
+        val reasons = buildList {
+            add(Reason.TRANSACTION_CONTEXT)
+            add(Reason.EXPLICIT_BANK_NAME)
+            if (matchingCard) add(Reason.CARD_NUMBER)
+            if (matchingIban) add(Reason.IBAN)
+        }
 
         return Detection(
             bankMatch.bank,
             if (score >= 100) Confidence.HIGH else Confidence.MEDIUM,
             Reason.TRANSACTION_CONTEXT,
             score,
-            listOf(Reason.TRANSACTION_CONTEXT, Reason.EXPLICIT_BANK_NAME)
+            reasons
         )
+    }
+
+    private fun findMatchingValidCard(body: String, bank: IranianBankRegistry.BankInfo): Boolean {
+        return Regex("\\d{4}(?:[ -]?\\d{4}){3}").findAll(body).any { match ->
+            val card = match.value.filter(Char::isDigit)
+            IranianBankRegistry.isValidCardNumber(card) && IranianBankRegistry.findByCard(card)?.id == bank.id
+        }
+    }
+
+    private fun findMatchingValidIban(body: String, bank: IranianBankRegistry.BankInfo): Boolean {
+        return Regex("IR\\d{24}", RegexOption.IGNORE_CASE).findAll(body.replace(" ", "").replace("-", ""))
+            .map { it.value }
+            .any { IranianBankRegistry.isValidIban(it) && IranianBankRegistry.findByIban(it)?.id == bank.id }
     }
 
     private fun findExplicitBankName(body: String): BankNameCandidate? {
