@@ -1,11 +1,6 @@
 package org.fossify.messages.helpers
 
-/**
- * Offline registry for Iranian bank identification.
- *
- * Sender IDs are intentionally conservative: a sender is considered bank-owned
- * only when it is explicitly registered here. Card/IBAN prefixes are NOT sender IDs.
- */
+/** Offline registry for conservative Iranian bank identification. */
 object IranianBankRegistry {
     enum class BankId {
         MELLI, MELLAT, TEJARAT, SADERAT, SEPAH, REFAH, MASKAN, KESHAVARZI,
@@ -62,54 +57,35 @@ object IranianBankRegistry {
 
     private val byId = banks.associateBy { it.id }
 
-    // Verified sender identifiers gathered from the project's real-world SMS samples.
-    // Do NOT put card prefixes here: a card belongs to an account, not to the sender.
+    // Verified sender identifiers from the supplied real SMS samples plus the existing conservative registry.
     private val smsSenders = mapOf(
-        "1000700" to BankId.TOSEE_TAAVON,
-        "100070007" to BankId.TOSEE_TAAVON,
-        "1000900" to BankId.PASARGAD,
-        "50009000" to BankId.PASARGAD,
-        "20000" to BankId.SAMAN,
-        "200020" to BankId.SEPAH,
-        "200021" to BankId.SEPAH,
-        "200022" to BankId.SEPAH,
-        "200033" to BankId.MELLAT,
-        "200030" to BankId.MELLAT,
-        "2000333" to BankId.MELLAT,
-        "200038" to BankId.SINA,
-        "200050" to BankId.EGHTESAD_NOVIN,
-        "200060" to BankId.SADERAT,
-        "200070" to BankId.TEJARAT,
-        "20007010" to BankId.TEJARAT,
-        "2000911" to BankId.KESHAVARZI,
-        "200093" to BankId.KESHAVARZI,
-        "300054" to BankId.PARSIAN,
-        "50001099" to BankId.PARSIAN,
-        "300055" to BankId.PARSIAN,
-        "30007" to BankId.PARSIAN,
-        "300066" to BankId.REFAH,
-        "300044" to BankId.REFAH,
-        "100088" to BankId.SARMAYEH,
-        "300014" to BankId.MASKAN,
-        "300017" to BankId.MELLI,
-        "BANKMELLAT" to BankId.MELLAT,
-        "MELLATBANK" to BankId.MELLAT,
-        "BANKMELLI" to BankId.MELLI,
-        "BANKMELLIIRAN" to BankId.MELLI,
-        "BANKSAMAN" to BankId.SAMAN,
-        "BANKTEJARAT" to BankId.TEJARAT,
-        "TEJARATBANK" to BankId.TEJARAT,
-        "BANKSADERAT" to BankId.SADERAT,
-        "BANKPASARGAD" to BankId.PASARGAD,
-        "BANKSEPAH" to BankId.SEPAH,
+        "1000700" to BankId.TOSEE_TAAVON, "100070007" to BankId.TOSEE_TAAVON,
+        "1000900" to BankId.PASARGAD, "50009000" to BankId.PASARGAD,
+        "20000" to BankId.SAMAN, "200020" to BankId.SEPAH, "200021" to BankId.SEPAH, "200022" to BankId.SEPAH,
+        "200033" to BankId.MELLAT, "200030" to BankId.MELLAT, "2000333" to BankId.MELLAT,
+        "200038" to BankId.SINA, "200050" to BankId.EGHTESAD_NOVIN, "200060" to BankId.SADERAT,
+        "200070" to BankId.TEJARAT, "20007010" to BankId.TEJARAT, "2000911" to BankId.KESHAVARZI, "200093" to BankId.KESHAVARZI,
+        "300054" to BankId.PARSIAN, "50001099" to BankId.PARSIAN, "300055" to BankId.PARSIAN, "30007" to BankId.PARSIAN,
+        "300066" to BankId.REFAH, "300044" to BankId.REFAH, "100088" to BankId.SARMAYEH, "300014" to BankId.MASKAN, "300017" to BankId.MELLI,
+        "BANKMELLAT" to BankId.MELLAT, "MELLATBANK" to BankId.MELLAT,
+        "BANKMELLI" to BankId.MELLI, "BANKMELLIIRAN" to BankId.MELLI,
+        "BANKSAMAN" to BankId.SAMAN, "BANKTEJARAT" to BankId.TEJARAT, "TEJARATBANK" to BankId.TEJARAT,
+        "BANKSADERAT" to BankId.SADERAT, "BANKPASARGAD" to BankId.PASARGAD, "BANKSEPAH" to BankId.SEPAH,
         "TTBANK" to BankId.TOSEE_TAAVON,
-        // Real sender values from the supplied samples.
+        // Exact senders observed in the supplied samples.
         "+98700717" to BankId.MELLI,
         "+989999987641" to BankId.BLUBANK,
-        "BANKMELLI" to BankId.MELLI,
         "+983000852809" to BankId.MEHR_IRAN,
         "+983000852803" to BankId.MEHR_IRAN,
         "+983000852801" to BankId.MEHR_IRAN,
+        "بانک سپه" to BankId.SEPAH,
+        "بانک ملی" to BankId.MELLI,
+        "BANKMELLI" to BankId.MELLI,
+        "BANKMELLIIRAN" to BankId.MELLI,
+        "BANKMELLI" to BankId.MELLI,
+        "TEJARATBANK" to BankId.TEJARAT,
+        "BANKTEJARAT" to BankId.TEJARAT,
+        "TTBANK" to BankId.TOSEE_TAAVON,
     )
 
     private val knownNonBankSenders = setOf("V.REFAH", "V.MASKAN")
@@ -120,11 +96,9 @@ object IranianBankRegistry {
     fun findByCard(cardNumber: String): BankInfo? {
         val normalized = normalizeDigits(cardNumber).filter(Char::isDigit)
         if (normalized.length < 6) return null
-        return banks.asSequence()
-            .flatMap { bank -> bank.cardPrefixes.asSequence().map { it to bank } }
+        return banks.asSequence().flatMap { bank -> bank.cardPrefixes.asSequence().map { it to bank } }
             .filter { (prefix, _) -> normalized.startsWith(prefix) }
-            .maxByOrNull { (prefix, _) -> prefix.length }
-            ?.second
+            .maxByOrNull { (prefix, _) -> prefix.length }?.second
     }
 
     fun isValidCardNumber(cardNumber: String): Boolean {
@@ -133,10 +107,7 @@ object IranianBankRegistry {
         var sum = 0
         for (i in digits.indices) {
             var value = digits[i] - '0'
-            if (i % 2 == 0) {
-                value *= 2
-                if (value > 9) value -= 9
-            }
+            if (i % 2 == 0) { value *= 2; if (value > 9) value -= 9 }
             sum += value
         }
         return sum % 10 == 0
@@ -162,8 +133,7 @@ object IranianBankRegistry {
     fun findBySmsSender(sender: String): BankInfo? {
         val normalized = normalizeSender(sender)
         if (normalized.isEmpty() || normalized in knownNonBankSenders) return null
-        smsSenders[normalized]?.let { return byId[it] }
-        return null
+        return smsSenders[normalized]?.let { byId[it] }
     }
 
     fun isKnownNonBankSender(sender: String): Boolean = normalizeSender(sender) in knownNonBankSenders
@@ -177,13 +147,11 @@ object IranianBankRegistry {
 
     private fun normalizeDigits(value: String): String = buildString(value.length) {
         value.forEach { char ->
-            append(
-                when (char) {
-                    in '۰'..'۹' -> ('0'.code + (char - '۰')).toChar()
-                    in '٠'..'٩' -> ('0'.code + (char - '٠')).toChar()
-                    else -> char
-                }
-            )
+            append(when (char) {
+                in '۰'..'۹' -> ('0'.code + (char - '۰')).toChar()
+                in '٠'..'٩' -> ('0'.code + (char - '٠')).toChar()
+                else -> char
+            })
         }
     }
 }
