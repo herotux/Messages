@@ -52,7 +52,7 @@ object IranianBankRegistry {
         BankInfo(BankId.EGHTESAD_NOVIN, "بانک اقتصاد نوین", "Eghtesad Novin Bank", "055", listOf("627412"), aliases = listOf("اقتصاد نوین"), logoResourceName = "bank_eghtesad_novin"),
         BankInfo(BankId.SARMAYEH, "بانک سرمایه", "Sarmayeh Bank", "058", listOf("639607"), aliases = listOf("سرمایه"), logoResourceName = "bank_sarmayeh"),
         BankInfo(BankId.SINA, "بانک سینا", "Sina Bank", "059", listOf("639346"), aliases = listOf("سینا"), logoResourceName = "bank_sina"),
-        BankInfo(BankId.MEHR_IRAN, "بانک قرض الحسنه مهر ایران", "Mehr Iran Bank", "060", listOf("606373"), aliases = listOf("مهر ایران", "مهر")),
+        BankInfo(BankId.MEHR_IRAN, "بانک قرض الحسنه مهر ایران", "Mehr Iran Bank", "060", listOf("606373"), aliases = listOf("مهر ایران", "مهر"), logoResourceName = "bank_mehr_iran"),
         BankInfo(BankId.SHAHR, "بانک شهر", "Shahr Bank", "061", listOf("502806", "504706"), aliases = listOf("شهر"), logoResourceName = "bank_shahr"),
         BankInfo(BankId.GARDESHGARI, "بانک گردشگری", "Gardeshgari Bank", "064", listOf("505416", "505426"), aliases = listOf("گردشگری"), logoResourceName = "bank_gardeshgari"),
         BankInfo(BankId.DEY, "بانک دی", "Dey Bank", "066", listOf("502938"), aliases = listOf("دی"), logoResourceName = "bank_dey"),
