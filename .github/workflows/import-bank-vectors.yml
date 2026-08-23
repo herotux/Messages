@@ -25,8 +25,6 @@ jobs:
         run: npm install --no-save svg2vectordrawable
 
       - name: Import and convert bank SVGs
-        env:
-          SOURCE_SHA: ceb8dab622e5e5d50009778ddce3b53c73c42cf7
         run: python3 tools/import_iranian_bank_vectors.py
 
       - name: Commit generated VectorDrawables
