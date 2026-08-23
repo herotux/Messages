@@ -1,6 +1,9 @@
 name: Import Iranian bank VectorDrawables
 
 on:
+  push:
+    branches:
+      - feat/iranian-bank-registry
   workflow_dispatch:
 
 permissions:
@@ -17,7 +20,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install SVG converter
         run: npm install --no-save svg2vectordrawable
@@ -25,8 +27,7 @@ jobs:
       - name: Import and convert bank SVGs
         env:
           SOURCE_SHA: ceb8dab622e5e5d50009778ddce3b53c73c42cf7
-        run: |
-          python3 tools/import_iranian_bank_vectors.py
+        run: python3 tools/import_iranian_bank_vectors.py
 
       - name: Commit generated VectorDrawables
         run: |
