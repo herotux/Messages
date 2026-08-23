@@ -46,22 +46,26 @@ class IranianBankRegistryTest {
         assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
         assertEquals(BankSmsDetector.Reason.VERIFIED_SENDER, detection?.reason)
     }
-    @Test fun bankSmsDetectorRecognizesValidCardWithTransactionContext() {
-        val detection = BankSmsDetector.detect("1000", "مبلغ از کارت ۶۰۳۷-۹۹۰۰-۰۰۰۰-۰۰۰۶ کسر شد و مانده حساب اعلام گردید")
+    @Test fun bankSmsDetectorRecognizesCardOnlyWhenBankNameAndTransactionContextExist() {
+        val detection = BankSmsDetector.detect("1000", "بانک ملی\nمبلغ از کارت ۶۰۳۷-۹۹۰۰-۰۰۰۰-۰۰۰۶ کسر شد\nمانده حساب اعلام گردید")
         assertEquals(IranianBankRegistry.BankId.MELLI, detection?.bank?.id)
         assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
-        assertEquals(BankSmsDetector.Reason.CARD_NUMBER, detection?.reason)
+        assertEquals(BankSmsDetector.Reason.TRANSACTION_CONTEXT, detection?.reason)
     }
     @Test fun bankSmsDetectorRejectsDonationCardMessage() {
         val body = "غدیر امسال، چند میلیون مهمان داری؟ امام صادق فرمودند اطعام یک مؤمن در روز غدیر، پاداش اطعام یک میلیون پیامبر و صالحان را دارد. با مشارکت در تهیه یک پرس غذا، در این سفره الهی میزبان باشیم. شماره کارت: 6062561000000144 درگاه پرداخت آنلاین: barayeali.ir"
         assertNull(BankSmsDetector.detect("1000", body))
     }
-    @Test fun bankSmsDetectorRecognizesValidIban() {
-        val detection = BankSmsDetector.detect("1000", "شماره شبا IR70 0120 0000 0000 0000 0000 00")
+    @Test fun bankSmsDetectorRequiresExplicitBankForIban() {
+        val body = "بانک ملت\nشماره شبا: IR700120000000000000000000\nمبلغ: 6000000\nمانده: 6035959"
+        val detection = BankSmsDetector.detect("1000", body)
         assertEquals(IranianBankRegistry.BankId.MELLAT, detection?.bank?.id)
         assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
-        assertEquals(BankSmsDetector.Reason.IBAN, detection?.reason)
+        assertEquals(BankSmsDetector.Reason.TRANSACTION_CONTEXT, detection?.reason)
     }
+    @Test fun bankSmsDetectorRejectsIbanWithoutBankContext() = assertNull(
+        BankSmsDetector.detect("1000", "شماره شبا IR700120000000000000000000 برای واریز وجه")
+    )
     @Test fun bankSmsDetectorRequiresTransactionContextForExplicitBankName() {
         val detection = BankSmsDetector.detect("1000", "بانک ملت\nمبلغ: 6000000\nمانده: 6035959\nزمان: 1405/05/29\nواریز")
         assertEquals(IranianBankRegistry.BankId.MELLAT, detection?.bank?.id)
@@ -70,6 +74,7 @@ class IranianBankRegistryTest {
     }
     @Test fun bankSmsDetectorRejectsBankNameWithoutTransactionContext() = assertNull(BankSmsDetector.detect("1000", "من امروز به بانک ملت مراجعه کردم"))
     @Test fun bankSmsDetectorRejectsPromotionalMessageContainingBankName() = assertNull(BankSmsDetector.detect("1000", "هموطن گرامی برای مشارکت در پویش بنای مهربانی و حمایت از جامعه هدف سازمان بهزیستی، کمک های نقدی خود را از طریق درگاه واریز نمائید. بانک مهر ایران"))
+    @Test fun bankSmsDetectorRejectsMerchantCardRequest() = assertNull(BankSmsDetector.detect("1000", "مانده حساب شما مبلغ 10.380.000 ریال بوده و شماره کارت فروشگاه جهت واریز خدمتتون ارسال میشود لطفا واریز و اطلاع دهید 5892101454789153 فروشگاه درجه یک"))
     @Test fun bankSmsDetectorDoesNotTrustUnknownSenderAlone() = assertNull(BankSmsDetector.detect("IR-MELLAT", "تراکنش انجام شد"))
     @Test fun bankSmsDetectorDoesNotUseInvalidCard() = assertNull(BankSmsDetector.detect("1000", "کارت ۶۰۳۷۹۹۰۰۰۰۰۰۰۰۰۷"))
 }
