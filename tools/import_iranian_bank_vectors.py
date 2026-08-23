@@ -19,12 +19,12 @@ BANKS = {
     "bank_melli": "Melli.svg", "bank_mellat": "Mellat.svg", "bank_tejarat": "Tejarat.svg",
     "bank_saderat": "Saderat.svg", "bank_sepah": "Sepah.svg", "bank_refah": "Refah.svg",
     "bank_maskan": "Maskan.svg", "bank_keshavarzi": "Keshavarzi.svg", "bank_sanat_madan": "Sanat_Madan.svg",
-    "bank_post": "Post.svg", "bank_tosee_saderat": "Tosee_Saderat.svg", "bank_tosee_taavon": "Tosee_Taavon.svg",
+    "bank_post": "Postbank.svg", "bank_tosee_saderat": "Tosee_Saderat.svg", "bank_tosee_taavon": "Tosee_Taavon.svg",
     "bank_parsian": "Parsian.svg", "bank_pasargad": "Pasargad.svg", "bank_karafarin": "Karafarin.svg",
     "bank_saman": "Saman.svg", "bank_eghtesad_novin": "Eghtesad_Novin.svg", "bank_sarmayeh": "Sarmayeh.svg",
     "bank_sina": "Sina.svg", "bank_mehr_iran": "Mehr_Iran.svg", "bank_shahr": "Shahr.svg",
     "bank_gardeshgari": "Gardeshgari.svg", "bank_dey": "Dey.svg", "bank_iran_zamin": "Iran_Zamin.svg",
-    "bank_resalat": "Resalat.svg", "bank_melal": "Melal.svg", "bank_khavar_mianeh": "Khavar_Mianeh.svg",
+    "bank_resalat": "Resalat.svg", "bank_melal": "Melall.svg", "bank_khavar_mianeh": "Khavar_Mianeh.svg",
     "bank_iran_venezuela": "Iran_Venezuela.svg",
 }
 
