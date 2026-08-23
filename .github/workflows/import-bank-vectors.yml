@@ -1,0 +1,41 @@
+name: Import Iranian bank VectorDrawables
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-bank-vectors:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install SVG converter
+        run: npm install --no-save svg2vectordrawable
+
+      - name: Import and convert bank SVGs
+        env:
+          SOURCE_SHA: ceb8dab622e5e5d50009778ddce3b53c73c42cf7
+        run: |
+          python3 tools/import_iranian_bank_vectors.py
+
+      - name: Commit generated VectorDrawables
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/res/drawable/bank_*.xml
+          if git diff --cached --quiet; then
+            echo "No generated changes"
+            exit 0
+          fi
+          git commit -m "feat: add Iranian bank VectorDrawables [skip ci]"
+          git push
