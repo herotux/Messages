@@ -50,4 +50,50 @@ class IranianBankRegistryTest {
         assertEquals("bank_mehr_iran", IranianBankRegistry.findById(IranianBankRegistry.BankId.MEHR_IRAN)?.logoResourceName)
         assertNotNull(IranianBankRegistry.findById(IranianBankRegistry.BankId.MELLAT)?.logoResourceName)
     }
+
+    @Test
+    fun bankSmsDetectorRecognizesValidCardWithPersianDigits() {
+        val detection = BankSmsDetector.detect(
+            sender = "1000",
+            body = "مبلغ از کارت ۶۰۳۷-۹۹۰۰-۰۰۰۰-۰۰۰۶ کسر شد",
+        )
+
+        assertEquals(IranianBankRegistry.BankId.MELLI, detection?.bank?.id)
+        assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
+        assertEquals(BankSmsDetector.Reason.CARD_NUMBER, detection?.reason)
+    }
+
+    @Test
+    fun bankSmsDetectorRecognizesValidIban() {
+        val detection = BankSmsDetector.detect(
+            sender = "1000",
+            body = "شماره شبا IR70 0120 0000 0000 0000 0000 00",
+        )
+
+        assertEquals(IranianBankRegistry.BankId.MELLAT, detection?.bank?.id)
+        assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
+        assertEquals(BankSmsDetector.Reason.IBAN, detection?.reason)
+    }
+
+    @Test
+    fun bankSmsDetectorRecognizesExplicitBankNameAsMediumConfidence() {
+        val detection = BankSmsDetector.detect(
+            sender = "1000",
+            body = "بانک ملت: تراکنش با موفقیت انجام شد",
+        )
+
+        assertEquals(IranianBankRegistry.BankId.MELLAT, detection?.bank?.id)
+        assertEquals(BankSmsDetector.Confidence.MEDIUM, detection?.confidence)
+        assertEquals(BankSmsDetector.Reason.EXPLICIT_BANK_NAME, detection?.reason)
+    }
+
+    @Test
+    fun bankSmsDetectorDoesNotTrustUnknownSenderAlone() {
+        assertNull(BankSmsDetector.detect("IR-MELLAT", "تراکنش انجام شد"))
+    }
+
+    @Test
+    fun bankSmsDetectorDoesNotUseInvalidCard() {
+        assertNull(BankSmsDetector.detect("1000", "کارت ۶۰۳۷۹۹۰۰۰۰۰۰۰۰۰۷"))
+    }
 }
