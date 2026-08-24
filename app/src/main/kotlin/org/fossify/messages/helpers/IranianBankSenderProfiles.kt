@@ -17,7 +17,13 @@ object IranianBankSenderProfiles {
         "BMI.IR" to IranianBankRegistry.BankId.MELLI,
         "BANKMELLI" to IranianBankRegistry.BankId.MELLI,
         "BANKMELLIIRAN" to IranianBankRegistry.BankId.MELLI,
-        "+989820003501" to IranianBankRegistry.BankId.SHAHR,
+        // Bank Sepah official/customer-service identifiers.
+        "BANKSEPAH" to IranianBankRegistry.BankId.SEPAH,
+        "SEPAHBANK" to IranianBankRegistry.BankId.SEPAH,
+        "30001557" to IranianBankRegistry.BankId.SEPAH,
+        "671557" to IranianBankRegistry.BankId.SEPAH,
+        "1557" to IranianBankRegistry.BankId.SEPAH,
+        "بانکسپه" to IranianBankRegistry.BankId.SEPAH,
     )
 
     fun find(sender: String): IranianBankRegistry.BankInfo? {
