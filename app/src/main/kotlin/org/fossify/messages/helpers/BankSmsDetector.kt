@@ -36,6 +36,12 @@ object BankSmsDetector {
     )
 
     fun detect(sender: String, body: String): Detection? {
+        // Exact alphanumeric Sender IDs are stronger than body heuristics. These are
+        // deliberately kept separate from the broad registry so adding a sender cannot
+        // accidentally make ordinary text containing a bank name look like a bank SMS.
+        BankSenderAliases.find(sender)?.let {
+            return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
+        }
         IranianBankSenderProfiles.find(sender)?.let {
             return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
         }
