@@ -55,6 +55,12 @@ interface ConversationsDao {
     @Query("UPDATE conversations SET archived = 0 WHERE thread_id = :threadId")
     fun unarchive(threadId: Long)
 
-    @Query("DELETE FROM conversations WHERE thread_id = :threadId")
+    /**
+     * Do not erase a cached conversation while the Telephony provider temporarily
+     * returns an incomplete/empty conversation set. A normal conversation with
+     * non-scheduled messages is only removed after its local messages are gone.
+     * Scheduled-only threads remain removable by the existing sync path.
+     */
+    @Query("DELETE FROM conversations WHERE thread_id = :threadId AND NOT EXISTS (SELECT 1 FROM messages WHERE messages.thread_id = :threadId AND messages.is_scheduled = 0)")
     fun deleteThreadId(threadId: Long)
 }
