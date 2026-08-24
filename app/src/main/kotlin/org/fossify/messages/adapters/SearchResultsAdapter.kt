@@ -12,6 +12,10 @@ import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemSearchResultBinding
+import org.fossify.messages.helpers.BankSmsDetector
+import org.fossify.messages.helpers.IranianBankLogoImageHelper
+import org.fossify.messages.helpers.IranianBankLogoResolver
+import org.fossify.messages.helpers.IranianSenderIconResolver
 import org.fossify.messages.models.SearchResult
 
 class SearchResultsAdapter(
@@ -22,21 +26,13 @@ class SearchResultsAdapter(
     private var textToHighlight = highlightText
 
     override fun getActionMenuId() = 0
-
     override fun prepareActionMode(menu: Menu) {}
-
     override fun actionItemPressed(id: Int) {}
-
     override fun getSelectableItemCount() = searchResults.size
-
     override fun getIsItemSelectable(position: Int) = false
-
     override fun getItemSelectionKey(position: Int) = searchResults.getOrNull(position)?.hashCode()
-
     override fun getItemKeyPosition(key: Int) = searchResults.indexOfFirst { it.hashCode() == key }
-
     override fun onActionModeCreated() {}
-
     override fun onActionModeDestroyed() {}
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -85,7 +81,27 @@ class SearchResultsAdapter(
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
             }
 
-            SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)
+            // Search results have their own photo pipeline, so bank logos need
+            // to be resolved here as well. Detection is deliberately conservative
+            // and never treats a bank/card mention alone as a bank message.
+            val bankDetection = BankSmsDetector.detect(searchResult.phoneNumber, searchResult.snippet)
+            val bankLogoRes = bankDetection?.let { IranianBankLogoResolver.resolve(activity, it.bank) }
+            val senderLogoRes = if (bankLogoRes == null) {
+                IranianSenderIconResolver.resolve(activity, searchResult.phoneNumber)
+            } else {
+                null
+            }
+            val logoRes = bankLogoRes ?: senderLogoRes
+
+            if (logoRes != null) {
+                Glide.with(activity).clear(searchResultImage)
+                val placeholder = SimpleContactsHelper(activity).getContactLetterIcon(searchResult.title)
+                if (!IranianBankLogoImageHelper.setBankLogo(searchResultImage, logoRes)) {
+                    SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title, placeholderImage = placeholder)
+                }
+            } else {
+                SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)
+            }
         }
     }
 
