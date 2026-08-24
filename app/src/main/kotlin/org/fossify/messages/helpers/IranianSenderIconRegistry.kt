@@ -18,9 +18,9 @@ object IranianSenderIconRegistry {
 
     private val senders = listOf(
         SenderInfo("SHAHR_BANK", "بانک شهر", Category.BANK, listOf("BANKSHAHR", "SHAHRBANK", "BANK SHAHR", "Bank Shahr", "بانک شهر"), "bank_shahr"),
-        SenderInfo("SEPAH_BANK", "بانک سپه", Category.BANK, listOf("BANKSEPAH", "SEPAHBANK", "BANK SEPAH", "Bank Sepah", "بانک سپه", "SEPAH BANK"), "bank_sepah"),
+        SenderInfo("SEPAH_BANK", "بانک سپه", Category.BANK, listOf("BANKSEPAH", "SEPAHBANK", "BANK SEPAH", "Bank Sepah", "بانک سپه", "SEPAH BANK", "SEPAH  BANK"), "bank_sepah"),
         SenderInfo("TEJARAT_BANK", "بانک تجارت", Category.BANK, listOf("BANKTEJARAT", "TEJARATBANK", "BANK TEJARAT", "TejaratBank", "بانک تجارت"), "bank_tejarat"),
-        SenderInfo("MELLI_BANK", "بانک ملی ایران", Category.BANK, listOf("BANKMELLI", "BANKMELLIIRAN", "BANK MELLI", "Bank Melli", "بانک ملی", "بانک ملی ایران"), "bank_melli"),
+        SenderInfo("MELLI_BANK", "بانک ملی ایران", Category.BANK, listOf("BANKMELLI", "BANKMELLIIRAN", "BANK MELLI", "Bank Melli", "بانک ملی", "بانک ملی ایران", "+98700717"), "bank_melli"),
         SenderInfo("IRANCELL", "ایرانسل", Category.TELECOM, listOf("IRANCELL", ".IRANCELL.", "IrancelleTo"), "sender_irancell"),
         SenderInfo("MOKHABERAT", "مخابرات ایران", Category.TELECOM, listOf("MOKHABERAT", "مخابرات"), "sender_mokhaberat"),
         SenderInfo("GAS_KURDISTAN", "گاز کردستان", Category.UTILITY, listOf("+984040102020", "گاز کردستان"), "sender_gas"),
