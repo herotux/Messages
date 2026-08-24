@@ -52,10 +52,14 @@ class SearchResultsAdapter(
             val logoRes = bankLogoRes ?: senderLogoRes
             if (logoRes != null) {
                 Glide.with(activity).clear(searchResultImage)
-                val placeholder = SimpleContactsHelper(activity).getContactLetterIcon(searchResult.title)
-                if (!IranianBankLogoImageHelper.setBankLogo(searchResultImage, logoRes)) SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title, placeholderImage = placeholder)
-            } else SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)
+                if (!IranianBankLogoImageHelper.setBankLogo(searchResultImage, logoRes)) {
+                    SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)
+                }
+            } else {
+                SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)
+            }
         }
     }
+
     override fun onViewRecycled(holder: ViewHolder) { super.onViewRecycled(holder); if (!activity.isDestroyed && !activity.isFinishing) Glide.with(activity).clear(ItemSearchResultBinding.bind(holder.itemView).searchResultImage) }
 }
