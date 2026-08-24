@@ -70,12 +70,14 @@ class App : FossifyApp() {
 
             searchMenu.onSearchTextChangedListener = { text ->
                 originalListener?.invoke(text)
-                if (text.trim().length < 2) return@onSearchTextChangedListener
-
-                ProviderSearchBridge.search(activity, text) { providerResults ->
-                    val resultsView = activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.search_results_list)
-                    val adapter = resultsView?.adapter as? SearchResultsAdapter ?: return@search
-                    ProviderSearchBridge.mergeIntoAdapter(adapter, providerResults, text)
+                if (text.trim().length >= 2) {
+                    ProviderSearchBridge.search(activity, text) { providerResults ->
+                        val resultsView = activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.search_results_list)
+                        val adapter = resultsView?.adapter as? SearchResultsAdapter
+                        if (adapter != null) {
+                            ProviderSearchBridge.mergeIntoAdapter(adapter, providerResults, text)
+                        }
+                    }
                 }
             }
         }
