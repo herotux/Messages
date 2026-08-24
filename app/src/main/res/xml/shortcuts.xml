@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <shortcut android:shortcutId="advanced_search" android:enabled="true" android:icon="@drawable/ic_search_vector" android:shortcutShortLabel="Advanced search" android:shortcutLongLabel="Advanced message search">
+    <shortcut android:shortcutId="advanced_search" android:enabled="true" android:shortcutShortLabel="Advanced search" android:shortcutLongLabel="Advanced message search">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="${applicationId}" android:targetClass="org.fossify.messages.activities.AdvancedSearchActivity" />
     </shortcut>
 </shortcuts>
