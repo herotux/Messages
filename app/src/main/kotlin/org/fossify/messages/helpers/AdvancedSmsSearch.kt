@@ -25,7 +25,7 @@ class AdvancedSmsSearch(private val context: Context) {
             AdvancedSearchFilter.Direction.OUTGOING -> { clauses += "${Telephony.Sms.TYPE} = ?"; args += Telephony.Sms.MESSAGE_TYPE_SENT.toString() }
             else -> Unit
         }
-        if (filter.unreadOnly) { clauses += "${Telephony.Sms.READ} = 0" }
+        if (filter.unreadOnly) clauses += "${Telephony.Sms.READ} = 0"
         val selection = clauses.takeIf { it.isNotEmpty() }?.joinToString(" AND ")
         val result = ArrayList<AdvancedSearchHit>()
         context.contentResolver.query(Telephony.Sms.CONTENT_URI, projection, selection, args.toTypedArray(), "${Telephony.Sms.DATE} DESC")?.use { cursor ->
@@ -40,9 +40,9 @@ class AdvancedSmsSearch(private val context: Context) {
             while (cursor.moveToNext() && result.size < limit) {
                 val bodyText = cursor.getString(body).orEmpty()
                 val sender = cursor.getString(address).orEmpty()
-                val bank = BankSmsDetector.detect(sender, bodyText)
-                if (filter.bankOnly && bank == null) continue
-                result += AdvancedSearchHit(cursor.getLong(id), cursor.getLong(thread), sender, bodyText, cursor.getLong(date), cursor.getInt(type), cursor.getInt(read) == 1, if (subject >= 0) cursor.getString(subject) else null, bank != null, bank?.bank?.name)
+                val detection = BankSmsDetector.detect(sender, bodyText)
+                if (filter.bankOnly && detection == null) continue
+                result += AdvancedSearchHit(cursor.getLong(id), cursor.getLong(thread), sender, bodyText, cursor.getLong(date), cursor.getInt(type), cursor.getInt(read) == 1, if (subject >= 0) cursor.getString(subject) else null, detection != null, detection?.bank?.persianName)
             }
         }
         return result
