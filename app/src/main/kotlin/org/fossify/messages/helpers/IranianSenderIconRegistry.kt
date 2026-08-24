@@ -37,7 +37,7 @@ object IranianSenderIconRegistry {
             id = "MOKHABERAT",
             displayName = "مخابرات ایران",
             category = Category.TELECOM,
-            senderAliases = listOf("MOKHABERAT", "مخابرات", "+9860009621"),
+            senderAliases = listOf("MOKHABERAT", "مخابرات"),
             logoResourceName = "sender_mokhaberat",
         ),
         SenderInfo(
