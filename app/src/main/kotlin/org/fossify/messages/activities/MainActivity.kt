@@ -37,7 +37,7 @@ import org.fossify.commons.extensions.underlineText
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.LICENSE_EVENT_BUS
-import org.fossify.commons.helpers.LICENSE_INDICATOR_FAST_SCROLLER
+import org.fossify.commons.helpers.LICENSE_INDICATOR_FAST_SCROLL
 import org.fossify.commons.helpers.LICENSE_SMS_MMS
 import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.MyContactsContentProvider
@@ -77,7 +77,6 @@ import org.greenrobot.eventbus.ThreadMode
 
 class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
-
     private val MAKE_DEFAULT_APP_REQUEST = 1
     private var storedTextColor = 0
     private var storedFontSize = 0
@@ -122,9 +121,8 @@ class MainActivity : SimpleActivity() {
     override fun onDestroy() { super.onDestroy(); bus?.unregister(this) }
 
     override fun onBackPressedCompat(): Boolean {
-        return if (binding.mainMenu.isSearchOpen) {
-            binding.mainMenu.closeSearch(); true
-        } else { appLockManager.lock(); false }
+        return if (binding.mainMenu.isSearchOpen) { binding.mainMenu.closeSearch(); true }
+        else { appLockManager.lock(); false }
     }
 
     private fun setupOptionsMenu() {
@@ -193,7 +191,11 @@ class MainActivity : SimpleActivity() {
             if (it) handlePermission(PERMISSION_SEND_SMS) {
                 if (it) handlePermission(PERMISSION_READ_CONTACTS) {
                     handleNotificationPermission { granted ->
-                        if (!granted) PermissionRequiredDialog(this, org.fossify.commons.R.string.allow_notifications_incoming_messages) { openNotificationSettings() }
+                        if (!granted) PermissionRequiredDialog(
+                            activity = this,
+                            textId = org.fossify.commons.R.string.allow_notifications_incoming_messages,
+                            positiveActionCallback = { openNotificationSettings() }
+                        )
                     }
                     initMessenger(); bus = EventBus.getDefault()
                     try { bus!!.register(this) } catch (_: Exception) {}
@@ -315,8 +317,15 @@ class MainActivity : SimpleActivity() {
                 val conversations = conversationsDB.getConversationsWithText(searchQuery)
                 if (text != lastSearchedText) return@ensureBackgroundThread
                 showSearchResults(messages, conversations, text, emptyList())
-                ProviderSearchBridge.search(this, text) { providerResults ->
-                    if (text == lastSearchedText) showSearchResults(messages, conversations, text, providerResults)
+            }
+            ProviderSearchBridge.search(this, text) { providerResults ->
+                if (text == lastSearchedText) {
+                    ensureBackgroundThread {
+                        val searchQuery = "%$text%"
+                        val messages = messagesDB.getMessagesWithText(searchQuery)
+                        val conversations = conversationsDB.getConversationsWithText(searchQuery)
+                        if (text == lastSearchedText) showSearchResults(messages, conversations, text, providerResults)
+                    }
                 }
             }
         } else {
@@ -337,7 +346,6 @@ class MainActivity : SimpleActivity() {
         val seen = HashSet<Long>()
         searchResults.forEach { if (it.messageId >= 0) seen.add(it.messageId) }
         providerResults.forEach { if (it.messageId < 0 || seen.add(it.messageId)) searchResults.add(it) }
-        searchResults.sortByDescending { it.date }
         runOnUiThread {
             binding.searchResultsList.beVisibleIf(searchResults.isNotEmpty())
             binding.searchPlaceholder.beVisibleIf(searchResults.isEmpty())
@@ -359,12 +367,9 @@ class MainActivity : SimpleActivity() {
     private fun launchSettings() { hideKeyboard(); startActivity(Intent(applicationContext, SettingsActivity::class.java)) }
 
     private fun launchAbout() {
-        val licenses = LICENSE_EVENT_BUS or LICENSE_SMS_MMS or LICENSE_INDICATOR_FAST_SCROLLER
+        val licenses = LICENSE_EVENT_BUS or LICENSE_SMS_MMS or LICENSE_INDICATOR_FAST_SCROLL
         val faqItems = arrayListOf(
-            FAQItem(R.string.faq_2_title, R.string.faq_2_text),
-            FAQItem(R.string.faq_3_title, R.string.faq_3_text),
-            FAQItem(R.string.faq_4_title, R.string.faq_4_text),
-            FAQItem(org.fossify.commons.R.string.faq_9_title_commons, org.fossify.commons.R.string.faq_9_text_commons)
+            FAQItem(R.string.faq_2_title, R.string.faq_2_text), FAQItem(R.string.faq_3_title, R.string.faq_3_text), FAQItem(R.string.faq_4_title, R.string.faq_4_text), FAQItem(org.fossify.commons.R.string.faq_9_title_commons, org.fossify.commons.R.string.faq_9_text_commons)
         )
         if (!resources.getBoolean(org.fossify.commons.R.bool.hide_google_relations)) {
             faqItems.add(FAQItem(org.fossify.commons.R.string.faq_2_title_commons, org.fossify.commons.R.string.faq_2_text_commons))
