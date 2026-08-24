@@ -43,10 +43,14 @@ class IranianBankRegistryTest {
         assertEquals(IranianBankRegistry.BankId.MELLI, IranianBankSenderProfiles.find("+9830009417")?.id)
         assertEquals(IranianBankRegistry.BankId.MELLI, IranianBankSenderProfiles.find("+98100041415001")?.id)
         assertEquals(IranianBankRegistry.BankId.MASKAN, IranianBankSenderProfiles.find("Maskan Bank")?.id)
+        assertEquals(IranianBankRegistry.BankId.SEPAH, IranianBankSenderProfiles.find("30001557")?.id)
+        assertEquals(IranianBankRegistry.BankId.SEPAH, IranianBankSenderProfiles.find("671557")?.id)
+        assertEquals(IranianBankRegistry.BankId.SEPAH, IranianBankSenderProfiles.find("BankSepah")?.id)
     }
     @Test fun banksWithBundledLogosExposeTheirDrawableName() {
         assertEquals("bank_melli", IranianBankRegistry.findById(IranianBankRegistry.BankId.MELLI)?.logoResourceName)
         assertEquals("bank_mehr_iran", IranianBankRegistry.findById(IranianBankRegistry.BankId.MEHR_IRAN)?.logoResourceName)
+        assertEquals("bank_sepah", IranianBankRegistry.findById(IranianBankRegistry.BankId.SEPAH)?.logoResourceName)
         assertNotNull(IranianBankRegistry.findById(IranianBankRegistry.BankId.MELLAT)?.logoResourceName)
     }
     @Test fun bankSmsDetectorRecognizesVerifiedSender() {
@@ -77,6 +81,18 @@ class IranianBankRegistryTest {
         val body = "بانک مسکن\nضامن گرامي حميد صيدي\nبا توجه به تعهد و ضمانت شما جهت بازپرداخت بدهي نامبرده به مبلغ 24803077 ريال اقدام فوري بعمل آوريد."
         val detection = BankSmsDetector.detect("Maskan Bank", body)
         assertEquals(IranianBankRegistry.BankId.MASKAN, detection?.bank?.id)
+        assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
+    }
+    @Test fun bankSmsDetectorRecognizesRealSepahTransactionSms() {
+        val body = "بانک سپه\nپرداخت گروهي\nحساب:20303320108\nمبلغ:6,000,000\nمانده:6,035,959\nزمان:1405/5/29\nواريز گروهي يارانه مرحله 186"
+        val detection = BankSmsDetector.detect("unknown", body)
+        assertEquals(IranianBankRegistry.BankId.SEPAH, detection?.bank?.id)
+        assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
+    }
+    @Test fun bankSmsDetectorRecognizesSepahOfficialServiceSms() {
+        val body = "بانک سپه\nمشتری گرامی\nبه منظور بروزرسانی زیرساخت ها، سامانه های بانک سپه از ساعت یک بامداد با اختلال همراه است."
+        val detection = BankSmsDetector.detect("30001557", body)
+        assertEquals(IranianBankRegistry.BankId.SEPAH, detection?.bank?.id)
         assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
     }
     @Test fun bankSmsDetectorRecognizesCardOnlyWhenBankNameAndTransactionContextExist() {
