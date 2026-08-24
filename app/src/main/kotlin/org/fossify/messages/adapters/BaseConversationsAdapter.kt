@@ -92,10 +92,18 @@ abstract class BaseConversationsAdapter(
 
             val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
             val confirmedBank = if (!conversation.isGroupConversation) BankConversationVerificationStore.getConfirmedBank(activity, conversation.threadId) else null
-            val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) BankSmsDetector.detect(conversation.phoneNumber, conversation.snippet)?.bank else null
+            // Alphanumeric senders such as "SEPAH BANK" can be represented by the
+            // provider as the conversation title rather than phoneNumber. Check both.
+            val senderCandidates = listOf(conversation.phoneNumber, conversation.title).distinct().filter { it.isNotBlank() }
+            val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) {
+                senderCandidates.firstNotNullOfOrNull { sender -> BankSmsDetector.detect(sender, conversation.snippet)?.bank }
+                    ?: BankSmsDetector.detect(conversation.phoneNumber, conversation.snippet)?.bank
+            } else null
             val bank = confirmedBank ?: detectedBank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
-            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) IranianSenderIconResolver.resolve(activity, conversation.phoneNumber) else null
+            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) {
+                senderCandidates.firstNotNullOfOrNull { sender -> IranianSenderIconResolver.resolve(activity, sender) }
+            } else null
             val logoRes = bankLogoRes ?: senderLogoRes
             if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)) {
                 // Bank/sender logo was applied successfully.
