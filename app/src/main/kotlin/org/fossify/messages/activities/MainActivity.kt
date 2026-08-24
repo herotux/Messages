@@ -37,7 +37,7 @@ import org.fossify.commons.extensions.underlineText
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.LICENSE_EVENT_BUS
-import org.fossify.commons.helpers.LICENSE_INDICATOR_FAST_SCROLL
+import org.fossify.commons.helpers.LICENSE_INDICATOR_FAST_SCROLLER
 import org.fossify.commons.helpers.LICENSE_SMS_MMS
 import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.MyContactsContentProvider
@@ -63,6 +63,7 @@ import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getMessages
 import org.fossify.messages.extensions.insertOrUpdateConversation
 import org.fossify.messages.extensions.messagesDB
+import org.fossify.messages.helpers.ProviderSearchBridge
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
@@ -76,14 +77,12 @@ import org.greenrobot.eventbus.ThreadMode
 
 class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
-    
-    private val MAKE_DEFAULT_APP_REQUEST = 1
 
+    private val MAKE_DEFAULT_APP_REQUEST = 1
     private var storedTextColor = 0
     private var storedFontSize = 0
     private var lastSearchedText = ""
     private var bus: EventBus? = null
-
     private val binding by viewBinding(ActivityMainBinding::inflate)
 
     @SuppressLint("InlinedApi")
@@ -93,39 +92,23 @@ class MainActivity : SimpleActivity() {
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
         refreshMenuItems()
-
         setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.conversationsList))
-
         checkAndDeleteOldRecycleBinMessages()
-        clearAllMessagesIfNeeded {
-            loadMessages()
-        }
-
-        if (checkAppSideloading()) {
-            return
-        }
+        clearAllMessagesIfNeeded { loadMessages() }
+        if (checkAppSideloading()) return
     }
 
     override fun onResume() {
         super.onResume()
         updateMenuColors()
         refreshMenuItems()
-
         getOrCreateConversationsAdapter().apply {
-            if (storedTextColor != getProperTextColor()) {
-                updateTextColor(getProperTextColor())
-            }
-
-            if (storedFontSize != config.fontSize) {
-                updateFontSize()
-            }
-
+            if (storedTextColor != getProperTextColor()) updateTextColor(getProperTextColor())
+            if (storedFontSize != config.fontSize) updateFontSize()
             updateDrafts()
         }
-
         updateTextColors(binding.mainCoordinator)
         binding.searchHolder.setBackgroundColor(getProperBackgroundColor())
-
         val properPrimaryColor = getProperPrimaryColor()
         binding.noConversationsPlaceholder2.setTextColor(properPrimaryColor)
         binding.noConversationsPlaceholder2.underlineText()
@@ -135,46 +118,27 @@ class MainActivity : SimpleActivity() {
         checkShortcut()
     }
 
-    override fun onPause() {
-        super.onPause()
-        storeStateVariables()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        bus?.unregister(this)
-    }
+    override fun onPause() { super.onPause(); storeStateVariables() }
+    override fun onDestroy() { super.onDestroy(); bus?.unregister(this) }
 
     override fun onBackPressedCompat(): Boolean {
         return if (binding.mainMenu.isSearchOpen) {
-            binding.mainMenu.closeSearch()
-            true
-        } else {
-            appLockManager.lock()
-            false
-        }
+            binding.mainMenu.closeSearch(); true
+        } else { appLockManager.lock(); false }
     }
 
     private fun setupOptionsMenu() {
         binding.mainMenu.requireToolbar().inflateMenu(R.menu.menu_main)
         binding.mainMenu.toggleHideOnScroll(true)
         binding.mainMenu.setupMenu()
-
-        binding.mainMenu.onSearchClosedListener = {
-            fadeOutSearch()
-        }
-
+        binding.mainMenu.onSearchClosedListener = { fadeOutSearch() }
         binding.mainMenu.onSearchTextChangedListener = { text ->
             if (text.isNotEmpty()) {
-                if (binding.searchHolder.alpha < 1f) {
-                    binding.searchHolder.fadeIn()
-                }
-            } else {
-                fadeOutSearch()
-            }
+                if (binding.searchHolder.alpha < 1f) binding.searchHolder.fadeIn()
+            } else fadeOutSearch()
             searchTextChanged(text)
         }
-
+        binding.advancedSearchButton.setOnClickListener { launchAdvancedSearch(lastSearchedText) }
         binding.mainMenu.requireToolbar().setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.show_recycle_bin -> launchRecycleBin()
@@ -183,8 +147,15 @@ class MainActivity : SimpleActivity() {
                 R.id.about -> launchAbout()
                 else -> return@setOnMenuItemClickListener false
             }
-            return@setOnMenuItemClickListener true
+            true
         }
+    }
+
+    private fun launchAdvancedSearch(query: String = "") {
+        hideKeyboard()
+        startActivity(Intent(this, AdvancedSearchActivity::class.java).apply {
+            putExtra("advanced_search_query", query)
+        })
     }
 
     private fun refreshMenuItems() {
@@ -197,118 +168,55 @@ class MainActivity : SimpleActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
         if (requestCode == MAKE_DEFAULT_APP_REQUEST) {
-            if (resultCode == RESULT_OK) {
-                askPermissions()
-            } else {
-                finish()
-            }
+            if (resultCode == RESULT_OK) askPermissions() else finish()
         }
     }
 
-    private fun storeStateVariables() {
-        storedTextColor = getProperTextColor()
-        storedFontSize = config.fontSize
-    }
-
-    private fun updateMenuColors() {
-        binding.mainMenu.updateColors()
-    }
+    private fun storeStateVariables() { storedTextColor = getProperTextColor(); storedFontSize = config.fontSize }
+    private fun updateMenuColors() { binding.mainMenu.updateColors() }
 
     private fun loadMessages() {
         if (isQPlus()) {
             val roleManager = getSystemService(RoleManager::class.java)
             if (roleManager!!.isRoleAvailable(RoleManager.ROLE_SMS)) {
-                if (roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
-                    askPermissions()
-                } else {
-                    val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS)
-                    startActivityForResult(intent, MAKE_DEFAULT_APP_REQUEST)
-                }
-            } else {
-                toast(org.fossify.commons.R.string.unknown_error_occurred)
-                finish()
-            }
-        } else {
-            if (Telephony.Sms.getDefaultSmsPackage(this) == packageName) {
-                askPermissions()
-            } else {
-                val intent = Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT)
-                intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, packageName)
-                startActivityForResult(intent, MAKE_DEFAULT_APP_REQUEST)
-            }
-        }
+                if (roleManager.isRoleHeld(RoleManager.ROLE_SMS)) askPermissions()
+                else startActivityForResult(roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS), MAKE_DEFAULT_APP_REQUEST)
+            } else { toast(org.fossify.commons.R.string.unknown_error_occurred); finish() }
+        } else if (Telephony.Sms.getDefaultSmsPackage(this) == packageName) askPermissions()
+        else startActivityForResult(Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT).apply {
+            putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, packageName)
+        }, MAKE_DEFAULT_APP_REQUEST)
     }
 
-    // while SEND_SMS and READ_SMS permissions are mandatory, READ_CONTACTS is optional.
-    // If we don't have it, we just won't be able to show the contact name in some cases
     private fun askPermissions() {
         handlePermission(PERMISSION_READ_SMS) {
-            if (it) {
-                handlePermission(PERMISSION_SEND_SMS) {
-                    if (it) {
-                        handlePermission(PERMISSION_READ_CONTACTS) {
-                            handleNotificationPermission { granted ->
-                                if (!granted) {
-                                    PermissionRequiredDialog(
-                                        activity = this,
-                                        textId = org.fossify.commons.R.string.allow_notifications_incoming_messages,
-                                        positiveActionCallback = { openNotificationSettings() })
-                                }
-                            }
-
-                            initMessenger()
-                            bus = EventBus.getDefault()
-                            try {
-                                bus!!.register(this)
-                            } catch (_: Exception) {
-                            }
-                        }
-                    } else {
-                        finish()
+            if (it) handlePermission(PERMISSION_SEND_SMS) {
+                if (it) handlePermission(PERMISSION_READ_CONTACTS) {
+                    handleNotificationPermission { granted ->
+                        if (!granted) PermissionRequiredDialog(this, org.fossify.commons.R.string.allow_notifications_incoming_messages) { openNotificationSettings() }
                     }
-                }
-            } else {
-                finish()
-            }
+                    initMessenger(); bus = EventBus.getDefault()
+                    try { bus!!.register(this) } catch (_: Exception) {}
+                } else finish()
+            } else finish()
         }
     }
 
     private fun initMessenger() {
-        checkWhatsNewDialog()
-        storeStateVariables()
-        getCachedConversations()
-        binding.noConversationsPlaceholder2.setOnClickListener {
-            launchNewConversation()
-        }
-
-        binding.conversationsFab.setOnClickListener {
-            launchNewConversation()
-        }
+        checkWhatsNewDialog(); storeStateVariables(); getCachedConversations()
+        binding.noConversationsPlaceholder2.setOnClickListener { launchNewConversation() }
+        binding.conversationsFab.setOnClickListener { launchNewConversation() }
     }
 
     private fun getCachedConversations() {
         ensureBackgroundThread {
-            val conversations = try {
-                conversationsDB.getNonArchived().toMutableList() as ArrayList<Conversation>
-            } catch (_: Exception) {
-                ArrayList()
-            }
-
-            val archived = try {
-                conversationsDB.getAllArchived()
-            } catch (_: Exception) {
-                listOf()
-            }
-
+            val conversations = try { conversationsDB.getNonArchived().toMutableList() as ArrayList<Conversation> } catch (_: Exception) { ArrayList() }
+            val archived = try { conversationsDB.getAllArchived() } catch (_: Exception) { listOf() }
             runOnUiThread {
                 setupConversations(conversations, cached = true)
-                getNewConversations(
-                    (conversations + archived).toMutableList() as ArrayList<Conversation>
-                )
+                getNewConversations((conversations + archived).toMutableList() as ArrayList<Conversation>)
             }
-            conversations.forEach {
-                clearExpiredScheduledMessages(it.threadId)
-            }
+            conversations.forEach { clearExpiredScheduledMessages(it.threadId) }
         }
     }
 
@@ -317,65 +225,31 @@ class MainActivity : SimpleActivity() {
         ensureBackgroundThread {
             val privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
             val conversations = getConversations(privateContacts = privateContacts)
-
             conversations.forEach { clonedConversation ->
-                val threadIds = cachedConversations.map { it.threadId }
-                if (!threadIds.contains(clonedConversation.threadId)) {
-                    conversationsDB.insertOrUpdate(clonedConversation)
-                    cachedConversations.add(clonedConversation)
+                if (!cachedConversations.map { it.threadId }.contains(clonedConversation.threadId)) {
+                    conversationsDB.insertOrUpdate(clonedConversation); cachedConversations.add(clonedConversation)
                 }
             }
-
             cachedConversations.forEach { cachedConversation ->
                 val threadId = cachedConversation.threadId
-
                 val isTemporaryThread = cachedConversation.isScheduled
                 val isConversationDeleted = !conversations.map { it.threadId }.contains(threadId)
-                if (isConversationDeleted && !isTemporaryThread) {
-                    conversationsDB.deleteThreadId(threadId)
-                }
-
-                val newConversation =
-                    conversations.find { it.phoneNumber == cachedConversation.phoneNumber }
+                if (isConversationDeleted && !isTemporaryThread) conversationsDB.deleteThreadId(threadId)
+                val newConversation = conversations.find { it.phoneNumber == cachedConversation.phoneNumber }
                 if (isTemporaryThread && newConversation != null) {
-                    // delete the original temporary thread and move any scheduled messages
-                    // to the new thread
                     conversationsDB.deleteThreadId(threadId)
-                    messagesDB.getScheduledThreadMessages(threadId)
-                        .forEach { message ->
-                            messagesDB.insertOrUpdate(
-                                message.copy(threadId = newConversation.threadId)
-                            )
-                        }
+                    messagesDB.getScheduledThreadMessages(threadId).forEach { message -> messagesDB.insertOrUpdate(message.copy(threadId = newConversation.threadId)) }
                     insertOrUpdateConversation(newConversation, cachedConversation)
                 }
             }
-
             cachedConversations.forEach { cachedConv ->
-                val conv = conversations.find {
-                    it.threadId == cachedConv.threadId && !Conversation.areContentsTheSame(
-                        old = cachedConv, new = it
-                    )
-                }
-                if (conv != null) {
-                    // FIXME: Scheduled message date is being reset here. Conversations with
-                    //  scheduled messages will have their original date.
-                    insertOrUpdateConversation(conv)
-                }
+                val conv = conversations.find { it.threadId == cachedConv.threadId && !Conversation.areContentsTheSame(old = cachedConv, new = it) }
+                if (conv != null) insertOrUpdateConversation(conv)
             }
-
             val allConversations = conversationsDB.getNonArchived() as ArrayList<Conversation>
-            runOnUiThread {
-                setupConversations(allConversations)
-            }
-
-            if (config.appRunCount == 1) {
-                conversations.map { it.threadId }.forEach { threadId ->
-                    val messages = getMessages(threadId, includeScheduledMessages = false)
-                    messages.chunked(30).forEach { currentMessages ->
-                        messagesDB.insertMessages(*currentMessages.toTypedArray())
-                    }
-                }
+            runOnUiThread { setupConversations(allConversations) }
+            if (config.appRunCount == 1) conversations.map { it.threadId }.forEach { threadId ->
+                getMessages(threadId, includeScheduledMessages = false).chunked(30).forEach { messagesDB.insertMessages(*it.toTypedArray()) }
             }
         }
     }
@@ -384,145 +258,54 @@ class MainActivity : SimpleActivity() {
         var currAdapter = binding.conversationsList.adapter
         if (currAdapter == null) {
             hideKeyboard()
-            currAdapter = ConversationsAdapter(
-                activity = this,
-                recyclerView = binding.conversationsList,
-                onRefresh = { notifyDatasetChanged() },
-                itemClick = { handleConversationClick(it) }
-            )
-
+            currAdapter = ConversationsAdapter(this, binding.conversationsList, { notifyDatasetChanged() }) { handleConversationClick(it) }
             binding.conversationsList.adapter = currAdapter
-            if (areSystemAnimationsEnabled) {
-                binding.conversationsList.scheduleLayoutAnimation()
-            }
+            if (areSystemAnimationsEnabled) binding.conversationsList.scheduleLayoutAnimation()
         }
         return currAdapter as ConversationsAdapter
     }
 
-    private fun setupConversations(
-        conversations: ArrayList<Conversation>,
-        cached: Boolean = false,
-    ) {
-        val sortedConversations = conversations
-            .sortedWith(
-                compareByDescending<Conversation> {
-                    config.pinnedConversations.contains(it.threadId.toString())
-                }.thenByDescending { it.date }
-            ).toMutableList() as ArrayList<Conversation>
-
-        if (cached && config.appRunCount == 1) {
-            // there are no cached conversations on the first run so we show the
-            // loading placeholder and progress until we are done loading from telephony
-            showOrHideProgress(conversations.isEmpty())
-        } else {
-            showOrHideProgress(false)
-            showOrHidePlaceholder(conversations.isEmpty())
-        }
-
-        try {
-            getOrCreateConversationsAdapter().apply {
-                updateConversations(sortedConversations) {
-                    if (!cached) {
-                        showOrHidePlaceholder(currentList.isEmpty())
-                    }
-                }
-            }
-        } catch (_: Exception) {
-        }
+    private fun setupConversations(conversations: ArrayList<Conversation>, cached: Boolean = false) {
+        val sortedConversations = conversations.sortedWith(compareByDescending<Conversation> { config.pinnedConversations.contains(it.threadId.toString()) }.thenByDescending { it.date }).toMutableList() as ArrayList<Conversation>
+        if (cached && config.appRunCount == 1) showOrHideProgress(conversations.isEmpty())
+        else { showOrHideProgress(false); showOrHidePlaceholder(conversations.isEmpty()) }
+        try { getOrCreateConversationsAdapter().updateConversations(sortedConversations) { if (!cached) showOrHidePlaceholder(currentList.isEmpty()) } } catch (_: Exception) {}
     }
 
     private fun showOrHideProgress(show: Boolean) {
-        if (show) {
-            binding.conversationsProgressBar.show()
-            binding.noConversationsPlaceholder.beVisible()
-            binding.noConversationsPlaceholder.text = getString(R.string.loading_messages)
-        } else {
-            binding.conversationsProgressBar.hide()
-            binding.noConversationsPlaceholder.beGone()
-        }
+        if (show) { binding.conversationsProgressBar.show(); binding.noConversationsPlaceholder.beVisible(); binding.noConversationsPlaceholder.text = getString(R.string.loading_messages) }
+        else { binding.conversationsProgressBar.hide(); binding.noConversationsPlaceholder.beGone() }
     }
-
     private fun showOrHidePlaceholder(show: Boolean) {
-        binding.conversationsFastscroller.beGoneIf(show)
-        binding.noConversationsPlaceholder.beVisibleIf(show)
-        binding.noConversationsPlaceholder.text = getString(R.string.no_conversations_found)
-        binding.noConversationsPlaceholder2.beVisibleIf(show)
+        binding.conversationsFastscroller.beGoneIf(show); binding.noConversationsPlaceholder.beVisibleIf(show); binding.noConversationsPlaceholder.text = getString(R.string.no_conversations_found); binding.noConversationsPlaceholder2.beVisibleIf(show)
     }
-
     private fun fadeOutSearch() {
-        binding.searchHolder.animate()
-            .alpha(0f)
-            .setDuration(SHORT_ANIMATION_DURATION)
-            .withEndAction {
-                binding.searchHolder.beGone()
-                searchTextChanged("", true)
-            }.start()
+        binding.searchHolder.animate().alpha(0f).setDuration(SHORT_ANIMATION_DURATION).withEndAction { binding.searchHolder.beGone(); searchTextChanged("", true) }.start()
     }
-
-    @SuppressLint("NotifyDataSetChanged")
-    private fun notifyDatasetChanged() {
-        getOrCreateConversationsAdapter().notifyDataSetChanged()
-    }
+    @SuppressLint("NotifyDataSetChanged") private fun notifyDatasetChanged() { getOrCreateConversationsAdapter().notifyDataSetChanged() }
 
     private fun handleConversationClick(any: Any) {
-        Intent(this, ThreadActivity::class.java).apply {
-            val conversation = any as Conversation
-            putExtra(THREAD_ID, conversation.threadId)
-            putExtra(THREAD_TITLE, conversation.title)
-            startActivity(this)
-        }
+        val conversation = any as Conversation
+        startActivity(Intent(this, ThreadActivity::class.java).apply { putExtra(THREAD_ID, conversation.threadId); putExtra(THREAD_TITLE, conversation.title) })
     }
+    private fun launchNewConversation() { hideKeyboard(); startActivity(Intent(this, NewConversationActivity::class.java)) }
 
-    private fun launchNewConversation() {
-        hideKeyboard()
-        Intent(this, NewConversationActivity::class.java).apply {
-            startActivity(this)
-        }
-    }
-
-    @SuppressLint("NewApi")
-    private fun checkShortcut() {
+    @SuppressLint("NewApi") private fun checkShortcut() {
         val appIconColor = config.appIconColor
         if (config.lastHandledShortcutColor != appIconColor) {
             val newConversation = getCreateNewContactShortcut(appIconColor)
-
-            val manager = getSystemService(ShortcutManager::class.java)
-            try {
-                manager.dynamicShortcuts = listOf(newConversation)
-                config.lastHandledShortcutColor = appIconColor
-            } catch (_: Exception) {
-            }
+            try { getSystemService(ShortcutManager::class.java).dynamicShortcuts = listOf(newConversation); config.lastHandledShortcutColor = appIconColor } catch (_: Exception) {}
         }
     }
-
-    @SuppressLint("NewApi")
-    private fun getCreateNewContactShortcut(appIconColor: Int): ShortcutInfo {
+    @SuppressLint("NewApi") private fun getCreateNewContactShortcut(appIconColor: Int): ShortcutInfo {
         val newEvent = getString(R.string.new_conversation)
-        val drawable =
-            AppCompatResources.getDrawable(this, org.fossify.commons.R.drawable.shortcut_plus)
-
-        (drawable as LayerDrawable).findDrawableByLayerId(
-            org.fossify.commons.R.id.shortcut_plus_background
-        ).applyColorFilter(appIconColor)
-
-        val bmp = drawable.convertToBitmap()
-
-        val intent = Intent(this, NewConversationActivity::class.java)
-        intent.action = Intent.ACTION_VIEW
-        return ShortcutInfo.Builder(this, "new_conversation")
-            .setShortLabel(newEvent)
-            .setLongLabel(newEvent)
-            .setIcon(Icon.createWithBitmap(bmp))
-            .setIntent(intent)
-            .setRank(0)
-            .build()
+        val drawable = AppCompatResources.getDrawable(this, org.fossify.commons.R.drawable.shortcut_plus)
+        (drawable as LayerDrawable).findDrawableByLayerId(org.fossify.commons.R.id.shortcut_plus_background).applyColorFilter(appIconColor)
+        return ShortcutInfo.Builder(this, "new_conversation").setShortLabel(newEvent).setLongLabel(newEvent).setIcon(Icon.createWithBitmap(drawable.convertToBitmap())).setIntent(Intent(this, NewConversationActivity::class.java).apply { action = Intent.ACTION_VIEW }).setRank(0).build()
     }
 
     private fun searchTextChanged(text: String, forceUpdate: Boolean = false) {
-        if (!binding.mainMenu.isSearchOpen && !forceUpdate) {
-            return
-        }
-
+        if (!binding.mainMenu.isSearchOpen && !forceUpdate) return
         lastSearchedText = text
         binding.searchPlaceholder2.beGoneIf(text.length >= 2)
         if (text.length >= 2) {
@@ -530,156 +313,65 @@ class MainActivity : SimpleActivity() {
                 val searchQuery = "%$text%"
                 val messages = messagesDB.getMessagesWithText(searchQuery)
                 val conversations = conversationsDB.getConversationsWithText(searchQuery)
-                if (text == lastSearchedText) {
-                    showSearchResults(messages, conversations, text)
+                if (text != lastSearchedText) return@ensureBackgroundThread
+                showSearchResults(messages, conversations, text, emptyList())
+                ProviderSearchBridge.search(this, text) { providerResults ->
+                    if (text == lastSearchedText) showSearchResults(messages, conversations, text, providerResults)
                 }
             }
         } else {
-            binding.searchPlaceholder.beVisible()
-            binding.searchResultsList.beGone()
+            binding.searchPlaceholder.beVisible(); binding.searchResultsList.beGone()
         }
     }
 
-    private fun showSearchResults(
-        messages: List<Message>,
-        conversations: List<Conversation>,
-        searchedText: String,
-    ) {
+    private fun showSearchResults(messages: List<Message>, conversations: List<Conversation>, searchedText: String, providerResults: List<SearchResult>) {
         val searchResults = ArrayList<SearchResult>()
         conversations.forEach { conversation ->
-            val date = (conversation.date * 1000L).formatDateOrTime(
-                context = this,
-                hideTimeOnOtherDays = true,
-                showCurrentYear = true
-            )
-
-            val searchResult = SearchResult(
-                messageId = -1,
-                title = conversation.title,
-                snippet = conversation.phoneNumber,
-                date = date,
-                threadId = conversation.threadId,
-                photoUri = conversation.photoUri
-            )
-            searchResults.add(searchResult)
+            searchResults.add(SearchResult(-1, conversation.title, conversation.phoneNumber, (conversation.date * 1000L).formatDateOrTime(this, true, true), conversation.threadId, conversation.photoUri))
         }
-
         messages.sortedByDescending { it.id }.forEach { message ->
             var recipient = message.senderName
-            if (recipient.isEmpty() && message.participants.isNotEmpty()) {
-                val participantNames = message.participants.map { it.name }
-                recipient = TextUtils.join(", ", participantNames)
-            }
-
-            val date = (message.date * 1000L).formatDateOrTime(
-                context = this,
-                hideTimeOnOtherDays = true,
-                showCurrentYear = true
-            )
-
-            val searchResult = SearchResult(
-                messageId = message.id,
-                title = recipient,
-                snippet = message.body,
-                date = date,
-                threadId = message.threadId,
-                photoUri = message.senderPhotoUri
-            )
-            searchResults.add(searchResult)
+            if (recipient.isEmpty() && message.participants.isNotEmpty()) recipient = TextUtils.join(", ", message.participants.map { it.name })
+            searchResults.add(SearchResult(message.id, recipient, message.body, (message.date * 1000L).formatDateOrTime(this, true, true), message.threadId, message.senderPhotoUri))
         }
-
+        val seen = HashSet<Long>()
+        searchResults.forEach { if (it.messageId >= 0) seen.add(it.messageId) }
+        providerResults.forEach { if (it.messageId < 0 || seen.add(it.messageId)) searchResults.add(it) }
+        searchResults.sortByDescending { it.date }
         runOnUiThread {
             binding.searchResultsList.beVisibleIf(searchResults.isNotEmpty())
             binding.searchPlaceholder.beVisibleIf(searchResults.isEmpty())
-
             val currAdapter = binding.searchResultsList.adapter
             if (currAdapter == null) {
                 SearchResultsAdapter(this, searchResults, binding.searchResultsList, searchedText) {
                     hideKeyboard()
-                    Intent(this, ThreadActivity::class.java).apply {
-                        putExtra(THREAD_ID, (it as SearchResult).threadId)
-                        putExtra(THREAD_TITLE, it.title)
-                        putExtra(SEARCHED_MESSAGE_ID, it.messageId)
-                        startActivity(this)
-                    }
-                }.apply {
-                    binding.searchResultsList.adapter = this
-                }
-            } else {
-                (currAdapter as SearchResultsAdapter).updateItems(searchResults, searchedText)
-            }
+                    val result = it as SearchResult
+                    startActivity(Intent(this, ThreadActivity::class.java).apply {
+                        putExtra(THREAD_ID, result.threadId); putExtra(THREAD_TITLE, result.title); putExtra(SEARCHED_MESSAGE_ID, result.messageId)
+                    })
+                }.also { binding.searchResultsList.adapter = it }
+            } else (currAdapter as SearchResultsAdapter).updateItems(searchResults, searchedText)
         }
     }
 
-    private fun launchRecycleBin() {
-        hideKeyboard()
-        startActivity(Intent(applicationContext, RecycleBinConversationsActivity::class.java))
-    }
-
-    private fun launchArchivedConversations() {
-        hideKeyboard()
-        startActivity(Intent(applicationContext, ArchivedConversationsActivity::class.java))
-    }
-
-    private fun launchSettings() {
-        hideKeyboard()
-        startActivity(Intent(applicationContext, SettingsActivity::class.java))
-    }
+    private fun launchRecycleBin() { hideKeyboard(); startActivity(Intent(applicationContext, RecycleBinConversationsActivity::class.java)) }
+    private fun launchArchivedConversations() { hideKeyboard(); startActivity(Intent(applicationContext, ArchivedConversationsActivity::class.java)) }
+    private fun launchSettings() { hideKeyboard(); startActivity(Intent(applicationContext, SettingsActivity::class.java)) }
 
     private fun launchAbout() {
-        val licenses = LICENSE_EVENT_BUS or LICENSE_SMS_MMS or LICENSE_INDICATOR_FAST_SCROLL
-
+        val licenses = LICENSE_EVENT_BUS or LICENSE_SMS_MMS or LICENSE_INDICATOR_FAST_SCROLLER
         val faqItems = arrayListOf(
-            FAQItem(
-                title = R.string.faq_2_title,
-                text = R.string.faq_2_text
-            ),
-            FAQItem(
-                title = R.string.faq_3_title,
-                text = R.string.faq_3_text
-            ),
-            FAQItem(
-                title = R.string.faq_4_title,
-                text = R.string.faq_4_text
-            ),
-            FAQItem(
-                title = org.fossify.commons.R.string.faq_9_title_commons,
-                text = org.fossify.commons.R.string.faq_9_text_commons
-            )
+            FAQItem(R.string.faq_2_title, R.string.faq_2_text),
+            FAQItem(R.string.faq_3_title, R.string.faq_3_text),
+            FAQItem(R.string.faq_4_title, R.string.faq_4_text),
+            FAQItem(org.fossify.commons.R.string.faq_9_title_commons, org.fossify.commons.R.string.faq_9_text_commons)
         )
-
         if (!resources.getBoolean(org.fossify.commons.R.bool.hide_google_relations)) {
-            faqItems.add(
-                FAQItem(
-                    title = org.fossify.commons.R.string.faq_2_title_commons,
-                    text = org.fossify.commons.R.string.faq_2_text_commons
-                )
-            )
-            faqItems.add(
-                FAQItem(
-                    title = org.fossify.commons.R.string.faq_6_title_commons,
-                    text = org.fossify.commons.R.string.faq_6_text_commons
-                )
-            )
+            faqItems.add(FAQItem(org.fossify.commons.R.string.faq_2_title_commons, org.fossify.commons.R.string.faq_2_text_commons))
+            faqItems.add(FAQItem(org.fossify.commons.R.string.faq_6_title_commons, org.fossify.commons.R.string.faq_6_text_commons))
         }
-
-        startAboutActivity(
-            appNameId = R.string.app_name,
-            licenseMask = licenses,
-            versionName = BuildConfig.VERSION_NAME,
-            faqItems = faqItems,
-            showFAQBeforeMail = true
-        )
+        startAboutActivity(appNameId = R.string.app_name, licenseMask = licenses, versionName = BuildConfig.VERSION_NAME, faqItems = faqItems, showFAQBeforeMail = true)
     }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun refreshConversations(@Suppress("unused") event: Events.RefreshConversations) {
-        initMessenger()
-    }
-
-    private fun checkWhatsNewDialog() {
-        arrayListOf<Release>().apply {
-            checkWhatsNew(this, BuildConfig.VERSION_CODE)
-        }
-    }
+    @Subscribe(threadMode = ThreadMode.MAIN) fun refreshConversations(@Suppress("unused") event: Events.RefreshConversations) { initMessenger() }
+    private fun checkWhatsNewDialog() { arrayListOf<Release>().apply { checkWhatsNew(this, BuildConfig.VERSION_CODE) } }
 }
