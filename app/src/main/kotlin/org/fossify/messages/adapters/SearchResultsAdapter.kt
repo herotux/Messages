@@ -6,10 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import com.bumptech.glide.Glide
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
+import org.fossify.commons.extensions.beGone
+import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.highlightTextPart
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.views.MyRecyclerView
+import org.fossify.messages.R
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemSearchResultBinding
 import org.fossify.messages.helpers.BankConversationVerificationStore
@@ -23,7 +26,7 @@ import org.fossify.messages.models.SearchResult
 class SearchResultsAdapter(
     activity: SimpleActivity,
     var searchResults: ArrayList<SearchResult>,
-    recyclerView: MyRecyclerView,
+    private val recyclerView: MyRecyclerView,
     highlightText: String,
     itemClick: (Any) -> Unit
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick) {
@@ -64,10 +67,11 @@ class SearchResultsAdapter(
     }
 
     private fun requestProviderResults(query: String) {
-        if (query.length < 2) return
-        val requestedQuery = query
+        val requestedQuery = query.trim()
+        if (requestedQuery.length < 2) return
+
         ProviderSearchBridge.search(activity, requestedQuery) { providerResults ->
-            if (requestedQuery != textToHighlight) return@search
+            if (requestedQuery != textToHighlight.trim()) return@search
 
             val merged = ArrayList<SearchResult>(searchResults.size + providerResults.size)
             val seenIds = HashSet<Long>()
@@ -80,11 +84,15 @@ class SearchResultsAdapter(
                     merged.add(result)
                 }
             }
-            // Provider results are already newest-first. Keep the existing Room results
-            // first and append unseen provider messages; this avoids comparing formatted dates.
-            if (merged != searchResults) {
+
+            if (merged.size != searchResults.size) {
                 searchResults = merged
+                recyclerView.beVisible()
+                activity.findViewById<View>(R.id.search_placeholder)?.beGone()
                 notifyDataSetChanged()
+            } else if (providerResults.isNotEmpty()) {
+                recyclerView.beVisible()
+                activity.findViewById<View>(R.id.search_placeholder)?.beGone()
             }
         }
     }
