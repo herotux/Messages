@@ -1,7 +1,7 @@
 package org.fossify.messages.helpers
 
 /**
- * Conservative offline detector for Iranian bank transaction SMS messages.
+ * Conservative offline detector for Iranian bank SMS messages.
  * A card/IBAN/name alone is not enough when the message looks promotional.
  */
 object BankSmsDetector {
@@ -36,6 +36,11 @@ object BankSmsDetector {
     )
 
     fun detect(sender: String, body: String): Detection? {
+        // Exact sender profiles are the strongest signal for informational, OTP and service SMS,
+        // where a transaction-shaped body is not expected.
+        IranianBankSenderProfiles.find(sender)?.let {
+            return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
+        }
         IranianBankRegistry.findBySmsSender(sender)?.let {
             return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
         }
@@ -49,8 +54,23 @@ object BankSmsDetector {
         // A card or IBAN is only corroborating evidence after that identity is known.
         val bankMatch = findExplicitBankName(normalizedBody) ?: return null
 
-        if (termHits < 2 && structureHits < 2) return null
         if (negativeHits > 0) return null
+
+        // Official service/notification SMS often contain no transaction terms at all.
+        // Require several institutional cues so an ordinary conversation mentioning a bank
+        // does not become a bank conversation.
+        val officialHits = officialMessageTerms.count { normalizedBody.contains(it, ignoreCase = true) }
+        if (officialHits >= 2 && termHits == 0 && structureHits == 0) {
+            return Detection(
+                bankMatch.bank,
+                Confidence.MEDIUM,
+                Reason.EXPLICIT_BANK_NAME,
+                75,
+                listOf(Reason.EXPLICIT_BANK_NAME),
+            )
+        }
+
+        if (termHits < 2 && structureHits < 2) return null
 
         val matchingCard = findMatchingValidCard(normalizedBody, bankMatch.bank)
         val matchingIban = findMatchingValidIban(normalizedBody, bankMatch.bank)
@@ -75,6 +95,12 @@ object BankSmsDetector {
             reasons
         )
     }
+
+    private val officialMessageTerms = listOf(
+        "مشتری گرامی", "مشتری محترم", "سامانه", "خدمات", "کد ورود", "کد فعال سازی",
+        "درخواست شما", "درخواست", "بروزرسانی", "زیرساخت", "بخشنامه", "جهت اطلاع",
+        "رمز", "ورود به سامانه", "هزینه پیامک", "سپرده", "افتتاح گردید", "تسهیلات"
+    )
 
     private fun findMatchingValidCard(body: String, bank: IranianBankRegistry.BankInfo): Boolean {
         return Regex("\\d{4}(?:[ -]?\\d{4}){3}").findAll(body).any { match ->
