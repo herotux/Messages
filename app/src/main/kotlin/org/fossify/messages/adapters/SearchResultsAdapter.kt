@@ -26,16 +26,14 @@ import org.fossify.messages.models.SearchResult
 class SearchResultsAdapter(
     activity: SimpleActivity,
     var searchResults: ArrayList<SearchResult>,
-    private val recyclerView: MyRecyclerView,
+    recyclerView: MyRecyclerView,
     highlightText: String,
     itemClick: (Any) -> Unit
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick) {
     private var fontSize = activity.getTextSize()
     private var textToHighlight = highlightText
 
-    init {
-        requestProviderResults(highlightText)
-    }
+    init { requestProviderResults(highlightText) }
 
     override fun getActionMenuId() = 0
     override fun prepareActionMode(menu: Menu) {}
@@ -46,14 +44,11 @@ class SearchResultsAdapter(
     override fun getItemKeyPosition(key: Int) = searchResults.indexOfFirst { it.hashCode() == key }
     override fun onActionModeCreated() {}
     override fun onActionModeDestroyed() {}
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
-        createViewHolder(ItemSearchResultBinding.inflate(layoutInflater, parent, false).root)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = createViewHolder(ItemSearchResultBinding.inflate(layoutInflater, parent, false).root)
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val searchResult = searchResults[position]
-        holder.bindView(searchResult, allowSingleClick = true, allowLongClick = false) { itemView, _ ->
-            setupView(itemView, searchResult)
-        }
+        holder.bindView(searchResult, allowSingleClick = true, allowLongClick = false) { itemView, _ -> setupView(itemView, searchResult) }
         bindViewHolder(holder)
     }
 
@@ -69,22 +64,12 @@ class SearchResultsAdapter(
     private fun requestProviderResults(query: String) {
         val requestedQuery = query.trim()
         if (requestedQuery.length < 2) return
-
         ProviderSearchBridge.search(activity, requestedQuery) { providerResults ->
             if (requestedQuery != textToHighlight.trim()) return@search
-
             val merged = ArrayList<SearchResult>(searchResults.size + providerResults.size)
             val seenIds = HashSet<Long>()
-            searchResults.forEach { result ->
-                if (result.messageId >= 0) seenIds.add(result.messageId)
-                merged.add(result)
-            }
-            providerResults.forEach { result ->
-                if (result.messageId < 0 || seenIds.add(result.messageId)) {
-                    merged.add(result)
-                }
-            }
-
+            searchResults.forEach { result -> if (result.messageId >= 0) seenIds.add(result.messageId); merged.add(result) }
+            providerResults.forEach { result -> if (result.messageId < 0 || seenIds.add(result.messageId)) merged.add(result) }
             if (merged.size != searchResults.size) {
                 searchResults = merged
                 recyclerView.beVisible()
@@ -108,29 +93,21 @@ class SearchResultsAdapter(
             searchResultDate.text = searchResult.date
             searchResultDate.setTextColor(textColor)
             searchResultDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
-
             val confirmedBank = BankConversationVerificationStore.getConfirmedBank(activity, searchResult.threadId)
-            val bankDetection = if (confirmedBank == null && searchResult.messageId >= 0) {
-                BankSmsDetector.detect(searchResult.title, searchResult.snippet)
-            } else null
+            val bankDetection = if (confirmedBank == null && searchResult.messageId >= 0) BankSmsDetector.detect(searchResult.title, searchResult.snippet) else null
             val bank = confirmedBank ?: bankDetection?.bank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
             val senderSource = if (searchResult.messageId < 0) searchResult.snippet else searchResult.title
             val senderLogoRes = if (bankLogoRes == null) IranianSenderIconResolver.resolve(activity, senderSource) else null
             val logoRes = bankLogoRes ?: senderLogoRes
-
             Glide.with(activity).clear(searchResultImage)
-            if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(searchResultImage, logoRes)) {
-                return@apply
-            }
+            if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(searchResultImage, logoRes)) return@apply
             SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)
         }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
-        if (!activity.isDestroyed && !activity.isFinishing) {
-            Glide.with(activity).clear(ItemSearchResultBinding.bind(holder.itemView).searchResultImage)
-        }
+        if (!activity.isDestroyed && !activity.isFinishing) Glide.with(activity).clear(ItemSearchResultBinding.bind(holder.itemView).searchResultImage)
     }
 }
