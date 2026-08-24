@@ -29,6 +29,7 @@ import org.fossify.messages.extensions.getAllDrafts
 import org.fossify.messages.helpers.BankSmsDetector
 import org.fossify.messages.helpers.IranianBankLogoImageHelper
 import org.fossify.messages.helpers.IranianBankLogoResolver
+import org.fossify.messages.helpers.IranianSenderIconResolver
 import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.models.Conversation
 
@@ -169,17 +170,23 @@ abstract class BaseConversationsAdapter(
                 null
             }
 
-            // Bank conversations get their bank logo directly from the VectorDrawable resource.
-            // The detector uses both the sender/number and the latest SMS snippet available here.
             val bankDetection = if (!conversation.isGroupConversation) {
                 BankSmsDetector.detect(conversation.phoneNumber, conversation.snippet)
             } else {
                 null
             }
             val bankLogoRes = bankDetection?.let { IranianBankLogoResolver.resolve(activity, it.bank) }
-            if (bankLogoRes != null) {
+            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) {
+                IranianSenderIconResolver.resolve(activity, conversation.phoneNumber)
+            } else {
+                null
+            }
+
+            // Priority: confirmed bank logo -> trusted service/sender logo -> normal contact image.
+            val logoRes = bankLogoRes ?: senderLogoRes
+            if (logoRes != null) {
                 Glide.with(activity).clear(conversationImage)
-                if (!IranianBankLogoImageHelper.setBankLogo(conversationImage, bankLogoRes)) {
+                if (!IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)) {
                     SimpleContactsHelper(activity).loadContactImage(
                         path = conversation.photoUri,
                         imageView = conversationImage,
