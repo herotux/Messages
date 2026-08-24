@@ -9,16 +9,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.ContactsContract
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.View
-import android.widget.EditText
-import androidx.recyclerview.widget.RecyclerView
 import org.fossify.commons.FossifyApp
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.PERMISSION_READ_SMS
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.commons.views.MySearchMenu
 import org.fossify.messages.activities.AdvancedSearchActivity
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.adapters.SearchResultsAdapter
@@ -58,7 +54,7 @@ class App : FossifyApp() {
         override fun onActivityCreated(activity: Activity, state: Bundle?) {
             if (activity !is MainActivity) return
 
-            val advancedButton = activity.findViewById<View>(R.id.advanced_search_button)
+            val advancedButton = activity.findViewById<android.view.View>(R.id.advanced_search_button)
             advancedButton?.apply {
                 isClickable = true
                 isFocusable = true
@@ -68,31 +64,20 @@ class App : FossifyApp() {
                 }
             }
 
-            // The stock MainActivity search is Room-backed. Attach a second watcher
-            // after MainActivity has initialized its own listener and supplement its
-            // results with the real Android SMS Provider, so unopened threads are searchable.
             if (!hasPermission(PERMISSION_READ_SMS)) return
-            val searchEditText = activity.findViewById<EditText>(androidx.appcompat.R.id.search_src_text)
-                ?: return
-            val resultsView = activity.findViewById<RecyclerView>(R.id.search_results_list) ?: return
+            val searchMenu = activity.findViewById<MySearchMenu>(R.id.main_menu) ?: return
+            val originalListener = searchMenu.onSearchTextChangedListener
 
-            searchEditText.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    val query = s?.toString().orEmpty().trim()
-                    if (query.length < 2) return
+            searchMenu.onSearchTextChangedListener = { text ->
+                originalListener?.invoke(text)
+                if (text.trim().length < 2) return@onSearchTextChangedListener
 
-                    // Let MainActivity finish its Room query first, then merge provider results.
-                    resultsView.postDelayed({
-                        ProviderSearchBridge.search(activity, query) { providerResults ->
-                            val adapter = resultsView.adapter as? SearchResultsAdapter ?: return@search
-                            ProviderSearchBridge.mergeIntoAdapter(adapter, providerResults, query)
-                        }
-                    }, 40L)
+                ProviderSearchBridge.search(activity, text) { providerResults ->
+                    val resultsView = activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.search_results_list)
+                    val adapter = resultsView?.adapter as? SearchResultsAdapter ?: return@search
+                    ProviderSearchBridge.mergeIntoAdapter(adapter, providerResults, text)
                 }
-
-                override fun afterTextChanged(s: Editable?) = Unit
-            })
+            }
         }
 
         override fun onActivityStarted(activity: Activity) = Unit
