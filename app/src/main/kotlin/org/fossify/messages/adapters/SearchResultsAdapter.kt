@@ -17,6 +17,7 @@ import org.fossify.messages.helpers.BankSmsDetector
 import org.fossify.messages.helpers.IranianBankLogoImageHelper
 import org.fossify.messages.helpers.IranianBankLogoResolver
 import org.fossify.messages.helpers.IranianSenderIconResolver
+import org.fossify.messages.helpers.ProviderSearchBridge
 import org.fossify.messages.models.SearchResult
 
 class SearchResultsAdapter(
@@ -28,6 +29,10 @@ class SearchResultsAdapter(
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick) {
     private var fontSize = activity.getTextSize()
     private var textToHighlight = highlightText
+
+    init {
+        requestProviderResults(highlightText)
+    }
 
     override fun getActionMenuId() = 0
     override fun prepareActionMode(menu: Menu) {}
@@ -52,13 +57,35 @@ class SearchResultsAdapter(
     override fun getItemCount() = searchResults.size
 
     fun updateItems(newItems: ArrayList<SearchResult>, highlightText: String = "") {
-        if (newItems.hashCode() != searchResults.hashCode()) {
-            searchResults = newItems.clone() as ArrayList<SearchResult>
-            textToHighlight = highlightText
-            notifyDataSetChanged()
-        } else if (textToHighlight != highlightText) {
-            textToHighlight = highlightText
-            notifyDataSetChanged()
+        searchResults = newItems.clone() as ArrayList<SearchResult>
+        textToHighlight = highlightText
+        notifyDataSetChanged()
+        requestProviderResults(highlightText)
+    }
+
+    private fun requestProviderResults(query: String) {
+        if (query.length < 2) return
+        val requestedQuery = query
+        ProviderSearchBridge.search(activity, requestedQuery) { providerResults ->
+            if (requestedQuery != textToHighlight) return@search
+
+            val merged = ArrayList<SearchResult>(searchResults.size + providerResults.size)
+            val seenIds = HashSet<Long>()
+            searchResults.forEach { result ->
+                if (result.messageId >= 0) seenIds.add(result.messageId)
+                merged.add(result)
+            }
+            providerResults.forEach { result ->
+                if (result.messageId < 0 || seenIds.add(result.messageId)) {
+                    merged.add(result)
+                }
+            }
+            // Provider results are already newest-first. Keep the existing Room results
+            // first and append unseen provider messages; this avoids comparing formatted dates.
+            if (merged != searchResults) {
+                searchResults = merged
+                notifyDataSetChanged()
+            }
         }
     }
 
@@ -74,35 +101,21 @@ class SearchResultsAdapter(
             searchResultDate.setTextColor(textColor)
             searchResultDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
 
-            // Search is presentation-only: bank detection must never filter or alter results.
-            // Manual confirmation has the highest priority, then the actual matched SMS text.
             val confirmedBank = BankConversationVerificationStore.getConfirmedBank(activity, searchResult.threadId)
             val bankDetection = if (confirmedBank == null && searchResult.messageId >= 0) {
                 BankSmsDetector.detect(searchResult.title, searchResult.snippet)
-            } else {
-                null
-            }
+            } else null
             val bank = confirmedBank ?: bankDetection?.bank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
-
             val senderSource = if (searchResult.messageId < 0) searchResult.snippet else searchResult.title
-            val senderLogoRes = if (bankLogoRes == null) {
-                IranianSenderIconResolver.resolve(activity, senderSource)
-            } else {
-                null
-            }
+            val senderLogoRes = if (bankLogoRes == null) IranianSenderIconResolver.resolve(activity, senderSource) else null
             val logoRes = bankLogoRes ?: senderLogoRes
 
             Glide.with(activity).clear(searchResultImage)
             if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(searchResultImage, logoRes)) {
                 return@apply
             }
-
-            SimpleContactsHelper(activity).loadContactImage(
-                searchResult.photoUri,
-                searchResultImage,
-                searchResult.title
-            )
+            SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)
         }
     }
 
