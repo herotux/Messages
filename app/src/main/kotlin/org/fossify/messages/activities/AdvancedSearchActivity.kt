@@ -14,9 +14,9 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.toast
+import org.fossify.messages.R
 import org.fossify.messages.helpers.AdvancedSearchFilter
 import org.fossify.messages.helpers.AdvancedSearchHit
 import org.fossify.messages.helpers.AdvancedSmsSearch
@@ -39,13 +39,15 @@ class AdvancedSearchActivity : SimpleActivity() {
     private var fromDate: Long? = null
     private var toDate: Long? = null
 
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val bg = getProperBackgroundColor()
         val fg = getProperTextColor()
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(bg) }
         val toolbar = Toolbar(this).apply {
-            title = "Advanced search"
+            title = getString(R.string.advanced_search_long)
             setTitleTextColor(fg)
             navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
             setNavigationOnClickListener { finish() }
@@ -122,8 +124,7 @@ class AdvancedSearchActivity : SimpleActivity() {
             fromDate = fromDate, toDate = toDate, direction = direction, unreadOnly = unreadCheck.isChecked,
             hasAttachment = null, bankOnly = bankCheck.isChecked
         )
-        val hits = searcher.search(filter)
-        render(hits)
+        render(searcher.search(filter))
     }
 
     private fun render(hits: List<AdvancedSearchHit>) {
@@ -132,10 +133,8 @@ class AdvancedSearchActivity : SimpleActivity() {
         hits.forEach { hit ->
             val row = TextView(this).apply {
                 text = "${hit.address}\n${hit.body}\n${DateFormat.getDateTimeInstance().format(Date(hit.date))}"
-                setTextColor(getProperTextColor())
-                textSize = 15f
-                setPadding(dp(12), dp(12), dp(12), dp(12))
-                setOnClickListener { openThread(hit) }
+                setTextColor(getProperTextColor()); textSize = 15f
+                setPadding(dp(12), dp(12), dp(12), dp(12)); setOnClickListener { openThread(hit) }
             }
             results.addView(row, LinearLayout.LayoutParams(-1, -2))
         }
@@ -143,8 +142,7 @@ class AdvancedSearchActivity : SimpleActivity() {
 
     private fun openThread(hit: AdvancedSearchHit) {
         startActivity(Intent(this, ThreadActivity::class.java).apply {
-            putExtra(THREAD_ID, hit.threadId)
-            putExtra(SEARCHED_MESSAGE_ID, hit.messageId)
+            putExtra(THREAD_ID, hit.threadId); putExtra(SEARCHED_MESSAGE_ID, hit.messageId)
         })
     }
 
