@@ -8,12 +8,8 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.isVisible
-import org.fossify.messages.helpers.THREAD_ID
 
-/**
- * Small confirmation banner shown at the top of a conversation when the
- * detector has medium confidence that the conversation is a bank SMS thread.
- */
+/** Compact confirmation card for a medium-confidence bank conversation. */
 class BankConversationVerificationView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -24,7 +20,7 @@ class BankConversationVerificationView @JvmOverloads constructor(
 
     init {
         orientation = VERTICAL
-        setPadding(dp(16), dp(10), dp(16), dp(10))
+        setPadding(dp(16), dp(12), dp(16), dp(12))
         gravity = Gravity.CENTER_VERTICAL
         isVisible = false
         setBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurfaceContainerHighest))
@@ -40,13 +36,7 @@ class BankConversationVerificationView @JvmOverloads constructor(
         val threadId = activity.intent.getLongExtra(THREAD_ID, 0L)
         if (threadId == 0L || prefs.contains(key(threadId))) return
 
-        val projection = arrayOf(
-            Telephony.Sms.THREAD_ID,
-            Telephony.Sms.ADDRESS,
-            Telephony.Sms.BODY,
-            Telephony.Sms.DATE,
-        )
-
+        val projection = arrayOf(Telephony.Sms.THREAD_ID, Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE)
         val detection = runCatching {
             context.contentResolver.query(
                 Telephony.Sms.CONTENT_URI,
@@ -73,45 +63,51 @@ class BankConversationVerificationView @JvmOverloads constructor(
             }
         }.getOrNull() ?: return
 
-        if (detection == null) return
-        showSuggestion(threadId, detection)
+        detection?.let { showSuggestion(threadId, it) }
     }
 
     private fun showSuggestion(threadId: Long, detection: BankSmsDetector.Detection) {
         removeAllViews()
-        val bankName = detection.bank.persianName
 
         val title = TextView(context).apply {
-            text = "آیا این پیام مربوط به $bankName است؟"
+            text = "این گفتگو احتمالاً مربوط به ${detection.bank.persianName} است"
             textSize = 15f
             setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface))
         }
         addView(title, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+
+        val subtitle = TextView(context).apply {
+            text = "آیا تشخیص بانک درست است؟"
+            textSize = 13f
+            setPadding(0, dp(4), 0, dp(8))
+            setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant))
+        }
+        addView(subtitle, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
 
         val buttons = LinearLayout(context).apply {
             orientation = HORIZONTAL
             gravity = Gravity.END
         }
 
+        fun dismiss(answer: Boolean) {
+            // Persist the user's decision, then remove the whole card rather than
+            // hiding only the clicked button.
+            prefs.edit().putBoolean(key(threadId), answer).apply()
+            removeAllViews()
+            isVisible = false
+        }
+
         val noButton = Button(context).apply {
             text = "خیر"
-            setOnClickListener {
-                prefs.edit().putBoolean(key(threadId), false).apply()
-                isVisible = false
-            }
+            setOnClickListener { dismiss(false) }
         }
         val yesButton = Button(context).apply {
-            text = "بله، $bankName"
-            setOnClickListener {
-                prefs.edit().putBoolean(key(threadId), true).apply()
-                isVisible = false
-            }
+            text = "بله، ${detection.bank.persianName}"
+            setOnClickListener { dismiss(true) }
         }
 
         buttons.addView(noButton, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-        buttons.addView(yesButton, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-            marginStart = dp(8)
-        })
+        buttons.addView(yesButton, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { marginStart = dp(8) })
         addView(buttons, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         isVisible = true
     }
@@ -122,9 +118,7 @@ class BankConversationVerificationView @JvmOverloads constructor(
     private fun resolveColor(attr: Int): Int {
         val typed = android.util.TypedValue()
         context.theme.resolveAttribute(attr, typed, true)
-        return if (typed.resourceId != 0) {
-            androidx.core.content.ContextCompat.getColor(context, typed.resourceId)
-        } else typed.data
+        return if (typed.resourceId != 0) androidx.core.content.ContextCompat.getColor(context, typed.resourceId) else typed.data
     }
 
     companion object {
