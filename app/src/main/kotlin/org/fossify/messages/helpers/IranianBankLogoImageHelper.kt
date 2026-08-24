@@ -7,18 +7,30 @@ import androidx.appcompat.content.res.AppCompatResources
 
 /**
  * Safely displays bank vector resources directly on an ImageView.
- * This intentionally avoids Glide bitmap transformations for VectorDrawable logos.
+ * Falls back to the platform drawable loader because a few generated vectors
+ * are handled differently by AppCompat on some Android versions.
  */
 object IranianBankLogoImageHelper {
     private const val TAG = "IranianBankLogo"
 
     fun setBankLogo(imageView: ImageView, resourceId: Int): Boolean {
-        return try {
-            val drawable: Drawable = AppCompatResources.getDrawable(imageView.context, resourceId) ?: return false
+        try {
+            val drawable: Drawable = AppCompatResources.getDrawable(imageView.context, resourceId)
+                ?: return false
             imageView.setImageDrawable(drawable)
+            imageView.visibility = ImageView.VISIBLE
+            imageView.alpha = 1f
+            return true
+        } catch (t: Throwable) {
+            Log.w(TAG, "AppCompat could not load bank logo: $resourceId", t)
+        }
+
+        return try {
+            imageView.setImageResource(resourceId)
+            imageView.visibility = ImageView.VISIBLE
+            imageView.alpha = 1f
             true
         } catch (t: Throwable) {
-            // A malformed/generated vector must never crash the message list/thread.
             Log.e(TAG, "Unable to load bank logo resource: $resourceId", t)
             false
         }
