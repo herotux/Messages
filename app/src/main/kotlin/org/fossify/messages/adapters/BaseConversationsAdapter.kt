@@ -26,6 +26,11 @@ import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
+import org.fossify.messages.helpers.BankConversationVerificationStore
+import org.fossify.messages.helpers.BankSmsDetector
+import org.fossify.messages.helpers.IranianBankLogoImageHelper
+import org.fossify.messages.helpers.IranianBankLogoResolver
+import org.fossify.messages.helpers.IranianSenderIconResolver
 import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.models.Conversation
 
@@ -51,11 +56,9 @@ abstract class BaseConversationsAdapter(
         })
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    fun updateFontSize() { fontSize = activity.getTextSize(); notifyDataSetChanged() }
+    @SuppressLint("NotifyDataSetChanged") fun updateFontSize() { fontSize = activity.getTextSize(); notifyDataSetChanged() }
     fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) { saveRecyclerViewState(); submitList(newConversations.toList(), commitCallback) }
-    @SuppressLint("NotifyDataSetChanged")
-    fun updateDrafts() { ensureBackgroundThread { val newDrafts = HashMap<Long, String>(); fetchDrafts(newDrafts); activity.runOnUiThread { if (drafts.hashCode() != newDrafts.hashCode()) { drafts = newDrafts; notifyDataSetChanged() } } } }
+    @SuppressLint("NotifyDataSetChanged") fun updateDrafts() { ensureBackgroundThread { val newDrafts = HashMap<Long, String>(); fetchDrafts(newDrafts); activity.runOnUiThread { if (drafts.hashCode() != newDrafts.hashCode()) { drafts = newDrafts; notifyDataSetChanged() } } } }
     override fun getSelectableItemCount() = itemCount
     protected fun getSelectedItems() = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
     override fun getIsItemSelectable(position: Int) = true
@@ -78,7 +81,7 @@ abstract class BaseConversationsAdapter(
             conversationFrame.isSelected = selectedKeys.contains(conversation.hashCode())
             conversationAddress.text = conversation.title; conversationAddress.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
             conversationBodyShort.text = smsDraft ?: conversation.snippet; conversationBodyShort.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
-            conversationDate.text = if (activity.config.usePersianCalendar) PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(conversation.date * 1000L)) else (conversation.date * 1000L).formatDateOrTime(context = context, hideTimeOnOtherDays = true, showCurrentYear = false)
+            conversationDate.text = if (activity.config.usePersianCalendar) PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(conversation.date * 1000L)) else (conversation.date * 1000L).formatDateOrTime(context = activity, hideTimeOnOtherDays = true, showCurrentYear = false)
             conversationDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
             val isUnread = !conversation.read
             conversationBodyShort.alpha = if (isUnread) 1f else 0.7f
@@ -86,8 +89,19 @@ abstract class BaseConversationsAdapter(
             val customTypeface = FontHelper.getTypeface(activity); conversationAddress.setTypeface(customTypeface, style); conversationBodyShort.setTypeface(customTypeface, style); conversationDate.setTypeface(customTypeface, style)
             arrayListOf(conversationAddress, conversationBodyShort, conversationDate).forEach { it.setTextColor(textColor) }
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
+
             val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
-            SimpleContactsHelper(activity).loadContactImage(path = conversation.photoUri, imageView = conversationImage, placeholderName = conversation.title, placeholderImage = placeholder)
+            val confirmedBank = if (!conversation.isGroupConversation) BankConversationVerificationStore.getConfirmedBank(activity, conversation.threadId) else null
+            val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) BankSmsDetector.detect(conversation.phoneNumber, conversation.snippet)?.bank else null
+            val bank = confirmedBank ?: detectedBank
+            val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
+            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) IranianSenderIconResolver.resolve(activity, conversation.phoneNumber) else null
+            val logoRes = bankLogoRes ?: senderLogoRes
+            if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)) {
+                // Bank/sender logo was applied successfully.
+            } else {
+                SimpleContactsHelper(activity).loadContactImage(path = conversation.photoUri, imageView = conversationImage, placeholderName = conversation.title, placeholderImage = placeholder)
+            }
         }
     }
 
