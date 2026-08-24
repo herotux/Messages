@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_launcher_name">Messages</string>
+    <string name="advanced_search_short">Advanced search</string>
+    <string name="advanced_search_long">Advanced message search</string>
     <string name="type_a_message">Type a message…</string>
     <string name="message_not_sent_short">Message not sent</string>
     <string name="message_not_sent_touch_retry">Not sent. Touch to retry.</string>
@@ -66,7 +68,7 @@
     <string name="archive">Archive</string>
     <string name="no_archived_conversations">No archived conversations have been found</string>
     <string name="archive_emptied_successfully">The archive has been emptied successfully</string>
-    <string name="empty_archive_confirmation">Are you sure you want to empty the archive? All archived conversations will be permanently lost.</string>
+    <string name="empty_archive_confirmation">Are you sure you want to empty the archive? All archived messages will be permanently lost.</string>
     <string name="keep_conversations_archived">Keep conversations archived</string>
     <!-- Recycle bin -->
     <string name="restore">Restore</string>
@@ -78,16 +80,8 @@
     <string name="archive_confirmation">Are you sure you want to archive %s?</string>
     <string name="restore_whole_conversation_confirmation">Are you sure you want to restore all messages of this conversation?</string>
     <string name="restore_confirmation">Are you sure you want to restore %s?</string>
-    <!-- Are you sure you want to delete 5 conversations? -->
-    <plurals name="delete_conversations">
-        <item quantity="one">%d conversation</item>
-        <item quantity="other">%d conversations</item>
-    </plurals>
-    <!-- Are you sure you want to delete 5 messages? -->
-    <plurals name="delete_messages">
-        <item quantity="one">%d message</item>
-        <item quantity="other">%d messages</item>
-    </plurals>
+    <plurals name="delete_conversations"><item quantity="one">%d conversation</item><item quantity="other">%d conversations</item></plurals>
+    <plurals name="delete_messages"><item quantity="one">%d message</item><item quantity="other">%d messages</item></plurals>
     <!-- Settings -->
     <string name="keyword">Keyword</string>
     <string name="blocked_keywords">Blocked keywords</string>
@@ -133,18 +127,4 @@
     <string name="attachment_sized_exceeds_max_limit">Attachment size exceeds max MMS limit</string>
     <string name="sim_card_not_available">SIM card not available</string>
     <string name="couldnt_download_mms">Couldn\'t download MMS</string>
-    <!-- FAQ -->
-    <string name="faq_1_title">Why does the app require access to the internet?</string>
-    <string name="faq_1_text">Sadly it is needed for sending MMS attachments. Not being able to send MMS would be a really huge disadvantage compared to other apps, so we decided to go this way.
-    However, as usually, there are no ads, tracking or analytics whatsoever, the internet is used only for sending MMS.</string>
-    <string name="faq_2_title">The other end is not receiving my MMS, is there anything I can do about it?</string>
-    <string name="faq_2_text">MMS size is limited by carriers, you can try setting a smaller limit in the app settings.</string>
-    <string name="faq_3_title">Does the app support scheduled messages?</string>
-    <string name="faq_3_text">Yes, you can schedule messages to be sent in the future by long pressing the Send button and picking the desired date and time.</string>
-    <string name="faq_4_title">Why do my group message replies appear as individual texts to recipients?</string>
-    <string name="faq_4_text">You need to enable \"Send group messages as MMS\" in the app settings. This will ensure that group messages are sent as proper MMS, allowing all participants to see each other\'s replies.</string>
-    <!--
-        Haven't found some strings? There's more at
-        https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res
-    -->
 </resources>
