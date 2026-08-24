@@ -15,9 +15,6 @@ class BankConversationVerificationView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
 ) : LinearLayout(context, attrs, defStyleAttr) {
-
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
     init {
         orientation = VERTICAL
         setPadding(dp(16), dp(12), dp(16), dp(12))
@@ -34,16 +31,14 @@ class BankConversationVerificationView @JvmOverloads constructor(
     private fun inspectConversation() {
         val activity = context as? android.app.Activity ?: return
         val threadId = activity.intent.getLongExtra(THREAD_ID, 0L)
-        if (threadId == 0L || prefs.contains(key(threadId))) return
+        if (threadId == 0L || BankConversationVerificationStore.getConfirmedBank(context, threadId) != null || BankConversationVerificationStore.isRejected(context, threadId)) return
 
-        val projection = arrayOf(Telephony.Sms.THREAD_ID, Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE)
+        val projection = arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY)
         val detection = runCatching {
             context.contentResolver.query(
-                Telephony.Sms.CONTENT_URI,
-                projection,
-                "${Telephony.Sms.THREAD_ID} = ?",
-                arrayOf(threadId.toString()),
-                "${Telephony.Sms.DATE} DESC",
+                Telephony.Sms.CONTENT_URI, projection,
+                "${Telephony.Sms.THREAD_ID} = ?", arrayOf(threadId.toString()),
+                "${Telephony.Sms.DATE} DESC"
             )?.use { cursor ->
                 val addressIndex = cursor.getColumnIndex(Telephony.Sms.ADDRESS)
                 val bodyIndex = cursor.getColumnIndex(Telephony.Sms.BODY)
@@ -53,29 +48,23 @@ class BankConversationVerificationView @JvmOverloads constructor(
                     val sender = if (addressIndex >= 0) cursor.getString(addressIndex).orEmpty() else ""
                     val body = if (bodyIndex >= 0) cursor.getString(bodyIndex).orEmpty() else ""
                     val candidate = BankSmsDetector.detect(sender, body)
-                    if (candidate?.confidence == BankSmsDetector.Confidence.MEDIUM) {
-                        result = candidate
-                        break
-                    }
+                    if (candidate?.confidence == BankSmsDetector.Confidence.MEDIUM) { result = candidate; break }
                     checked++
                 }
                 result
             }
         }.getOrNull() ?: return
-
         detection?.let { showSuggestion(threadId, it) }
     }
 
     private fun showSuggestion(threadId: Long, detection: BankSmsDetector.Detection) {
         removeAllViews()
-
         val title = TextView(context).apply {
             text = "این گفتگو احتمالاً مربوط به ${detection.bank.persianName} است"
             textSize = 15f
             setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface))
         }
         addView(title, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-
         val subtitle = TextView(context).apply {
             text = "آیا تشخیص بانک درست است؟"
             textSize = 13f
@@ -83,38 +72,24 @@ class BankConversationVerificationView @JvmOverloads constructor(
             setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant))
         }
         addView(subtitle, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-
-        val buttons = LinearLayout(context).apply {
-            orientation = HORIZONTAL
-            gravity = Gravity.END
-        }
+        val buttons = LinearLayout(context).apply { orientation = HORIZONTAL; gravity = Gravity.END }
 
         fun dismiss(answer: Boolean) {
-            // Persist the user's decision, then remove the whole card rather than
-            // hiding only the clicked button.
-            prefs.edit().putBoolean(key(threadId), answer).apply()
+            if (answer) BankConversationVerificationStore.confirm(context, threadId, detection.bank)
+            else BankConversationVerificationStore.reject(context, threadId)
             removeAllViews()
             isVisible = false
         }
 
-        val noButton = Button(context).apply {
-            text = "خیر"
-            setOnClickListener { dismiss(false) }
-        }
-        val yesButton = Button(context).apply {
-            text = "بله، ${detection.bank.persianName}"
-            setOnClickListener { dismiss(true) }
-        }
-
+        val noButton = Button(context).apply { text = "خیر"; setOnClickListener { dismiss(false) } }
+        val yesButton = Button(context).apply { text = "بله، ${detection.bank.persianName}"; setOnClickListener { dismiss(true) } }
         buttons.addView(noButton, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
         buttons.addView(yesButton, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply { marginStart = dp(8) })
         addView(buttons, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         isVisible = true
     }
 
-    private fun key(threadId: Long) = "confirmed_$threadId"
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
     private fun resolveColor(attr: Int): Int {
         val typed = android.util.TypedValue()
         context.theme.resolveAttribute(attr, typed, true)
@@ -122,7 +97,6 @@ class BankConversationVerificationView @JvmOverloads constructor(
     }
 
     companion object {
-        private const val PREFS_NAME = "bank_conversation_verification"
         private const val MAX_MESSAGES_TO_CHECK = 30
     }
 }
