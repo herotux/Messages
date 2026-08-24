@@ -44,12 +44,11 @@ class SearchResultsAdapter(
             searchResultSnippet.text = searchResult.snippet.highlightTextPart(textToHighlight, properPrimaryColor); searchResultSnippet.setTextColor(textColor); searchResultSnippet.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
             searchResultDate.text = searchResult.date; searchResultDate.setTextColor(textColor); searchResultDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
 
-            // Explicit user confirmation always wins over message-level detection.
             val confirmedBank = BankConversationVerificationStore.getConfirmedBank(activity, searchResult.threadId)
-            val bankDetection = if (confirmedBank == null) BankSmsDetector.detect(searchResult.phoneNumber, searchResult.snippet) else null
+            val bankDetection = if (confirmedBank == null) BankSmsDetector.detect("", searchResult.snippet) else null
             val bank = confirmedBank ?: bankDetection?.bank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
-            val senderLogoRes = if (bankLogoRes == null) IranianSenderIconResolver.resolve(activity, searchResult.phoneNumber) else null
+            val senderLogoRes = if (bankLogoRes == null) IranianSenderIconResolver.resolve(activity, searchResult.title) else null
             val logoRes = bankLogoRes ?: senderLogoRes
             if (logoRes != null) {
                 Glide.with(activity).clear(searchResultImage)
