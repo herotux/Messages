@@ -1,9 +1,9 @@
 package org.fossify.messages.helpers
 
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.os.Build
-import android.os.Environment
 import android.provider.MediaStore
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -63,7 +63,7 @@ object DebugLog {
             var uri = resolver.query(collection, projection, selection, selectionArgs, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
-                    MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY, id)
+                    ContentUris.withAppendedId(collection, id)
                 } else null
             }
 
@@ -92,7 +92,7 @@ object DebugLog {
             resolver.query(collection, arrayOf(MediaStore.Downloads._ID), selection, arrayOf(FILE_NAME, DOWNLOADS_SUBPATH), null)?.use { cursor ->
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
-                    resolver.delete(MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY, id), null, null)
+                    resolver.delete(ContentUris.withAppendedId(collection, id), null, null)
                 }
             }
         } catch (_: Exception) {
