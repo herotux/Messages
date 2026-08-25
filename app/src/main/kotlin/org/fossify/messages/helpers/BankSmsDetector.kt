@@ -35,6 +35,21 @@ object BankSmsDetector {
         "فروشگاه", "خدمتتون ارسال", "اطلاع دهید"
     )
 
+    private val officialMessageTerms = listOf(
+        "مشتری گرامی", "مشتری محترم", "سامانه", "خدمات", "کد ورود", "کد فعال سازی",
+        "درخواست شما", "درخواست", "بروزرسانی", "زیرساخت", "بخشنامه", "جهت اطلاع",
+        "رمز", "ورود به سامانه", "هزینه پیامک", "سپرده", "افتتاح گردید", "تسهیلات"
+    )
+
+    // Built once instead of rebuilding 30+ banks/aliases and sorting them for every RecyclerView bind.
+    private val bankNameCandidates: List<BankNameCandidate> by lazy {
+        IranianBankRegistry.allBanks()
+            .asSequence()
+            .flatMap { bank -> bank.aliases.filter { it.length >= 3 }.map { BankNameCandidate(bank, it) } }
+            .sortedByDescending { it.alias.length }
+            .toList()
+    }
+
     fun detect(sender: String, body: String): Detection? {
         // Exact sender profiles are the strongest signal for informational, OTP and service SMS,
         // where a transaction-shaped body is not expected.
@@ -50,15 +65,9 @@ object BankSmsDetector {
         val termHits = transactionTerms.count { normalizedBody.contains(it, ignoreCase = true) }
         val structureHits = transactionStructure.count { it.containsMatchIn(normalizedBody) }
 
-        // An unknown sender must explicitly identify the bank in the message.
-        // A card or IBAN is only corroborating evidence after that identity is known.
         val bankMatch = findExplicitBankName(normalizedBody) ?: return null
-
         if (negativeHits > 0) return null
 
-        // Official service/notification SMS often contain no transaction terms at all.
-        // Require several institutional cues so an ordinary conversation mentioning a bank
-        // does not become a bank conversation.
         val officialHits = officialMessageTerms.count { normalizedBody.contains(it, ignoreCase = true) }
         if (officialHits >= 2 && termHits == 0 && structureHits == 0) {
             return Detection(
@@ -96,12 +105,6 @@ object BankSmsDetector {
         )
     }
 
-    private val officialMessageTerms = listOf(
-        "مشتری گرامی", "مشتری محترم", "سامانه", "خدمات", "کد ورود", "کد فعال سازی",
-        "درخواست شما", "درخواست", "بروزرسانی", "زیرساخت", "بخشنامه", "جهت اطلاع",
-        "رمز", "ورود به سامانه", "هزینه پیامک", "سپرده", "افتتاح گردید", "تسهیلات"
-    )
-
     private fun findMatchingValidCard(body: String, bank: IranianBankRegistry.BankInfo): Boolean {
         return Regex("\\d{4}(?:[ -]?\\d{4}){3}").findAll(body).any { match ->
             val card = match.value.filter(Char::isDigit)
@@ -116,10 +119,7 @@ object BankSmsDetector {
     }
 
     private fun findExplicitBankName(body: String): BankNameCandidate? {
-        val candidates = IranianBankRegistry.allBanks().flatMap { bank ->
-            bank.aliases.filter { it.length >= 3 }.map { BankNameCandidate(bank, it) }
-        }.sortedByDescending { it.alias.length }
-        val matches = candidates.filter { hasExplicitInstitutionName(body, it.alias) }.toList()
+        val matches = bankNameCandidates.filter { hasExplicitInstitutionName(body, it.alias) }
         if (matches.isEmpty()) return null
         val bestLength = matches.maxOf { it.alias.length }
         val best = matches.filter { it.alias.length == bestLength }
@@ -128,7 +128,15 @@ object BankSmsDetector {
     }
 
     private fun hasExplicitInstitutionName(body: String, alias: String): Boolean {
-        val escapedAlias = Regex.escape(alias.trim())
+        val normalizedAlias = alias.trim()
+        // Persian aliases such as "بانک سپه" already contain the institution prefix.
+        if (normalizedAlias.startsWith("بانک ") || normalizedAlias.startsWith("بانکِ ") ||
+            normalizedAlias.startsWith("موسسه ") || normalizedAlias.startsWith("مؤسسه ")) {
+            return Regex("(?:^|[^آ-ی])${Regex.escape(normalizedAlias)}(?=$|[^آ-ی])")
+                .containsMatchIn(body)
+        }
+
+        val escapedAlias = Regex.escape(normalizedAlias)
         return Regex("(?:بانک|بانکِ|موسسه اعتباری|موسسه|مؤسسه اعتباری|مؤسسه)\\s+$escapedAlias(?=$|[^آ-ی])")
             .containsMatchIn(body)
     }
