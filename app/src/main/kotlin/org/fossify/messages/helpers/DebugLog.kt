@@ -42,13 +42,16 @@ object DebugLog {
         ""
     }
 
-    /** Copies the current private debug log to Downloads. Call explicitly when exporting. */
-    fun exportToDownloads(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+    /**
+     * Exports the private debug log to the public Downloads collection on Android 10+.
+     * Returns true only after the bytes have actually been copied successfully.
+     */
+    fun exportToDownloads(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
 
-        try {
+        return try {
             val file = context.getFileStreamPath(FILE_NAME)
-            if (!file.exists()) return
+            if (!file.exists() || file.length() == 0L) return false
 
             val resolver = context.contentResolver
             val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
@@ -60,7 +63,9 @@ object DebugLog {
                 if (cursor.moveToFirst()) {
                     val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
                     ContentUris.withAppendedId(collection, id)
-                } else null
+                } else {
+                    null
+                }
             }
 
             if (uri == null) {
@@ -68,14 +73,26 @@ object DebugLog {
                     put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
                     put(MediaStore.Downloads.MIME_TYPE, "text/plain")
                     put(MediaStore.Downloads.RELATIVE_PATH, DOWNLOADS_SUBPATH)
+                    put(MediaStore.Downloads.IS_PENDING, 1)
                 }
-                uri = resolver.insert(collection, values) ?: return
+                uri = resolver.insert(collection, values) ?: return false
             }
 
             resolver.openOutputStream(uri, "wt")?.use { output ->
-                file.inputStream().use { input -> input.copyTo(output) }
-            }
+                file.inputStream().use { input ->
+                    input.copyTo(output)
+                }
+            } ?: return false
+
+            resolver.update(
+                uri,
+                ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) },
+                null,
+                null
+            )
+            true
         } catch (_: Exception) {
+            false
         }
     }
 
@@ -85,7 +102,13 @@ object DebugLog {
             val resolver = context.contentResolver
             val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
             val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.RELATIVE_PATH} = ?"
-            resolver.query(collection, arrayOf(MediaStore.Downloads._ID), selection, arrayOf(FILE_NAME, DOWNLOADS_SUBPATH), null)?.use { cursor ->
+            resolver.query(
+                collection,
+                arrayOf(MediaStore.Downloads._ID),
+                selection,
+                arrayOf(FILE_NAME, DOWNLOADS_SUBPATH),
+                null
+            )?.use { cursor ->
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
                     resolver.delete(ContentUris.withAppendedId(collection, id), null, null)
