@@ -227,6 +227,17 @@ class MainActivity : SimpleActivity() {
         ensureBackgroundThread {
             val privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
             val conversations = getConversations(privateContacts = privateContacts)
+
+            // Telephony's Threads provider can transiently return an empty/incomplete
+            // snapshot while the default SMS app is syncing. Never treat that as a
+            // real deletion of an already populated Room cache.
+            if (conversations.isEmpty() && cachedConversations.any { !it.isArchived }) {
+                runOnUiThread {
+                    setupConversations(cachedConversations.filterNot { it.isArchived }.toMutableList() as ArrayList<Conversation>)
+                }
+                return@ensureBackgroundThread
+            }
+
             conversations.forEach { clonedConversation ->
                 if (!cachedConversations.map { it.threadId }.contains(clonedConversation.threadId)) {
                     conversationsDB.insertOrUpdate(clonedConversation); cachedConversations.add(clonedConversation)
