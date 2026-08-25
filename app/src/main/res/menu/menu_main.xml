@@ -17,6 +17,7 @@
         android:id="@+id/export_debug_log"
         android:showAsAction="never"
         android:title="Export debug log"
+        app:actionProviderClass="org.fossify.messages.helpers.DebugLogExportActionProvider"
         app:showAsAction="never" />
     <item
         android:id="@+id/settings"
