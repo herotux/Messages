@@ -57,7 +57,7 @@ abstract class BaseConversationsAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged") fun updateFontSize() { fontSize = activity.getTextSize(); notifyDataSetChanged() }
-    fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) { saveRecyclerViewState(); submitList(newConversations.toList(), commitCallback) }
+    fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) { org.fossify.messages.activities.SearchBuildCompatState.currentConversations = newConversations.toList(); saveRecyclerViewState(); submitList(newConversations.toList(), commitCallback) }
     @SuppressLint("NotifyDataSetChanged") fun updateDrafts() { ensureBackgroundThread { val newDrafts = HashMap<Long, String>(); fetchDrafts(newDrafts); activity.runOnUiThread { if (drafts.hashCode() != newDrafts.hashCode()) { drafts = newDrafts; notifyDataSetChanged() } } } }
     override fun getSelectableItemCount() = itemCount
     protected fun getSelectedItems() = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
@@ -92,18 +92,11 @@ abstract class BaseConversationsAdapter(
 
             val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
             val confirmedBank = if (!conversation.isGroupConversation) BankConversationVerificationStore.getConfirmedBank(activity, conversation.threadId) else null
-            val senderCandidates = listOf(conversation.phoneNumber, conversation.title, conversation.snippet)
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-                .distinct()
-            val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) {
-                senderCandidates.firstNotNullOfOrNull { sender -> BankSmsDetector.detect(sender, conversation.snippet)?.bank }
-            } else null
+            val senderCandidates = listOf(conversation.phoneNumber, conversation.title, conversation.snippet).map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+            val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) senderCandidates.firstNotNullOfOrNull { sender -> BankSmsDetector.detect(sender, conversation.snippet)?.bank } else null
             val bank = confirmedBank ?: detectedBank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
-            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) {
-                senderCandidates.firstNotNullOfOrNull { sender -> IranianSenderIconResolver.resolve(activity, sender) }
-            } else null
+            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) senderCandidates.firstNotNullOfOrNull { sender -> IranianSenderIconResolver.resolve(activity, sender) } else null
             val logoRes = bankLogoRes ?: senderLogoRes
             Glide.with(activity).clear(conversationImage)
             if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)) return@apply
