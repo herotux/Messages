@@ -42,10 +42,17 @@ class IranianBankRegistryTest {
         assertEquals(IranianBankRegistry.BankId.SHAHR, IranianBankSenderProfiles.find("+9820003502")?.id)
         assertEquals(IranianBankRegistry.BankId.MELLI, IranianBankSenderProfiles.find("+9830009417")?.id)
         assertEquals(IranianBankRegistry.BankId.MELLI, IranianBankSenderProfiles.find("+98100041415001")?.id)
+        assertEquals(IranianBankRegistry.BankId.MELLI, IranianBankSenderProfiles.find("+98700717")?.id)
+        assertEquals(IranianBankRegistry.BankId.MELLI, IranianBankSenderProfiles.find("Bank Melli")?.id)
+        assertEquals(IranianBankRegistry.BankId.MELLI, IranianBankSenderProfiles.find("Bank-Melli")?.id)
         assertEquals(IranianBankRegistry.BankId.MASKAN, IranianBankSenderProfiles.find("Maskan Bank")?.id)
         assertEquals(IranianBankRegistry.BankId.SEPAH, IranianBankSenderProfiles.find("30001557")?.id)
         assertEquals(IranianBankRegistry.BankId.SEPAH, IranianBankSenderProfiles.find("671557")?.id)
         assertEquals(IranianBankRegistry.BankId.SEPAH, IranianBankSenderProfiles.find("BankSepah")?.id)
+        assertEquals(IranianBankRegistry.BankId.SEPAH, IranianBankSenderProfiles.find("SEPAH BANK")?.id)
+        assertEquals(IranianBankRegistry.BankId.SEPAH, IranianBankSenderProfiles.find("SEPAH-BANK")?.id)
+        assertEquals(IranianBankRegistry.BankId.TEJARAT, IranianBankSenderProfiles.find("TejaratBank")?.id)
+        assertEquals(IranianBankRegistry.BankId.TEJARAT, IranianBankSenderProfiles.find("Tejarat Bank")?.id)
     }
     @Test fun banksWithBundledLogosExposeTheirDrawableName() {
         assertEquals("bank_melli", IranianBankRegistry.findById(IranianBankRegistry.BankId.MELLI)?.logoResourceName)
@@ -94,6 +101,20 @@ class IranianBankRegistryTest {
         val detection = BankSmsDetector.detect("30001557", body)
         assertEquals(IranianBankRegistry.BankId.SEPAH, detection?.bank?.id)
         assertEquals(BankSmsDetector.Confidence.HIGH, detection?.confidence)
+    }
+    @Test fun bankSmsDetectorRecognizesActualProblematicSenders() {
+        val sepah = BankSmsDetector.detect("SEPAH BANK", "تراکنش انجام شد")
+        val tejarat = BankSmsDetector.detect("TejaratBank", "تراکنش انجام شد")
+        val melli = BankSmsDetector.detect("Bank Melli", "تراکنش انجام شد")
+        val melliPhone = BankSmsDetector.detect("+98700717", "تراکنش انجام شد")
+        assertEquals(IranianBankRegistry.BankId.SEPAH, sepah?.bank?.id)
+        assertEquals(IranianBankRegistry.BankId.TEJARAT, tejarat?.bank?.id)
+        assertEquals(IranianBankRegistry.BankId.MELLI, melli?.bank?.id)
+        assertEquals(IranianBankRegistry.BankId.MELLI, melliPhone?.bank?.id)
+        assertEquals(BankSmsDetector.Confidence.HIGH, sepah?.confidence)
+        assertEquals(BankSmsDetector.Confidence.HIGH, tejarat?.confidence)
+        assertEquals(BankSmsDetector.Confidence.HIGH, melli?.confidence)
+        assertEquals(BankSmsDetector.Confidence.HIGH, melliPhone?.confidence)
     }
     @Test fun bankSmsDetectorRecognizesCardOnlyWhenBankNameAndTransactionContextExist() {
         val detection = BankSmsDetector.detect("1000", "بانک ملی\nمبلغ از کارت ۶۰۳۷-۹۹۰۰-۰۰۰۰-۰۰۰۶ کسر شد\nمانده حساب اعلام گردید")
