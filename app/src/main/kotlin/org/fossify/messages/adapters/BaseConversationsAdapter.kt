@@ -28,6 +28,7 @@ import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
 import org.fossify.messages.helpers.BankConversationVerificationStore
 import org.fossify.messages.helpers.BankSmsDetector
+import org.fossify.messages.helpers.DebugLog
 import org.fossify.messages.helpers.IranianBankLogoImageHelper
 import org.fossify.messages.helpers.IranianBankLogoResolver
 import org.fossify.messages.helpers.IranianSenderIconResolver
@@ -57,7 +58,11 @@ abstract class BaseConversationsAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged") fun updateFontSize() { fontSize = activity.getTextSize(); notifyDataSetChanged() }
-    fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) { saveRecyclerViewState(); submitList(newConversations.toList(), commitCallback) }
+    fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) {
+        DebugLog.write(activity, "ADAPTER_UPDATE_CONVERSATIONS count=${newConversations.size} threads=${newConversations.take(5).joinToString(",") { it.threadId.toString() }}")
+        saveRecyclerViewState()
+        submitList(newConversations.toList(), commitCallback)
+    }
     @SuppressLint("NotifyDataSetChanged") fun updateDrafts() { ensureBackgroundThread { val newDrafts = HashMap<Long, String>(); fetchDrafts(newDrafts); activity.runOnUiThread { if (drafts.hashCode() != newDrafts.hashCode()) { drafts = newDrafts; notifyDataSetChanged() } } } }
     override fun getSelectableItemCount() = itemCount
     protected fun getSelectedItems() = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
@@ -73,6 +78,7 @@ abstract class BaseConversationsAdapter(
     private fun fetchDrafts(drafts: HashMap<Long, String>) { drafts.clear(); for ((threadId, draft) in activity.getAllDrafts()) drafts[threadId] = draft }
 
     private fun setupView(view: View, conversation: Conversation) {
+        DebugLog.write(activity, "ADAPTER_BIND thread=${conversation.threadId} title=${conversation.title.take(40)}")
         ItemConversationBinding.bind(view).apply {
             root.setupViewBackground(activity)
             val smsDraft = drafts[conversation.threadId]
