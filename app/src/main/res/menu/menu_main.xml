@@ -16,7 +16,7 @@
     <item
         android:id="@+id/export_debug_log"
         android:showAsAction="never"
-        android:title="@string/export_debug_log"
+        android:title="Export debug log"
         app:showAsAction="never" />
     <item
         android:id="@+id/settings"
