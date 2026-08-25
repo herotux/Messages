@@ -49,12 +49,11 @@ interface ConversationsDao {
     fun unarchive(threadId: Long)
 
     /**
-     * A sync pass may see an empty/incomplete Telephony snapshot. Never delete a
-     * cached thread that has no locally cached messages in that situation; there
-     * is no evidence in Room that the user actually deleted the conversation.
-     * Threads with locally cached messages are still removed when their messages
-     * have disappeared from the local message cache.
+     * The foreground sync can receive an empty/incomplete Telephony snapshot.
+     * Deleting Room conversations from that snapshot is unsafe because this DAO
+     * has no access to the Telephony provider to verify that a thread is gone.
+     * Actual user deletions continue through the normal deleteConversation path.
      */
-    @Query("DELETE FROM conversations WHERE thread_id = :threadId AND EXISTS (SELECT 1 FROM messages WHERE messages.thread_id = :threadId AND messages.is_scheduled = 0) AND NOT EXISTS (SELECT 1 FROM messages WHERE messages.thread_id = :threadId AND messages.is_scheduled = 0 AND messages.id IN (SELECT id FROM messages WHERE thread_id = :threadId))")
+    @Query("DELETE FROM conversations WHERE 1 = 0")
     fun deleteThreadId(threadId: Long)
 }
