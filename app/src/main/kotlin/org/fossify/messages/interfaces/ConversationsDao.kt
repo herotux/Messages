@@ -15,23 +15,17 @@ interface ConversationsDao {
     @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE archived = 0")
     fun getNonArchivedWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
-    fun getNonArchived(): List<Conversation> {
-        return getNonArchivedWithLatestSnippet().map { it.toConversation() }
-    }
+    fun getNonArchived(): List<Conversation> = getNonArchivedWithLatestSnippet().map { it.toConversation() }
 
     @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE archived = 1")
     fun getAllArchivedWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
-    fun getAllArchived(): List<Conversation> {
-        return getAllArchivedWithLatestSnippet().map { it.toConversation() }
-    }
+    fun getAllArchived(): List<Conversation> = getAllArchivedWithLatestSnippet().map { it.toConversation() }
 
     @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE (SELECT COUNT(*) FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND messages.thread_id = conversations.thread_id) > 0")
     fun getAllWithMessagesInRecycleBinWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
-    fun getAllWithMessagesInRecycleBin(): List<Conversation> {
-        return getAllWithMessagesInRecycleBinWithLatestSnippet().map { it.toConversation() }
-    }
+    fun getAllWithMessagesInRecycleBin(): List<Conversation> = getAllWithMessagesInRecycleBinWithLatestSnippet().map { it.toConversation() }
 
     @Query("SELECT * FROM conversations WHERE thread_id = :threadId")
     fun getConversationWithThreadId(threadId: Long): Conversation?
@@ -40,11 +34,10 @@ interface ConversationsDao {
     fun getUnreadConversations(): List<Conversation>
 
     /**
-     * Search conversation title/phone plus the actual SMS sender/body belonging to the thread.
-     * This makes bank searches work even when the bank name is only present in the SMS body
-     * and the conversation title is an opaque short code.
+     * Search conversation title/phone and message content/sender fields.
+     * Message.address is NOT a Room column; Message stores it as sender_phone_number.
      */
-    @Query("SELECT * FROM conversations WHERE title LIKE :text OR phone_number LIKE :text OR thread_id IN (SELECT thread_id FROM messages WHERE body LIKE :text OR address LIKE :text)")
+    @Query("SELECT * FROM conversations WHERE title LIKE :text OR phone_number LIKE :text OR thread_id IN (SELECT thread_id FROM messages WHERE body LIKE :text OR sender_phone_number LIKE :text OR sender_name LIKE :text)")
     fun getConversationsWithText(text: String): List<Conversation>
 
     @Query("UPDATE conversations SET read = 1 WHERE thread_id = :threadId")
