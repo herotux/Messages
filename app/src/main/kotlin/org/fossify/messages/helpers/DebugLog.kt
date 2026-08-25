@@ -1,12 +1,17 @@
 package org.fossify.messages.helpers
 
+import android.content.ContentValues
 import android.content.Context
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 object DebugLog {
     private const val FILE_NAME = "messages_debug.log"
+    private const val DOWNLOADS_SUBPATH = "Download/"
     private val lock = Any()
 
     fun write(context: Context, message: String) {
@@ -16,6 +21,7 @@ object DebugLog {
                 context.openFileOutput(FILE_NAME, Context.MODE_APPEND).bufferedWriter().use {
                     it.append(timestamp).append(" | ").append(message).append('\n')
                 }
+                exportToDownloads(context)
             }
         } catch (_: Exception) {
         }
@@ -23,7 +29,10 @@ object DebugLog {
 
     fun clear(context: Context) {
         try {
-            context.deleteFile(FILE_NAME)
+            synchronized(lock) {
+                context.deleteFile(FILE_NAME)
+                deleteExportedFile(context)
+            }
         } catch (_: Exception) {
         }
     }
@@ -32,5 +41,61 @@ object DebugLog {
         context.openFileInput(FILE_NAME).bufferedReader().use { it.readText() }
     } catch (_: Exception) {
         ""
+    }
+
+    /**
+     * Copies the current private debug log to the public Downloads collection.
+     * No storage permission is required on Android 10+.
+     */
+    fun exportToDownloads(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+
+        try {
+            val file = context.getFileStreamPath(FILE_NAME)
+            if (!file.exists()) return
+
+            val resolver = context.contentResolver
+            val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            val projection = arrayOf(MediaStore.Downloads._ID)
+            val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.RELATIVE_PATH} = ?"
+            val selectionArgs = arrayOf(FILE_NAME, DOWNLOADS_SUBPATH)
+
+            var uri = resolver.query(collection, projection, selection, selectionArgs, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
+                    MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY, id)
+                } else null
+            }
+
+            if (uri == null) {
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
+                    put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                    put(MediaStore.Downloads.RELATIVE_PATH, DOWNLOADS_SUBPATH)
+                }
+                uri = resolver.insert(collection, values) ?: return
+            }
+
+            resolver.openOutputStream(uri, "wt")?.use { output ->
+                file.inputStream().use { input -> input.copyTo(output) }
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun deleteExportedFile(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        try {
+            val resolver = context.contentResolver
+            val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.RELATIVE_PATH} = ?"
+            resolver.query(collection, arrayOf(MediaStore.Downloads._ID), selection, arrayOf(FILE_NAME, DOWNLOADS_SUBPATH), null)?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
+                    resolver.delete(MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY, id), null, null)
+                }
+            }
+        } catch (_: Exception) {
+        }
     }
 }
