@@ -39,8 +39,12 @@ interface ConversationsDao {
     @Query("SELECT * FROM conversations WHERE read = 0")
     fun getUnreadConversations(): List<Conversation>
 
-    /** Search contact name and address/phone without affecting message search. */
-    @Query("SELECT * FROM conversations WHERE title LIKE :text OR phone_number LIKE :text")
+    /**
+     * Search conversation title/phone plus the actual SMS sender/body belonging to the thread.
+     * This makes bank searches work even when the bank name is only present in the SMS body
+     * and the conversation title is an opaque short code.
+     */
+    @Query("SELECT * FROM conversations WHERE title LIKE :text OR phone_number LIKE :text OR thread_id IN (SELECT thread_id FROM messages WHERE body LIKE :text OR address LIKE :text)")
     fun getConversationsWithText(text: String): List<Conversation>
 
     @Query("UPDATE conversations SET read = 1 WHERE thread_id = :threadId")
