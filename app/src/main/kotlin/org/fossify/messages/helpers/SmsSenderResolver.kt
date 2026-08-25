@@ -4,10 +4,8 @@ import android.content.Context
 import android.provider.Telephony
 
 /**
- * Resolves a real incoming SMS sender for a thread.
- * Alphanumeric sender IDs must be read from ADDRESS; the conversation's
- * phoneNumber is not reliable for senders such as SEPAH BANK, TejaratBank,
- * and Bank Melli.
+ * Resolves the strongest sender identity for a conversation from real incoming SMS rows.
+ * Verified alphanumeric Sender IDs are preferred over an arbitrary latest address.
  */
 object SmsSenderResolver {
     fun getLatestSender(context: Context, threadId: Long): String? {
@@ -21,11 +19,19 @@ object SmsSenderResolver {
                 arrayOf(threadId.toString(), Telephony.Sms.MESSAGE_TYPE_INBOX.toString()),
                 "${Telephony.Sms.DATE} DESC"
             )?.use { cursor ->
+                var fallback: String? = null
                 while (cursor.moveToNext()) {
                     val sender = cursor.getString(0)?.trim().orEmpty()
-                    if (sender.isNotEmpty()) return@use sender
+                    if (sender.isEmpty()) continue
+                    if (fallback == null) fallback = sender
+                    if (BankSenderAliases.find(sender) != null ||
+                        IranianBankSenderProfiles.find(sender) != null ||
+                        IranianBankRegistry.findBySmsSender(sender) != null
+                    ) {
+                        return@use sender
+                    }
                 }
-                null
+                fallback
             }
         } catch (_: Exception) {
             null
