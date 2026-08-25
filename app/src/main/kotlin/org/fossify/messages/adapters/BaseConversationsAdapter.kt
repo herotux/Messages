@@ -42,8 +42,7 @@ abstract class BaseConversationsAdapter(
     diffUtil = ConversationDiffCallback(),
     itemClick = itemClick,
     onRefresh = onRefresh
-),
-    RecyclerViewFastScroller.OnPopupTextUpdate {
+), RecyclerViewFastScroller.OnPopupTextUpdate {
     private var fontSize = activity.getTextSize()
     private var drafts = HashMap<Long, String>()
     private var recyclerViewState: Parcelable? = null
@@ -52,7 +51,6 @@ abstract class BaseConversationsAdapter(
         setupDragListener(true)
         setHasStableIds(true)
         updateDrafts()
-
         registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onChanged() = restoreRecyclerViewState()
             override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) = restoreRecyclerViewState()
@@ -69,14 +67,9 @@ abstract class BaseConversationsAdapter(
     fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) {
         saveRecyclerViewState()
         submitList(newConversations.toList(), commitCallback)
-
-        // Never query Telephony.Sms from onBindViewHolder. Warm the sender cache in the
-        // background and refresh only the affected visual rows when it is ready.
         BankLogoThreadCache.warm(activity, newConversations.map { it.threadId }) {
             activity.runOnUiThread {
-                if (!activity.isDestroyed && !activity.isFinishing) {
-                    notifyDataSetChanged()
-                }
+                if (!activity.isDestroyed && !activity.isFinishing) notifyDataSetChanged()
             }
         }
     }
@@ -96,7 +89,6 @@ abstract class BaseConversationsAdapter(
     }
 
     override fun getSelectableItemCount() = itemCount
-
     protected fun getSelectedItems() = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
     override fun getIsItemSelectable(position: Int) = true
     override fun getItemSelectionKey(position: Int) = currentList.getOrNull(position)?.hashCode()
@@ -111,9 +103,7 @@ abstract class BaseConversationsAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val conversation = getItem(position)
-        holder.bindView(conversation, allowSingleClick = true, allowLongClick = true) { itemView, _ ->
-            setupView(itemView, conversation)
-        }
+        holder.bindView(conversation, allowSingleClick = true, allowLongClick = true) { itemView, _ -> setupView(itemView, conversation) }
         bindViewHolder(holder)
     }
 
@@ -141,7 +131,6 @@ abstract class BaseConversationsAdapter(
             pinIndicator.beVisibleIf(activity.config.pinnedConversations.contains(conversation.threadId.toString()))
             pinIndicator.applyColorFilter(textColor)
             conversationFrame.isSelected = selectedKeys.contains(conversation.hashCode())
-
             conversationAddress.apply {
                 text = conversation.title
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
@@ -151,14 +140,9 @@ abstract class BaseConversationsAdapter(
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
             }
             conversationDate.apply {
-                text = if (activity.config.usePersianCalendar) {
-                    PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(conversation.date * 1000L))
-                } else {
-                    (conversation.date * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
-                }
+                text = if (activity.config.usePersianCalendar) PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(conversation.date * 1000L)) else (conversation.date * 1000L).formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
             }
-
             val isUnread = !conversation.read
             val style = if (isUnread) {
                 conversationBodyShort.alpha = 1f
@@ -181,15 +165,8 @@ abstract class BaseConversationsAdapter(
                 conversationImage.setImageResource(bankLogoId)
                 conversationImage.alpha = 1f
             } else {
-                val placeholder = if (conversation.isGroupConversation) {
-                    SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title)
-                } else null
-                SimpleContactsHelper(activity).loadContactImage(
-                    path = conversation.photoUri,
-                    imageView = conversationImage,
-                    placeholderName = conversation.title,
-                    placeholderImage = placeholder
-                )
+                val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
+                SimpleContactsHelper(activity).loadContactImage(path = conversation.photoUri, imageView = conversationImage, placeholderName = conversation.title, placeholderImage = placeholder)
             }
         }
     }
@@ -217,6 +194,5 @@ abstract class BaseConversationsAdapter(
         override fun areItemsTheSame(oldItem: Conversation, newItem: Conversation) = Conversation.areItemsTheSame(oldItem, newItem)
         override fun areContentsTheSame(oldItem: Conversation, newItem: Conversation) = Conversation.areContentsTheSame(oldItem, newItem)
     }
-
     companion object { private const val MAX_UNREAD_BADGE_COUNT = 99 }
 }
