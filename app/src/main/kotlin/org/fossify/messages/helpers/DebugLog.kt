@@ -12,7 +12,9 @@ import java.util.Locale
 object DebugLog {
     private const val FILE_NAME = "messages_debug.log"
     private const val DOWNLOADS_SUBPATH = "Download/"
+    private const val AUTO_EXPORT_MIN_INTERVAL_MS = 2_000L
     private val lock = Any()
+    private var lastAutoExportAt = 0L
 
     fun write(context: Context, message: String) {
         try {
@@ -20,6 +22,27 @@ object DebugLog {
             synchronized(lock) {
                 context.openFileOutput(FILE_NAME, Context.MODE_APPEND).bufferedWriter().use {
                     it.append(timestamp).append(" | ").append(message).append('\n')
+                }
+            }
+
+            // During the bank-logo investigation, automatically keep a public copy of the
+            // latest debug log whenever a conversation is bound. This avoids requiring any
+            // menu/ActionProvider changes and lets us inspect the exact detector -> adapter
+            // sequence without impacting normal app startup.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && message.startsWith("ADAPTER_BIND")) {
+                val now = System.currentTimeMillis()
+                val shouldExport = synchronized(lock) {
+                    if (now - lastAutoExportAt >= AUTO_EXPORT_MIN_INTERVAL_MS) {
+                        lastAutoExportAt = now
+                        true
+                    } else {
+                        false
+                    }
+                }
+                if (shouldExport) {
+                    Thread {
+                        exportToDownloads(context.applicationContext)
+                    }.start()
                 }
             }
         } catch (_: Exception) {
