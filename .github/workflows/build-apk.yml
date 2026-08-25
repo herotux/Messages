@@ -16,9 +16,9 @@ permissions:
 
 jobs:
   test-and-build:
-    name: Test and build Core APK
+    name: Test and build Android APKs
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -40,28 +40,72 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Run unit tests
+      - name: Run Core unit tests
         run: ./gradlew testCoreDebugUnitTest --stacktrace
+
+      - name: Run FOSS unit tests
+        run: ./gradlew testFossDebugUnitTest --stacktrace
+
+      - name: Run GPlay unit tests
+        run: ./gradlew testGplayDebugUnitTest --stacktrace
 
       - name: Run lint
         run: ./gradlew lint --stacktrace
 
-      - name: Build core debug APK
+      - name: Build Core debug APK
         run: ./gradlew assembleCoreDebug --stacktrace
+
+      - name: Build FOSS debug APK
+        run: ./gradlew assembleFossDebug --stacktrace
+
+      - name: Build GPlay debug APK
+        run: ./gradlew assembleGplayDebug --stacktrace
 
       - name: Collect Core APK
         run: |
-          mkdir -p artifacts
-          APK=$(find app/build/outputs/apk -type f -name '*.apk' | head -n 1)
+          mkdir -p artifacts/core
+          APK=$(find app/build/outputs/apk -type f -name '*core*debug*.apk' | head -n 1)
           test -n "$APK"
-          cp "$APK" artifacts/Messages-core-debug.apk
-          ls -lh artifacts/Messages-core-debug.apk
+          cp "$APK" artifacts/core/Messages-core-debug.apk
+          ls -lh artifacts/core/Messages-core-debug.apk
+
+      - name: Collect FOSS APK
+        run: |
+          mkdir -p artifacts/foss
+          APK=$(find app/build/outputs/apk -type f -name '*foss*debug*.apk' | head -n 1)
+          test -n "$APK"
+          cp "$APK" artifacts/foss/Messages-foss-debug.apk
+          ls -lh artifacts/foss/Messages-foss-debug.apk
+
+      - name: Collect GPlay APK
+        run: |
+          mkdir -p artifacts/gplay
+          APK=$(find app/build/outputs/apk -type f -name '*gplay*debug*.apk' | head -n 1)
+          test -n "$APK"
+          cp "$APK" artifacts/gplay/Messages-gplay-debug.apk
+          ls -lh artifacts/gplay/Messages-gplay-debug.apk
 
       - name: Upload Core APK
         uses: actions/upload-artifact@v4
         with:
           name: Messages-core-debug
-          path: artifacts/Messages-core-debug.apk
+          path: artifacts/core/Messages-core-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload FOSS APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Messages-foss-debug
+          path: artifacts/foss/Messages-foss-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload GPlay APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Messages-gplay-debug
+          path: artifacts/gplay/Messages-gplay-debug.apk
           if-no-files-found: error
           retention-days: 14
 
