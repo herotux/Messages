@@ -21,7 +21,6 @@ object DebugLog {
                 context.openFileOutput(FILE_NAME, Context.MODE_APPEND).bufferedWriter().use {
                     it.append(timestamp).append(" | ").append(message).append('\n')
                 }
-                exportToDownloads(context)
             }
         } catch (_: Exception) {
         }
@@ -43,10 +42,7 @@ object DebugLog {
         ""
     }
 
-    /**
-     * Copies the current private debug log to the public Downloads collection.
-     * No storage permission is required on Android 10+.
-     */
+    /** Copies the current private debug log to Downloads. Call explicitly when exporting. */
     fun exportToDownloads(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
 
