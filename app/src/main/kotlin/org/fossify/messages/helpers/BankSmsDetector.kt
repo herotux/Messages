@@ -36,8 +36,12 @@ object BankSmsDetector {
     )
 
     fun detect(sender: String, body: String): Detection? {
-        // Exact sender profiles are the strongest signal for informational, OTP and service SMS,
-        // where a transaction-shaped body is not expected.
+        // Exact alphanumeric Sender IDs are stronger than body heuristics. These are
+        // deliberately kept separate from the broad registry so adding a sender cannot
+        // accidentally make ordinary text containing a bank name look like a bank SMS.
+        BankSenderAliases.find(sender)?.let {
+            return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
+        }
         IranianBankSenderProfiles.find(sender)?.let {
             return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
         }
@@ -45,29 +49,21 @@ object BankSmsDetector {
             return Detection(it, Confidence.HIGH, Reason.VERIFIED_SENDER, 100, listOf(Reason.VERIFIED_SENDER))
         }
 
-        val normalizedBody = normalizeDigits(body)
+        // Normalize Arabic/Persian spelling variants before matching. Real bank SMS samples
+        // frequently use Arabic ک/ي (e.g. «بانك ملي») while the registry uses Persian ک/ی.
+        val normalizedBody = normalizeText(normalizeDigits(body))
         val negativeHits = nonTransactionTerms.count { normalizedBody.contains(it, ignoreCase = true) }
         val termHits = transactionTerms.count { normalizedBody.contains(it, ignoreCase = true) }
         val structureHits = transactionStructure.count { it.containsMatchIn(normalizedBody) }
 
-        // An unknown sender must explicitly identify the bank in the message.
-        // A card or IBAN is only corroborating evidence after that identity is known.
+        // Unknown senders must explicitly identify the institution. A card/IBAN by itself
+        // never selects a bank.
         val bankMatch = findExplicitBankName(normalizedBody) ?: return null
-
         if (negativeHits > 0) return null
 
-        // Official service/notification SMS often contain no transaction terms at all.
-        // Require several institutional cues so an ordinary conversation mentioning a bank
-        // does not become a bank conversation.
         val officialHits = officialMessageTerms.count { normalizedBody.contains(it, ignoreCase = true) }
         if (officialHits >= 2 && termHits == 0 && structureHits == 0) {
-            return Detection(
-                bankMatch.bank,
-                Confidence.MEDIUM,
-                Reason.EXPLICIT_BANK_NAME,
-                75,
-                listOf(Reason.EXPLICIT_BANK_NAME),
-            )
+            return Detection(bankMatch.bank, Confidence.MEDIUM, Reason.EXPLICIT_BANK_NAME, 75, listOf(Reason.EXPLICIT_BANK_NAME))
         }
 
         if (termHits < 2 && structureHits < 2) return null
@@ -86,14 +82,7 @@ object BankSmsDetector {
             if (matchingCard) add(Reason.CARD_NUMBER)
             if (matchingIban) add(Reason.IBAN)
         }
-
-        return Detection(
-            bankMatch.bank,
-            if (score >= 100) Confidence.HIGH else Confidence.MEDIUM,
-            Reason.TRANSACTION_CONTEXT,
-            score,
-            reasons
-        )
+        return Detection(bankMatch.bank, if (score >= 100) Confidence.HIGH else Confidence.MEDIUM, Reason.TRANSACTION_CONTEXT, score, reasons)
     }
 
     private val officialMessageTerms = listOf(
@@ -128,10 +117,20 @@ object BankSmsDetector {
     }
 
     private fun hasExplicitInstitutionName(body: String, alias: String): Boolean {
-        val escapedAlias = Regex.escape(alias.trim())
+        val escapedAlias = Regex.escape(normalizeText(alias.trim()))
         return Regex("(?:بانک|بانکِ|موسسه اعتباری|موسسه|مؤسسه اعتباری|مؤسسه)\\s+$escapedAlias(?=$|[^آ-ی])")
             .containsMatchIn(body)
     }
+
+    private fun normalizeText(value: String): String = value
+        .replace('ك', 'ک')
+        .replace('ي', 'ی')
+        .replace('ى', 'ی')
+        .replace('ۀ', 'ه')
+        .replace('ة', 'ه')
+        .replace('\u200c', ' ')
+        .replace(Regex("\\s+"), " ")
+        .trim()
 
     private fun normalizeDigits(value: String): String = buildString(value.length) {
         value.forEach { char ->

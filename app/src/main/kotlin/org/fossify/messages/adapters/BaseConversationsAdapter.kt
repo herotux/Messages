@@ -92,16 +92,22 @@ abstract class BaseConversationsAdapter(
 
             val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
             val confirmedBank = if (!conversation.isGroupConversation) BankConversationVerificationStore.getConfirmedBank(activity, conversation.threadId) else null
-            val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) BankSmsDetector.detect(conversation.phoneNumber, conversation.snippet)?.bank else null
+            val senderCandidates = listOf(conversation.phoneNumber, conversation.title, conversation.snippet)
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+            val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) {
+                senderCandidates.firstNotNullOfOrNull { sender -> BankSmsDetector.detect(sender, conversation.snippet)?.bank }
+            } else null
             val bank = confirmedBank ?: detectedBank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
-            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) IranianSenderIconResolver.resolve(activity, conversation.phoneNumber) else null
+            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) {
+                senderCandidates.firstNotNullOfOrNull { sender -> IranianSenderIconResolver.resolve(activity, sender) }
+            } else null
             val logoRes = bankLogoRes ?: senderLogoRes
-            if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)) {
-                // Bank/sender logo was applied successfully.
-            } else {
-                SimpleContactsHelper(activity).loadContactImage(path = conversation.photoUri, imageView = conversationImage, placeholderName = conversation.title, placeholderImage = placeholder)
-            }
+            Glide.with(activity).clear(conversationImage)
+            if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)) return@apply
+            SimpleContactsHelper(activity).loadContactImage(path = conversation.photoUri, imageView = conversationImage, placeholderName = conversation.title, placeholderImage = placeholder)
         }
     }
 

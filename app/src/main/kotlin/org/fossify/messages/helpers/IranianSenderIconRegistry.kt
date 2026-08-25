@@ -21,11 +21,13 @@ object IranianSenderIconRegistry {
         SenderInfo("SEPAH_BANK", "بانک سپه", Category.BANK, listOf("BANKSEPAH", "SEPAHBANK", "BANK SEPAH", "Bank Sepah", "بانک سپه", "SEPAH BANK", "SEPAH  BANK"), "bank_sepah"),
         SenderInfo("TEJARAT_BANK", "بانک تجارت", Category.BANK, listOf("BANKTEJARAT", "TEJARATBANK", "BANK TEJARAT", "TejaratBank", "بانک تجارت"), "bank_tejarat"),
         SenderInfo("MELLI_BANK", "بانک ملی ایران", Category.BANK, listOf("BANKMELLI", "BANKMELLIIRAN", "BANK MELLI", "Bank Melli", "بانک ملی", "بانک ملی ایران", "+98700717"), "bank_melli"),
-        SenderInfo("IRANCELL", "ایرانسل", Category.TELECOM, listOf("IRANCELL", ".IRANCELL.", "IrancelleTo"), "sender_irancell"),
-        SenderInfo("MOKHABERAT", "مخابرات ایران", Category.TELECOM, listOf("MOKHABERAT", "مخابرات"), "sender_mokhaberat"),
-        SenderInfo("GAS_KURDISTAN", "گاز کردستان", Category.UTILITY, listOf("+984040102020", "گاز کردستان"), "sender_gas"),
-        SenderInfo("ELECTRICITY_KURDISTAN", "برق کردستان", Category.UTILITY, listOf("+98404014013900", "برق کردستان"), "sender_electricity"),
-        SenderInfo("SAKHD", "ساخد", Category.GOVERNMENT, listOf("+9860009621", "ساخد"), "sender_sakhd"),
+        SenderInfo("MCI", "همراه اول", Category.TELECOM, listOf("MCI", "IR-MCI", "HAMRAHE AVAL", "HAMRAHEAVAL", "همراه اول", "همراه‌اول"), "sender_mci"),
+        SenderInfo("IRANCELL", "ایرانسل", Category.TELECOM, listOf("IRANCELL", ".IRANCELL.", "IrancelleTo", "IRANCELLTO", "ایرانسل"), "sender_irancell"),
+        SenderInfo("MOKHABERAT", "مخابرات ایران", Category.TELECOM, listOf("MOKHABERAT", "TCI", "TCT", "MOKHABERATIRAN", "مخابرات", "شرکت مخابرات ایران"), "sender_mokhaberat"),
+        SenderInfo("GAS_KURDISTAN", "گاز کردستان", Category.UTILITY, listOf("+984040102020", "گاز کردستان", "گاز", "شرکت گاز", "شرکت ملی گاز ایران"), "sender_gas"),
+        SenderInfo("ELECTRICITY_KURDISTAN", "برق کردستان", Category.UTILITY, listOf("+98404014013900", "برق کردستان", "برق", "توانیر", "شرکت توانیر"), "sender_electricity"),
+        SenderInfo("WATER_IRAN", "آب و فاضلاب", Category.UTILITY, listOf("آبفا", "آب و فاضلاب", "شرکت آب و فاضلاب", "شرکت آبفا", "آبفای کردستان"), "sender_water"),
+        SenderInfo("SAKHD", "ساخد", Category.GOVERNMENT, listOf("+9860009621", "ساخد", "سازمان خدمات درمانی نیروهای مسلح", "سازمان تامین خدمات درمانی نیروهای مسلح"), "sender_sakhd"),
     )
 
     private val aliases = senders.flatMap { sender ->
