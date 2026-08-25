@@ -32,6 +32,7 @@ import org.fossify.messages.helpers.IranianBankLogoImageHelper
 import org.fossify.messages.helpers.IranianBankLogoResolver
 import org.fossify.messages.helpers.IranianSenderIconResolver
 import org.fossify.messages.helpers.PersianDateHelper
+import org.fossify.messages.helpers.SmsSenderResolver
 import org.fossify.messages.models.Conversation
 
 @Suppress("LeakingThis")
@@ -92,12 +93,22 @@ abstract class BaseConversationsAdapter(
 
             val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
             val confirmedBank = if (!conversation.isGroupConversation) BankConversationVerificationStore.getConfirmedBank(activity, conversation.threadId) else null
-            // Alphanumeric senders such as "SEPAH BANK" can be represented by the
-            // provider as the conversation title rather than phoneNumber. Check both.
-            val senderCandidates = listOf(conversation.phoneNumber, conversation.title).distinct().filter { it.isNotBlank() }
+
+            // Conversation.phoneNumber is not reliable for alphanumeric SMS senders.
+            // Resolve the real ADDRESS from the newest SMS in this thread and use it first.
+            val actualSmsSender = if (!conversation.isGroupConversation) {
+                SmsSenderResolver.getLatestSender(activity, conversation.threadId)
+            } else null
+            val senderCandidates = listOf(actualSmsSender, conversation.phoneNumber, conversation.title)
+                .filterNotNull()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+
             val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) {
-                senderCandidates.firstNotNullOfOrNull { sender -> BankSmsDetector.detect(sender, conversation.snippet)?.bank }
-                    ?: BankSmsDetector.detect(conversation.phoneNumber, conversation.snippet)?.bank
+                senderCandidates.firstNotNullOfOrNull { sender ->
+                    BankSmsDetector.detect(sender, conversation.snippet)?.bank
+                } ?: BankSmsDetector.detect(conversation.phoneNumber, conversation.snippet)?.bank
             } else null
             val bank = confirmedBank ?: detectedBank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
