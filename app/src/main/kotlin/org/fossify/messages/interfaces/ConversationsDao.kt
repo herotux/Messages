@@ -15,23 +15,17 @@ interface ConversationsDao {
     @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE archived = 0")
     fun getNonArchivedWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
-    fun getNonArchived(): List<Conversation> {
-        return getNonArchivedWithLatestSnippet().map { it.toConversation() }
-    }
+    fun getNonArchived(): List<Conversation> = getNonArchivedWithLatestSnippet().map { it.toConversation() }
 
     @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE archived = 1")
     fun getAllArchivedWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
-    fun getAllArchived(): List<Conversation> {
-        return getAllArchivedWithLatestSnippet().map { it.toConversation() }
-    }
+    fun getAllArchived(): List<Conversation> = getAllArchivedWithLatestSnippet().map { it.toConversation() }
 
     @Query("SELECT (SELECT body FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND messages.thread_id = conversations.thread_id ORDER BY messages.date DESC LIMIT 1) as new_snippet, * FROM conversations WHERE (SELECT COUNT(*) FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NOT NULL AND messages.thread_id = conversations.thread_id) > 0")
     fun getAllWithMessagesInRecycleBinWithLatestSnippet(): List<ConversationWithSnippetOverride>
 
-    fun getAllWithMessagesInRecycleBin(): List<Conversation> {
-        return getAllWithMessagesInRecycleBinWithLatestSnippet().map { it.toConversation() }
-    }
+    fun getAllWithMessagesInRecycleBin(): List<Conversation> = getAllWithMessagesInRecycleBinWithLatestSnippet().map { it.toConversation() }
 
     @Query("SELECT * FROM conversations WHERE thread_id = :threadId")
     fun getConversationWithThreadId(threadId: Long): Conversation?
@@ -39,7 +33,6 @@ interface ConversationsDao {
     @Query("SELECT * FROM conversations WHERE read = 0")
     fun getUnreadConversations(): List<Conversation>
 
-    /** Search contact name and address/phone without affecting message search. */
     @Query("SELECT * FROM conversations WHERE title LIKE :text OR phone_number LIKE :text")
     fun getConversationsWithText(text: String): List<Conversation>
 
@@ -56,11 +49,12 @@ interface ConversationsDao {
     fun unarchive(threadId: Long)
 
     /**
-     * Do not erase a cached conversation while the Telephony provider temporarily
-     * returns an incomplete/empty conversation set. A normal conversation with
-     * non-scheduled messages is only removed after its local messages are gone.
-     * Scheduled-only threads remain removable by the existing sync path.
+     * A sync pass may see an empty/incomplete Telephony snapshot. Never delete a
+     * cached thread that has no locally cached messages in that situation; there
+     * is no evidence in Room that the user actually deleted the conversation.
+     * Threads with locally cached messages are still removed when their messages
+     * have disappeared from the local message cache.
      */
-    @Query("DELETE FROM conversations WHERE thread_id = :threadId AND NOT EXISTS (SELECT 1 FROM messages WHERE messages.thread_id = :threadId AND messages.is_scheduled = 0)")
+    @Query("DELETE FROM conversations WHERE thread_id = :threadId AND EXISTS (SELECT 1 FROM messages WHERE messages.thread_id = :threadId AND messages.is_scheduled = 0) AND NOT EXISTS (SELECT 1 FROM messages WHERE messages.thread_id = :threadId AND messages.is_scheduled = 0 AND messages.id IN (SELECT id FROM messages WHERE thread_id = :threadId))")
     fun deleteThreadId(threadId: Long)
 }
