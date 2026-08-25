@@ -12,7 +12,7 @@ object IranianBankSenderProfiles {
         "MASKANBANK" to IranianBankRegistry.BankId.MASKAN,
         "BANKMASKAN" to IranianBankRegistry.BankId.MASKAN,
 
-        // Bank Melli: keep both the compact and human-form sender variants.
+        // Bank Melli: exact observed phone and human-readable sender variants.
         "+9830009417" to IranianBankRegistry.BankId.MELLI,
         "+98100041415001" to IranianBankRegistry.BankId.MELLI,
         "+98700717" to IranianBankRegistry.BankId.MELLI,
@@ -22,8 +22,7 @@ object IranianBankSenderProfiles {
         "BANKMELLIIRAN" to IranianBankRegistry.BankId.MELLI,
         "BANK MELLI" to IranianBankRegistry.BankId.MELLI,
 
-        // Bank Sepah: normalization turns both "SEPAH BANK" and "SEPAH-BANK"
-        // into the canonical SEPAHBANK key.
+        // Bank Sepah: Android may preserve spaces/separators in the sender.
         "BANKSEPAH" to IranianBankRegistry.BankId.SEPAH,
         "SEPAHBANK" to IranianBankRegistry.BankId.SEPAH,
         "SEPAH BANK" to IranianBankRegistry.BankId.SEPAH,
@@ -47,14 +46,16 @@ object IranianBankSenderProfiles {
     /**
      * Canonicalizes Android SMS sender IDs before lookup.
      *
-     * We deliberately keep '+' for international phone-number senders, but
-     * remove whitespace, separators and case differences from alphanumeric
-     * sender IDs. This makes e.g. "SEPAH BANK" == "SEPAH-BANK" ==
-     * "SEPAHBANK" and "Bank Melli" == "BANKMELLI".
+     * Keep '+' for international phone-number senders. For alphanumeric
+     * sender IDs, discard separators/punctuation and normalize case so that
+     * values such as "SEPAH BANK", "SEPAH-BANK" and "SEPAHBANK" all resolve
+     * to the same canonical key. The same applies to "Bank Melli".
      */
     private fun normalize(value: String): String = buildString(value.length) {
-        normalizeDigits(value.trim()).uppercase().forEach { char ->
-            if (!char.isWhitespace() && char != '-' && char != '_' && char != '\u200C') {
+        normalizeDigits(value.trim()).uppercase().forEachIndexed { index, char ->
+            if (char == '+' && index == 0) {
+                append(char)
+            } else if (char.isLetterOrDigit()) {
                 append(char)
             }
         }
