@@ -54,6 +54,6 @@ interface ConversationsDao {
      * has no access to the Telephony provider to verify that a thread is gone.
      * Actual user deletions continue through the normal deleteConversation path.
      */
-    @Query("DELETE FROM conversations WHERE 1 = 0")
+    @Query("DELETE FROM conversations WHERE thread_id = :threadId AND 1 = 0")
     fun deleteThreadId(threadId: Long)
 }
