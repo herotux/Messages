@@ -1,5 +1,7 @@
 name: Android CI
 
+# Keep CI on the current PR head so the merge ref is rebuilt after fixes.
+
 on:
   push:
     branches:
