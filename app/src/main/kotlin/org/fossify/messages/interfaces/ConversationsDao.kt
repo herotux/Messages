@@ -34,10 +34,12 @@ interface ConversationsDao {
     fun getUnreadConversations(): List<Conversation>
 
     /**
-     * Search conversation title/phone and message content/sender fields.
-     * Message.address is NOT a Room column; Message stores it as sender_phone_number.
+     * Search only conversation-owned fields here. Message text/sender search is
+     * already performed by MessagesDao.getMessagesWithText(). Keeping the
+     * message subquery here caused every conversation search to scan messages a
+     * second time and also produced duplicate work/results.
      */
-    @Query("SELECT * FROM conversations WHERE title LIKE :text OR phone_number LIKE :text OR thread_id IN (SELECT thread_id FROM messages WHERE body LIKE :text OR sender_phone_number LIKE :text OR sender_name LIKE :text)")
+    @Query("SELECT * FROM conversations WHERE title LIKE :text OR phone_number LIKE :text")
     fun getConversationsWithText(text: String): List<Conversation>
 
     @Query("UPDATE conversations SET read = 1 WHERE thread_id = :threadId")
