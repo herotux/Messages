@@ -21,6 +21,7 @@ object IranianBankSenderProfiles {
         "BANKMELLI" to IranianBankRegistry.BankId.MELLI,
         "BANKMELLIIRAN" to IranianBankRegistry.BankId.MELLI,
         "BANK MELLI" to IranianBankRegistry.BankId.MELLI,
+        "بانک ملی" to IranianBankRegistry.BankId.MELLI,
 
         // Bank Sepah: Android may preserve spaces/separators in the sender.
         "BANKSEPAH" to IranianBankRegistry.BankId.SEPAH,
@@ -30,11 +31,28 @@ object IranianBankSenderProfiles {
         "671557" to IranianBankRegistry.BankId.SEPAH,
         "1557" to IranianBankRegistry.BankId.SEPAH,
         "بانکسپه" to IranianBankRegistry.BankId.SEPAH,
+        "بانک سپه" to IranianBankRegistry.BankId.SEPAH,
 
         // Bank Tejarat sender variants.
         "TEJARATBANK" to IranianBankRegistry.BankId.TEJARAT,
         "BANKTEJARAT" to IranianBankRegistry.BankId.TEJARAT,
         "TEJARAT BANK" to IranianBankRegistry.BankId.TEJARAT,
+        "بانک تجارت" to IranianBankRegistry.BankId.TEJARAT,
+
+        // Bank Mellat sender variants. Keep this sender-only; no message-body parsing.
+        "MELLATBANK" to IranianBankRegistry.BankId.MELLAT,
+        "BANKMELLAT" to IranianBankRegistry.BankId.MELLAT,
+        "MELLAT BANK" to IranianBankRegistry.BankId.MELLAT,
+        "بانک ملت" to IranianBankRegistry.BankId.MELLAT,
+
+        // Tosee Taavon sender variants.
+        "TTBANK" to IranianBankRegistry.BankId.TOSEE_TAAVON,
+        "TOSEE TAAVON" to IranianBankRegistry.BankId.TOSEE_TAAVON,
+        "TOSEE TAVON" to IranianBankRegistry.BankId.TOSEE_TAAVON,
+        "BANKTOSEE TAAVON" to IranianBankRegistry.BankId.TOSEE_TAAVON,
+        "BANKTOSEETAAVON" to IranianBankRegistry.BankId.TOSEE_TAAVON,
+        "بانک توسعه تعاون" to IranianBankRegistry.BankId.TOSEE_TAAVON,
+        "توسعه تعاون" to IranianBankRegistry.BankId.TOSEE_TAAVON,
     )
 
     fun find(sender: String): IranianBankRegistry.BankInfo? {
@@ -49,7 +67,7 @@ object IranianBankSenderProfiles {
      * Keep '+' for international phone-number senders. For alphanumeric
      * sender IDs, discard separators/punctuation and normalize case so that
      * values such as "SEPAH BANK", "SEPAH-BANK" and "SEPAHBANK" all resolve
-     * to the same canonical key. The same applies to "Bank Melli".
+     * to the same canonical key.
      */
     private fun normalize(value: String): String = buildString(value.length) {
         normalizeDigits(value.trim()).uppercase().forEachIndexed { index, char ->
