@@ -1,0 +1,105 @@
+name: Apply conversation performance optimization
+
+on:
+  push:
+    branches:
+      - fix/bank-sender-only-and-sepah-logo-v4
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    if: contains(github.event.head_commit.message, '[perf-opt]') && !contains(github.event.head_commit.message, '[perf-opt-done]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/bank-sender-only-and-sepah-logo-v4
+          fetch-depth: 1
+
+      - name: Apply safe conversation caching optimizations
+        shell: python
+        run: |
+          from pathlib import Path
+
+          # 1) Cache canonical-address-id -> phone number. This removes a ContentResolver
+          # query for every occurrence of the same recipient across conversations/refreshes.
+          cache = Path('app/src/main/kotlin/org/fossify/messages/helpers/MessagingCache.kt')
+          s = cache.read_text()
+          old = '''object MessagingCache {\n    val namePhoto = LruCache<String, NamePhoto>(CACHE_SIZE)\n    internal val participantsCache = ThreadParticipantsCache(CACHE_SIZE)\n}'''
+          new = '''object MessagingCache {\n    val namePhoto = LruCache<String, NamePhoto>(CACHE_SIZE)\n    val phoneNumberByAddressId = LruCache<Int, String>(CACHE_SIZE * 2)\n    internal val participantsCache = ThreadParticipantsCache(CACHE_SIZE)\n}'''
+          if old not in s:
+              raise SystemExit('MessagingCache anchor not found')
+          cache.write_text(s.replace(old, new, 1))
+
+          # 2) Use the cache in canonical-address lookup and avoid constructing a new\n          # SimpleContactsHelper for every phone number in a thread.
+          ctx = Path('app/src/main/kotlin/org/fossify/messages/extensions/Context.kt')
+          s = ctx.read_text()
+          old = '''fun Context.getThreadContactNames(\n    phoneNumbers: List<String>,\n    privateContacts: ArrayList<SimpleContact>,\n): ArrayList<String> {\n    val names = ArrayList<String>()\n    phoneNumbers.forEach { number ->\n        val name = SimpleContactsHelper(this).getNameFromPhoneNumber(number)'''
+          new = '''fun Context.getThreadContactNames(\n    phoneNumbers: List<String>,\n    privateContacts: ArrayList<SimpleContact>,\n): ArrayList<String> {\n    val names = ArrayList<String>()\n    val simpleContactsHelper = SimpleContactsHelper(this)\n    phoneNumbers.forEach { number ->\n        val name = simpleContactsHelper.getNameFromPhoneNumber(number)'''
+          if old not in s:
+              raise SystemExit('getThreadContactNames anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''fun Context.getPhoneNumberFromAddressId(canonicalAddressId: Int): String {\n    val uri = Uri.withAppendedPath(MmsSms.CONTENT_URI, "canonical-addresses")'''
+          new = '''fun Context.getPhoneNumberFromAddressId(canonicalAddressId: Int): String {\n    MessagingCache.phoneNumberByAddressId.get(canonicalAddressId)?.let { return it }\n\n    val uri = Uri.withAppendedPath(MmsSms.CONTENT_URI, "canonical-addresses")'''
+          if old not in s:
+              raise SystemExit('getPhoneNumberFromAddressId anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''            if (cursor.moveToFirst()) {\n                return cursor.getStringValue(Mms.Addr.ADDRESS)\n            }'''
+          new = '''            if (cursor.moveToFirst()) {\n                val number = cursor.getStringValue(Mms.Addr.ADDRESS)\n                MessagingCache.phoneNumberByAddressId.put(canonicalAddressId, number)\n                return number\n            }'''
+          if old not in s:
+              raise SystemExit('canonical address return anchor not found')
+          s = s.replace(old, new, 1)
+          ctx.write_text(s)
+
+          # 3) Remove repeated O(n^2) list scans while reconciling the cached conversation list.
+          main = Path('app/src/main/kotlin/org/fossify/messages/activities/MainActivity.kt')
+          s = main.read_text()
+          old = '''            conversations.forEach { clonedConversation ->\n                val threadIds = cachedConversations.map { it.threadId }\n                if (!threadIds.contains(clonedConversation.threadId)) {\n                    conversationsDB.insertOrUpdate(clonedConversation)\n                    cachedConversations.add(clonedConversation)\n                }\n            }'''
+          new = '''            val cachedByThreadId = cachedConversations.associateBy { it.threadId }.toMutableMap()\n            conversations.forEach { clonedConversation ->\n                if (!cachedByThreadId.containsKey(clonedConversation.threadId)) {\n                    conversationsDB.insertOrUpdate(clonedConversation)\n                    cachedConversations.add(clonedConversation)\n                    cachedByThreadId[clonedConversation.threadId] = clonedConversation\n                }\n            }'''
+          if old not in s:
+              raise SystemExit('conversation insertion anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''                val isTemporaryThread = cachedConversation.isScheduled\n                val isConversationDeleted = !conversations.map { it.threadId }.contains(threadId)'''
+          new = '''                val isTemporaryThread = cachedConversation.isScheduled\n                val isConversationDeleted = !conversationsByThreadId.containsKey(threadId)'''
+          if old not in s:
+              raise SystemExit('conversation deletion anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''            cachedConversations.forEach { cachedConversation ->\n                val threadId = cachedConversation.threadId\n\n                val isTemporaryThread = cachedConversation.isScheduled\n                val isConversationDeleted = !conversationsByThreadId.containsKey(threadId)'''
+          new = '''            val conversationsByThreadId = conversations.associateBy { it.threadId }\n            val conversationsByPhone = conversations.associateBy { it.phoneNumber }\n\n            cachedConversations.forEach { cachedConversation ->\n                val threadId = cachedConversation.threadId\n\n                val isTemporaryThread = cachedConversation.isScheduled\n                val isConversationDeleted = !conversationsByThreadId.containsKey(threadId)'''
+          if old not in s:
+              raise SystemExit('conversation map anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''                val newConversation =\n                    conversations.find { it.phoneNumber == cachedConversation.phoneNumber }'''
+          new = '''                val newConversation = conversationsByPhone[cachedConversation.phoneNumber]'''
+          if old not in s:
+              raise SystemExit('conversation phone lookup anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''            cachedConversations.forEach { cachedConv ->\n                val conv = conversations.find {\n                    it.threadId == cachedConv.threadId && !Conversation.areContentsTheSame(\n                        old = cachedConv, new = it\n                    )\n                }'''
+          new = '''            cachedConversations.forEach { cachedConv ->\n                val candidate = conversationsByThreadId[cachedConv.threadId]\n                val conv = candidate?.takeUnless {\n                    Conversation.areContentsTheSame(old = cachedConv, new = it)\n                }'''
+          if old not in s:
+              raise SystemExit('conversation content lookup anchor not found')
+          s = s.replace(old, new, 1)
+          main.write_text(s)
+
+      - name: Verify patch
+        run: |
+          git diff --check
+          ./gradlew :app:compileDebugKotlin --no-daemon --stacktrace
+
+      - name: Commit optimization
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/org/fossify/messages/helpers/MessagingCache.kt \
+                  app/src/main/kotlin/org/fossify/messages/extensions/Context.kt \
+                  app/src/main/kotlin/org/fossify/messages/activities/MainActivity.kt
+          git commit -m "[perf-opt-done] optimize conversation refresh lookups"
+          git push origin HEAD:fix/bank-sender-only-and-sepah-logo-v4
