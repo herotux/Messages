@@ -61,11 +61,19 @@ object IranianBankSenderProfiles {
         val normalized = normalize(sender)
         val id = normalizedSenders[normalized]
         if (id in tracedBanks) {
-            Log.d(TAG, "BANK_SENDER_MATCH raw=${sender.take(80)} normalized=$normalized bankId=$id")
+            safeLog("BANK_SENDER_MATCH raw=${sender.take(80)} normalized=$normalized bankId=$id")
         } else if (id == null && (sender.contains("MELLAT", true) || sender.contains("TEJARAT", true) || sender.contains("SEPAH", true) || sender.contains("MELLI", true) || sender.contains("TOSEE", true) || sender.contains("توسعه") || sender.contains("ملت") || sender.contains("تجارت") || sender.contains("سپه") || sender.contains("ملی"))) {
-            Log.d(TAG, "BANK_SENDER_MISS raw=${sender.take(80)} normalized=$normalized")
+            safeLog("BANK_SENDER_MISS raw=${sender.take(80)} normalized=$normalized")
         }
         return id?.let(IranianBankRegistry::findById)
+    }
+
+    private fun safeLog(message: String) {
+        try {
+            Log.d(TAG, message)
+        } catch (_: Throwable) {
+            // android.util.Log is not implemented by plain JVM unit-test stubs.
+        }
     }
 
     private fun normalize(value: String): String = buildString(value.length) {
