@@ -60,7 +60,7 @@ object IranianBankSenderProfiles {
     fun find(sender: String): IranianBankRegistry.BankInfo? {
         val normalized = normalize(sender)
         val id = normalizedSenders[normalized]
-        if (sender.contains("SEPAH", true) || sender.contains("سپه", true) || normalized.contains("SEPAH")) {
+        if (isSepahCandidate(sender)) {
             safeLog("SEPAH_DETECT_START raw=${sender.take(80)} rawLength=${sender.length} normalized=$normalized normalizedLength=${normalized.length}")
             safeLog("SEPAH_DETECT_PROFILE normalized=$normalized mappedBank=$id")
         }
@@ -74,6 +74,24 @@ object IranianBankSenderProfiles {
             safeLog("SEPAH_DETECT_RESULT normalized=$normalized bankId=${result?.id} english=${result?.englishName} logoResource=${result?.logoResourceName}")
         }
         return result
+    }
+
+    /** Returns true when the sender itself looks like a Sepah sender identifier. */
+    fun isSepahCandidate(sender: String): Boolean {
+        val normalized = normalize(sender)
+        return normalizedSenders[normalized] == IranianBankRegistry.BankId.SEPAH ||
+            normalized.contains("SEPAH") ||
+            normalized.contains("سپه") ||
+            normalized == "30001557" ||
+            normalized == "671557" ||
+            normalized == "1557"
+    }
+
+    /** Debug-only representation used by the conversation UI logs. */
+    fun debugNormalize(sender: String): String {
+        val normalized = normalize(sender)
+        val codePoints = sender.take(120).joinToString(",") { it.code.toString() }
+        return "raw=${sender.take(120)} normalized=$normalized rawLength=${sender.length} normalizedLength=${normalized.length} codePoints=$codePoints"
     }
 
     private fun safeLog(message: String) {
