@@ -39,12 +39,15 @@ jobs:
 
       - name: Import bank VectorDrawable resources
         run: |
-          # The project now uses the SVG-derived XML VectorDrawables exclusively.
-          # Remove legacy PNGs with the same resource names to avoid Android
-          # resource-merger collisions.
-          rm -f app/src/main/res/drawable/bank_*.png
+          # All bank logos use generated VectorDrawables except Sepah.
+          # Sepah must remain a PNG because its vector resource is not safe
+          # for the Android versions targeted by this project.
+          find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
           rm -f app/src/main/res/drawable/bank_*.xml
+          test -f app/src/main/res/drawable/bank_sepah.png
           python3 tools/import_iranian_bank_logos.py
+          test -f app/src/main/res/drawable/bank_sepah.png
+          test ! -e app/src/main/res/drawable/bank_sepah.xml
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
