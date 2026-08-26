@@ -1,3 +1,4 @@
+# One-shot optimizer; the source patch is committed back to the target branch.
 name: Apply conversation performance fix
 
 on:
