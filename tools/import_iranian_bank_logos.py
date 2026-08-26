@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Import Iranian bank SVG logos as Android VectorDrawable XML resources."""
+"""Import Iranian bank SVG logos as Android VectorDrawable XML resources.
+
+Sepah is intentionally kept as a PNG resource because its Android vector
+conversion has caused compatibility/rendering problems in the app.
+"""
 
 from __future__ import annotations
 
@@ -17,10 +21,10 @@ LOGOS = {
     "bank_saderat": "saderat-color.svg",
     "bank_mellat": "mellat-color.svg",
 
-    # These three are bundled locally from the SVG files supplied by the user.
+    # These are bundled locally from the SVG files supplied by the user.
     "bank_tejarat": "bank_tejarat.svg",
     "bank_melli": "bank_melli.svg",
-    "bank_sepah": "bank_sepah.svg",
+    # bank_sepah is intentionally excluded: the app uses bank_sepah.png.
 
     "bank_keshavarzi": "keshavarzi-color.svg",
     "bank_parsian": "parsian-color.svg",
@@ -47,11 +51,9 @@ LOGOS = {
     "bank_melal": "melall-color.svg",
 }
 
-
 LOCAL_LOGOS = {
     "bank_tejarat",
     "bank_melli",
-    "bank_sepah",
 }
 
 
@@ -91,6 +93,15 @@ def convert(svg_path: pathlib.Path, xml_path: pathlib.Path) -> None:
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
 
+    # Never allow the old/problematic Sepah vector resource to survive a run.
+    sepah_xml = OUT / "bank_sepah.xml"
+    sepah_xml.unlink(missing_ok=True)
+
+    # The PNG is the authoritative Sepah logo resource.
+    sepah_png = OUT / "bank_sepah.png"
+    if not sepah_png.is_file():
+        raise RuntimeError(f"Required Sepah PNG is missing: {sepah_png}")
+
     tmp = ROOT / ".bank-logo-svg-tmp"
     tmp.mkdir(exist_ok=True)
 
@@ -117,6 +128,8 @@ def main() -> None:
 
             convert(svg_path, xml_path)
             print(f"created {xml_path}")
+
+        print(f"kept {sepah_png} as PNG; bank_sepah.xml is intentionally not generated")
 
     finally:
         for path in tmp.glob("*"):
