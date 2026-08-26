@@ -10,8 +10,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "app/src/main/res/drawable"
 BASE_URL = "https://raw.githubusercontent.com/snapp-store/iranian-banks-react-icons/main/optimized/"
 
-# Android resource name -> verified upstream SVG filename.
-# Keep this list limited to files that actually exist upstream.
+# Android resource name -> upstream SVG filename.
 LOGOS = {
     "bank_saderat": "saderat-color.svg",
     "bank_mellat": "mellat-color.svg",
@@ -43,6 +42,15 @@ LOGOS = {
     "bank_melal": "melall-color.svg",
 }
 
+# For the three affected banks, use the exact SVG files supplied by the
+# Wikimedia/Wikipedia pages the project selected. The Commons redirect
+# resolves to the original SVG and urllib follows that redirect.
+SOURCE_URLS = {
+    "bank_sepah": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Bank_Sepah_logo.svg",
+    "bank_melli": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Bank_Melli_Iran_Logo.svg",
+    "bank_tejarat": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Tejarat_Bank_Logo.svg",
+}
+
 
 def fetch(url: str, dest: pathlib.Path) -> None:
     request = urllib.request.Request(url, headers={"User-Agent": "Messages-bank-logo-import/1.0"})
@@ -54,8 +62,8 @@ def fetch(url: str, dest: pathlib.Path) -> None:
 
 
 def convert(svg_path: pathlib.Path, xml_path: pathlib.Path) -> None:
-    # Use npx so CI does not depend on a globally installed executable.
-    # The package documents `s2v` as its CLI entry point.
+    # svg2vectordrawable converts SVG paths/strokes into Android-safe
+    # VectorDrawable XML. Keep precision at 3 to avoid unnecessarily huge XML.
     subprocess.run(
         [
             "npx", "--yes", "--package", "svg2vectordrawable@2.9.1",
@@ -73,7 +81,7 @@ def main() -> None:
         for resource_name, filename in LOGOS.items():
             svg_path = tmp / filename
             xml_path = OUT / f"{resource_name}.xml"
-            url = BASE_URL + filename
+            url = SOURCE_URLS.get(resource_name, BASE_URL + filename)
             print(f"download {url}")
             fetch(url, svg_path)
             convert(svg_path, xml_path)
