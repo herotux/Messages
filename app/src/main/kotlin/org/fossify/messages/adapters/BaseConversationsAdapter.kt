@@ -27,9 +27,9 @@ import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
 import org.fossify.messages.helpers.BankConversationVerificationStore
-import org.fossify.messages.helpers.DebugLog
 import org.fossify.messages.helpers.IranianBankLogoImageHelper
 import org.fossify.messages.helpers.IranianBankLogoResolver
+import org.fossify.messages.helpers.IranianBankRegistry
 import org.fossify.messages.helpers.IranianBankSenderProfiles
 import org.fossify.messages.helpers.IranianSenderIconResolver
 import org.fossify.messages.helpers.PersianDateHelper
@@ -41,10 +41,21 @@ abstract class BaseConversationsAdapter(
     recyclerView: MyRecyclerView,
     onRefresh: () -> Unit,
     itemClick: (Any) -> Unit,
-) : MyRecyclerViewListAdapter<Conversation>(activity = activity, recyclerView = recyclerView, diffUtil = ConversationDiffCallback(), itemClick = itemClick, onRefresh = onRefresh), RecyclerViewFastScroller.OnPopupTextUpdate {
+) : MyRecyclerViewListAdapter<Conversation>(
+    activity = activity,
+    recyclerView = recyclerView,
+    diffUtil = ConversationDiffCallback(),
+    itemClick = itemClick,
+    onRefresh = onRefresh
+), RecyclerViewFastScroller.OnPopupTextUpdate {
     private var fontSize = activity.getTextSize()
     private var drafts = HashMap<Long, String>()
     private var recyclerViewState: Parcelable? = null
+
+    // Bank detection is presentation data. Never recompute it for every RecyclerView bind.
+    // The list is refreshed when the conversation list changes, while recycled views only
+    // render the cached result.
+    private val bankCache = HashMap<Long, IranianBankRegistry.BankInfo?>()
 
     init {
         setupDragListener(true)
@@ -57,98 +68,192 @@ abstract class BaseConversationsAdapter(
         })
     }
 
-    @SuppressLint("NotifyDataSetChanged") fun updateFontSize() { fontSize = activity.getTextSize(); notifyDataSetChanged() }
-    fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) {
-        DebugLog.write(activity, "ADAPTER_UPDATE_CONVERSATIONS count=${newConversations.size} threads=${newConversations.take(5).joinToString(",") { it.threadId.toString() }}")
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateFontSize() {
+        fontSize = activity.getTextSize()
+        notifyDataSetChanged()
+    }
+
+    fun updateConversations(
+        newConversations: ArrayList<Conversation>,
+        commitCallback: (() -> Unit)? = null,
+    ) {
         saveRecyclerViewState()
+        bankCache.clear()
         submitList(newConversations.toList(), commitCallback)
     }
-    @SuppressLint("NotifyDataSetChanged") fun updateDrafts() { ensureBackgroundThread { val newDrafts = HashMap<Long, String>(); fetchDrafts(newDrafts); activity.runOnUiThread { if (drafts.hashCode() != newDrafts.hashCode()) { drafts = newDrafts; notifyDataSetChanged() } } } }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateDrafts() {
+        ensureBackgroundThread {
+            val newDrafts = HashMap<Long, String>()
+            fetchDrafts(newDrafts)
+            activity.runOnUiThread {
+                if (drafts.hashCode() != newDrafts.hashCode()) {
+                    drafts = newDrafts
+                    notifyDataSetChanged()
+                }
+            }
+        }
+    }
+
     override fun getSelectableItemCount() = itemCount
-    protected fun getSelectedItems() = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
+
+    protected fun getSelectedItems() = currentList.filter {
+        selectedKeys.contains(it.hashCode())
+    } as ArrayList<Conversation>
+
     override fun getIsItemSelectable(position: Int) = true
     override fun getItemSelectionKey(position: Int) = currentList.getOrNull(position)?.hashCode()
     override fun getItemKeyPosition(key: Int) = currentList.indexOfFirst { it.hashCode() == key }
     override fun onActionModeCreated() {}
     override fun onActionModeDestroyed() {}
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder { val binding = ItemConversationBinding.inflate(layoutInflater, parent, false); return createViewHolder(binding.root) }
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) { val conversation = getItem(position); holder.bindView(conversation, allowSingleClick = true, allowLongClick = true) { itemView, _ -> setupView(itemView, conversation) }; bindViewHolder(holder) }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = ItemConversationBinding.inflate(layoutInflater, parent, false)
+        return createViewHolder(binding.root)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val conversation = getItem(position)
+        holder.bindView(conversation, allowSingleClick = true, allowLongClick = true) { itemView, _ ->
+            setupView(itemView, conversation)
+        }
+        bindViewHolder(holder)
+    }
+
     override fun getItemId(position: Int) = getItem(position).threadId
-    override fun onViewRecycled(holder: ViewHolder) { super.onViewRecycled(holder); if (!activity.isDestroyed && !activity.isFinishing) Glide.with(activity).clear(ItemConversationBinding.bind(holder.itemView).conversationImage) }
-    private fun fetchDrafts(drafts: HashMap<Long, String>) { drafts.clear(); for ((threadId, draft) in activity.getAllDrafts()) drafts[threadId] = draft }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        super.onViewRecycled(holder)
+        if (!activity.isDestroyed && !activity.isFinishing) {
+            Glide.with(activity).clear(ItemConversationBinding.bind(holder.itemView).conversationImage)
+        }
+    }
+
+    private fun fetchDrafts(drafts: HashMap<Long, String>) {
+        drafts.clear()
+        for ((threadId, draft) in activity.getAllDrafts()) drafts[threadId] = draft
+    }
+
+    private fun getBankForConversation(conversation: Conversation): IranianBankRegistry.BankInfo? {
+        if (conversation.isGroupConversation) return null
+        val threadId = conversation.threadId
+        if (bankCache.containsKey(threadId)) return bankCache[threadId]
+
+        val confirmed = BankConversationVerificationStore.getConfirmedBank(activity, threadId)
+        val detected = confirmed ?: IranianBankSenderProfiles.find(conversation.phoneNumber)
+        bankCache[threadId] = detected
+        return detected
+    }
 
     private fun setupView(view: View, conversation: Conversation) {
-        DebugLog.write(activity, "ADAPTER_BIND thread=${conversation.threadId} title=${conversation.title.take(40)}")
         ItemConversationBinding.bind(view).apply {
             root.setupViewBackground(activity)
             val smsDraft = drafts[conversation.threadId]
-            draftIndicator.beVisibleIf(!smsDraft.isNullOrEmpty()); draftIndicator.setTextColor(properPrimaryColor)
-            pinIndicator.beVisibleIf(activity.config.pinnedConversations.contains(conversation.threadId.toString())); pinIndicator.applyColorFilter(textColor)
+            draftIndicator.beVisibleIf(!smsDraft.isNullOrEmpty())
+            draftIndicator.setTextColor(properPrimaryColor)
+
+            pinIndicator.beVisibleIf(activity.config.pinnedConversations.contains(conversation.threadId.toString()))
+            pinIndicator.applyColorFilter(textColor)
             conversationFrame.isSelected = selectedKeys.contains(conversation.hashCode())
-            conversationAddress.text = conversation.title; conversationAddress.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
-            conversationBodyShort.text = smsDraft ?: conversation.snippet; conversationBodyShort.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
-            conversationDate.text = if (activity.config.usePersianCalendar) PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(conversation.date * 1000L)) else (conversation.date * 1000L).formatDateOrTime(context = activity, hideTimeOnOtherDays = true, showCurrentYear = false)
-            conversationDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
+
+            conversationAddress.apply {
+                text = conversation.title
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
+            }
+            conversationBodyShort.apply {
+                text = smsDraft ?: conversation.snippet
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
+            }
+            conversationDate.apply {
+                text = if (activity.config.usePersianCalendar) {
+                    PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(conversation.date * 1000L))
+                } else {
+                    (conversation.date * 1000L).formatDateOrTime(
+                        context = activity,
+                        hideTimeOnOtherDays = true,
+                        showCurrentYear = false
+                    )
+                }
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
+            }
+
             val isUnread = !conversation.read
             conversationBodyShort.alpha = if (isUnread) 1f else 0.7f
-            val style = if (isUnread) { if (conversation.isScheduled) Typeface.BOLD_ITALIC else Typeface.BOLD } else { if (conversation.isScheduled) Typeface.ITALIC else Typeface.NORMAL }
-            val customTypeface = FontHelper.getTypeface(activity); conversationAddress.setTypeface(customTypeface, style); conversationBodyShort.setTypeface(customTypeface, style); conversationDate.setTypeface(customTypeface, style)
+            val style = if (isUnread) {
+                if (conversation.isScheduled) Typeface.BOLD_ITALIC else Typeface.BOLD
+            } else {
+                if (conversation.isScheduled) Typeface.ITALIC else Typeface.NORMAL
+            }
+            val customTypeface = FontHelper.getTypeface(activity)
+            conversationAddress.setTypeface(customTypeface, style)
+            conversationBodyShort.setTypeface(customTypeface, style)
+            conversationDate.setTypeface(customTypeface, style)
             arrayListOf(conversationAddress, conversationBodyShort, conversationDate).forEach { it.setTextColor(textColor) }
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
 
-            val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
-            val sepahTitleContext = conversation.title.contains("سپه") || conversation.title.contains("SEPAH", ignoreCase = true)
-            val sepahSnippetContext = conversation.snippet.contains("سپه") || conversation.snippet.contains("SEPAH", ignoreCase = true)
-            val sepahSenderContext = IranianBankSenderProfiles.isSepahCandidate(conversation.phoneNumber)
-            val sepahContext = !conversation.isGroupConversation && (sepahTitleContext || sepahSnippetContext || sepahSenderContext)
-
-            if (sepahContext) {
-                DebugLog.write(activity, "SEPAH_UI_INPUT thread=${conversation.threadId} title=${conversation.title.take(120)} snippet=${conversation.snippet.take(160)} sender=${conversation.phoneNumber.take(120)} group=${conversation.isGroupConversation}")
-                DebugLog.write(activity, "SEPAH_UI_INPUT_NORMALIZED ${IranianBankSenderProfiles.debugNormalize(conversation.phoneNumber)}")
-                DebugLog.write(activity, "SEPAH_UI_INPUT_CONTEXT titleMatch=$sepahTitleContext snippetMatch=$sepahSnippetContext senderMatch=$sepahSenderContext")
+            val placeholder = if (conversation.isGroupConversation) {
+                SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title)
+            } else {
+                null
             }
 
-            val confirmedBank = if (!conversation.isGroupConversation) BankConversationVerificationStore.getConfirmedBank(activity, conversation.threadId) else null
-            val senderBank = if (!conversation.isGroupConversation) IranianBankSenderProfiles.find(conversation.phoneNumber) else null
-            val bank = confirmedBank ?: senderBank
-
-            if (sepahContext) {
-                DebugLog.write(activity, "SEPAH_UI_DETECTION confirmed=${confirmedBank?.id} senderProfile=${senderBank?.id} selected=${bank?.id}")
-                if (bank == null) {
-                    DebugLog.write(activity, "SEPAH_UI_DETECTION_MISS thread=${conversation.threadId} reason=no_confirmed_bank_and_sender_profile sender=${conversation.phoneNumber.take(120)}")
-                }
-            }
-
+            val bank = getBankForConversation(conversation)
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
-            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) IranianSenderIconResolver.resolve(activity, conversation.phoneNumber) else null
+            val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) {
+                IranianSenderIconResolver.resolve(activity, conversation.phoneNumber)
+            } else {
+                null
+            }
             val logoRes = bankLogoRes ?: senderLogoRes
 
-            if (sepahContext || bank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
-                DebugLog.write(activity, "SEPAH_UI_LOGO bankId=${bank?.id} bankLogoRes=$bankLogoRes senderLogoRes=$senderLogoRes finalLogoRes=$logoRes")
-            }
-
             val logoApplied = logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)
-            if (sepahContext || bank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
-                DebugLog.write(activity, "SEPAH_UI_IMAGE_RESULT thread=${conversation.threadId} logoRes=$logoRes applied=$logoApplied imageViewId=${conversationImage.id}")
-            }
-
             if (!logoApplied) {
-                if (sepahContext || senderBank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH || confirmedBank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
-                    DebugLog.write(activity, "SEPAH_UI_FALLBACK_CONTACT thread=${conversation.threadId} photoUri=${conversation.photoUri != null} reason=logo_not_applied")
-                }
-                SimpleContactsHelper(activity).loadContactImage(path = conversation.photoUri, imageView = conversationImage, placeholderName = conversation.title, placeholderImage = placeholder)
-            }
-
-            if (sepahContext) {
-                DebugLog.write(activity, "SEPAH_UI_END thread=${conversation.threadId}")
+                SimpleContactsHelper(activity).loadContactImage(
+                    path = conversation.photoUri,
+                    imageView = conversationImage,
+                    placeholderName = conversation.title,
+                    placeholderImage = placeholder
+                )
             }
         }
     }
 
-    private fun setupBadgeCount(view: TextView, isUnread: Boolean, count: Int) { view.apply { beVisibleIf(isUnread); if (isUnread) { text = when { count > MAX_UNREAD_BADGE_COUNT -> "$MAX_UNREAD_BADGE_COUNT+"; count == 0 -> ""; else -> count.toString() }; setTextColor(properPrimaryColor.getContrastColor()); background?.applyColorFilter(properPrimaryColor) } } }
+    private fun setupBadgeCount(view: TextView, isUnread: Boolean, count: Int) {
+        view.apply {
+            beVisibleIf(isUnread)
+            if (isUnread) {
+                text = when {
+                    count > MAX_UNREAD_BADGE_COUNT -> "$MAX_UNREAD_BADGE_COUNT+"
+                    count == 0 -> ""
+                    else -> count.toString()
+                }
+                setTextColor(properPrimaryColor.getContrastColor())
+                background?.applyColorFilter(properPrimaryColor)
+            }
+        }
+    }
+
     override fun onChange(position: Int) = currentList.getOrNull(position)?.title ?: ""
-    private fun saveRecyclerViewState() { recyclerViewState = recyclerView.layoutManager?.onSaveInstanceState() }
-    private fun restoreRecyclerViewState() { recyclerView.layoutManager?.onRestoreInstanceState(recyclerViewState) }
-    private class ConversationDiffCallback : DiffUtil.ItemCallback<Conversation>() { override fun areItemsTheSame(oldItem: Conversation, newItem: Conversation) = Conversation.areItemsTheSame(oldItem, newItem); override fun areContentsTheSame(oldItem: Conversation, newItem: Conversation) = Conversation.areContentsTheSame(oldItem, newItem) }
-    companion object { private const val MAX_UNREAD_BADGE_COUNT = 99 }
+
+    private fun saveRecyclerViewState() {
+        recyclerViewState = recyclerView.layoutManager?.onSaveInstanceState()
+    }
+
+    private fun restoreRecyclerViewState() {
+        recyclerView.layoutManager?.onRestoreInstanceState(recyclerViewState)
+    }
+
+    private class ConversationDiffCallback : DiffUtil.ItemCallback<Conversation>() {
+        override fun areItemsTheSame(oldItem: Conversation, newItem: Conversation) =
+            Conversation.areItemsTheSame(oldItem, newItem)
+
+        override fun areContentsTheSame(oldItem: Conversation, newItem: Conversation) =
+            Conversation.areContentsTheSame(oldItem, newItem)
+    }
+
+    companion object {
+        private const val MAX_UNREAD_BADGE_COUNT = 99
+    }
 }
