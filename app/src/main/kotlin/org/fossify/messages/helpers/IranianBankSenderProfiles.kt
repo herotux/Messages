@@ -90,7 +90,7 @@ object IranianBankSenderProfiles {
     /** Debug-only representation used by the conversation UI logs. */
     fun debugNormalize(sender: String): String {
         val normalized = normalize(sender)
-        val codePoints = sender.take(120).joinToString(",") { it.code.toString() }
+        val codePoints = sender.take(120).map { it.code.toString() }.joinToString(",")
         return "raw=${sender.take(120)} normalized=$normalized rawLength=${sender.length} normalizedLength=${normalized.length} codePoints=$codePoints"
     }
 
