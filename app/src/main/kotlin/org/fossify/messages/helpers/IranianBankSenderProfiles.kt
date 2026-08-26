@@ -11,8 +11,6 @@ object IranianBankSenderProfiles {
         "+9820003502" to IranianBankRegistry.BankId.SHAHR,
         "MASKANBANK" to IranianBankRegistry.BankId.MASKAN,
         "BANKMASKAN" to IranianBankRegistry.BankId.MASKAN,
-
-        // Bank Melli: exact observed phone and human-readable sender variants.
         "+9830009417" to IranianBankRegistry.BankId.MELLI,
         "+98100041415001" to IranianBankRegistry.BankId.MELLI,
         "+98700717" to IranianBankRegistry.BankId.MELLI,
@@ -22,8 +20,6 @@ object IranianBankSenderProfiles {
         "BANKMELLIIRAN" to IranianBankRegistry.BankId.MELLI,
         "BANK MELLI" to IranianBankRegistry.BankId.MELLI,
         "بانک ملی" to IranianBankRegistry.BankId.MELLI,
-
-        // Bank Sepah: Android may preserve spaces/separators in the sender.
         "BANKSEPAH" to IranianBankRegistry.BankId.SEPAH,
         "SEPAHBANK" to IranianBankRegistry.BankId.SEPAH,
         "SEPAH BANK" to IranianBankRegistry.BankId.SEPAH,
@@ -32,20 +28,14 @@ object IranianBankSenderProfiles {
         "1557" to IranianBankRegistry.BankId.SEPAH,
         "بانکسپه" to IranianBankRegistry.BankId.SEPAH,
         "بانک سپه" to IranianBankRegistry.BankId.SEPAH,
-
-        // Bank Tejarat sender variants.
         "TEJARATBANK" to IranianBankRegistry.BankId.TEJARAT,
         "BANKTEJARAT" to IranianBankRegistry.BankId.TEJARAT,
         "TEJARAT BANK" to IranianBankRegistry.BankId.TEJARAT,
         "بانک تجارت" to IranianBankRegistry.BankId.TEJARAT,
-
-        // Bank Mellat sender variants. Keep this sender-only; no message-body parsing.
         "MELLATBANK" to IranianBankRegistry.BankId.MELLAT,
         "BANKMELLAT" to IranianBankRegistry.BankId.MELLAT,
         "MELLAT BANK" to IranianBankRegistry.BankId.MELLAT,
         "بانک ملت" to IranianBankRegistry.BankId.MELLAT,
-
-        // Tosee Taavon sender variants.
         "TTBANK" to IranianBankRegistry.BankId.TOSEE_TAAVON,
         "TOSEE TAAVON" to IranianBankRegistry.BankId.TOSEE_TAAVON,
         "TOSEE TAVON" to IranianBankRegistry.BankId.TOSEE_TAAVON,
@@ -55,27 +45,32 @@ object IranianBankSenderProfiles {
         "توسعه تعاون" to IranianBankRegistry.BankId.TOSEE_TAAVON,
     )
 
+    private val tracedBanks = setOf(
+        IranianBankRegistry.BankId.SEPAH,
+        IranianBankRegistry.BankId.MELLI,
+        IranianBankRegistry.BankId.TEJARAT,
+        IranianBankRegistry.BankId.MELLAT,
+        IranianBankRegistry.BankId.TOSEE_TAAVON,
+    )
+
     fun find(sender: String): IranianBankRegistry.BankInfo? {
         val normalized = normalize(sender)
-        val id = normalizedSenders[normalized] ?: return null
-        return IranianBankRegistry.findById(id)
+        val id = normalizedSenders[normalized]
+        if (id in tracedBanks) {
+            DebugLog.write(
+                null,
+                "BANK_SENDER_MATCH raw=${sender.take(80)} normalized=$normalized bankId=$id"
+            )
+        } else if (id == null && (sender.contains("MELLAT", true) || sender.contains("TEJARAT", true) || sender.contains("SEPAH", true) || sender.contains("MELLI", true) || sender.contains("TOSEE", true) || sender.contains("توسعه") || sender.contains("ملت") || sender.contains("تجارت") || sender.contains("سپه") || sender.contains("ملی"))) {
+            DebugLog.write(null, "BANK_SENDER_MISS raw=${sender.take(80)} normalized=$normalized")
+        }
+        return id?.let(IranianBankRegistry::findById)
     }
 
-    /**
-     * Canonicalizes Android SMS sender IDs before lookup.
-     *
-     * Keep '+' for international phone-number senders. For alphanumeric
-     * sender IDs, discard separators/punctuation and normalize case so that
-     * values such as "SEPAH BANK", "SEPAH-BANK" and "SEPAHBANK" all resolve
-     * to the same canonical key.
-     */
     private fun normalize(value: String): String = buildString(value.length) {
         normalizeDigits(value.trim()).uppercase().forEachIndexed { index, char ->
-            if (char == '+' && index == 0) {
-                append(char)
-            } else if (char.isLetterOrDigit()) {
-                append(char)
-            }
+            if (char == '+' && index == 0) append(char)
+            else if (char.isLetterOrDigit()) append(char)
         }
     }
 
