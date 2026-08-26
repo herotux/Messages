@@ -1,75 +1,79 @@
 #!/usr/bin/env python3
-"""Import 64px Iranian bank logos into Android resources.
+"""Import Iranian bank SVG logos as Android VectorDrawable XML resources.
 
-Development-time only: the app never accesses the network. The generated PNG
-files are committed into the APK resources.
-
-Source: amastaneh/IranianBankLogos, src/ibls64.png.
+Source: snapp-store/iranian-banks-react-icons, optimized/*-color.svg.
+The SVGs are downloaded only during development/CI; the Android app never
+accesses the network at runtime.
 """
 from __future__ import annotations
 
-import io
 import pathlib
+import subprocess
 import urllib.request
-
-from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "app/src/main/res/drawable"
-SPRITE_URL = "https://raw.githubusercontent.com/amastaneh/IranianBankLogos/master/src/ibls64.png"
+BASE_URL = "https://raw.githubusercontent.com/snapp-store/iranian-banks-react-icons/main/optimized/"
 
-# Exact 64px positions from IranianBankLogos/src/ibl.css.
+# Android resource name -> source SVG filename stem.
 LOGOS = {
-    "bank_saderat": (0, 0),
-    "bank_mellat": (1, 0),
-    "bank_tejarat": (2, 0),
-    "bank_melli": (3, 0),
-    "bank_sepah": (4, 0),
-    "bank_keshavarzi": (0, 1),
-    "bank_parsian": (1, 1),
-    "bank_maskan": (2, 1),
-    "bank_refah": (3, 1),
-    "bank_eghtesad_novin": (4, 1),
-    "bank_sepah_ansar_legacy": (0, 2),
-    "bank_pasargad": (1, 2),
-    "bank_saman": (2, 2),
-    "bank_sina": (3, 2),
-    "bank_post": (4, 2),
-    "bank_ghavamin_legacy": (0, 3),
-    "bank_tosee_taavon": (1, 3),
-    "bank_shahr": (2, 3),
-    "bank_ayandeh_legacy": (3, 3),
-    "bank_sarmayeh": (4, 3),
-    "bank_dey": (0, 4),
-    "bank_khavar_mianeh": (1, 4),
-    "bank_iran_zamin": (2, 4),
-    "bank_karafarin": (3, 4),
-    "bank_gardeshgari": (4, 4),
-    "bank_sanat_madan": (0, 5),
-    "bank_tosee_saderat": (1, 5),
-    "bank_khavar_mianeh_alt": (2, 5),
-    "bank_iran_venezuela": (3, 5),
-    "bank_resalat": (4, 5),
-    "bank_iran": (0, 6),
-    "bank_melal": (1, 6),
-    "bank_refah_alt": (2, 6),
+    "bank_saderat": "saderat-color",
+    "bank_mellat": "mellat-color",
+    "bank_tejarat": "tejarat-color",
+    "bank_melli": "melli-color",
+    "bank_sepah": "sepah-color",
+    "bank_keshavarzi": "keshavarzi-color",
+    "bank_parsian": "parsian-color",
+    "bank_maskan": "maskan-color",
+    "bank_refah": "refah-color",
+    "bank_eghtesad_novin": "eghtesad-novin-color",
+    "bank_pasargad": "pasargad-color",
+    "bank_saman": "saman-color",
+    "bank_sina": "sina-color",
+    "bank_post": "post-color",
+    "bank_tosee_taavon": "tosee-taavon-color",
+    "bank_shahr": "shahr-color",
+    "bank_ayandeh": "ayandeh-color",
+    "bank_sarmayeh": "sarmayeh-color",
+    "bank_dey": "dey-color",
+    "bank_khavar_mianeh": "khavar-mianeh-color",
+    "bank_iran_zamin": "iran-zamin-color",
+    "bank_karafarin": "karafarin-color",
+    "bank_gardeshgari": "gardeshgari-color",
+    "bank_sanat_madan": "sanat-madan-color",
+    "bank_tosee_saderat": "tosee-saderat-color",
+    "bank_iran_venezuela": "iran-venezuela-color",
+    "bank_resalat": "resalat-color",
+    "bank_iran": "iran-color",
+    "bank_melal": "melall-color",
 }
+
+
+def convert(svg_path: pathlib.Path, xml_path: pathlib.Path) -> None:
+    subprocess.run(
+        ["s2v", "-p", "3", "-i", str(svg_path), "-o", str(xml_path)],
+        check=True,
+    )
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    with urllib.request.urlopen(SPRITE_URL, timeout=30) as response:
-        sprite = Image.open(io.BytesIO(response.read())).convert("RGBA")
-
-    if sprite.width < 320 or sprite.height < 448:
-        raise RuntimeError(f"Unexpected sprite size: {sprite.size}")
-
-    for name, (column, row) in LOGOS.items():
-        left, top = column * 64, row * 64
-        sprite.crop((left, top, left + 64, top + 64)).save(
-            OUT / f"{name}.png", optimize=True
-        )
-        print(f"created {name}.png")
+    tmp = ROOT / ".bank-logo-svg-tmp"
+    tmp.mkdir(exist_ok=True)
+    try:
+        for resource_name, source_stem in LOGOS.items():
+            svg_path = tmp / f"{source_stem}.svg"
+            xml_path = OUT / f"{resource_name}.xml"
+            url = BASE_URL + f"{source_stem}.svg"
+            print(f"download {url}")
+            with urllib.request.urlopen(url, timeout=30) as response:
+                svg_path.write_bytes(response.read())
+            convert(svg_path, xml_path)
+            print(f"created {xml_path}")
+    finally:
+        for path in tmp.glob("*"):
+            path.unlink(missing_ok=True)
+        tmp.rmdir()
 
 
 if __name__ == "__main__":
