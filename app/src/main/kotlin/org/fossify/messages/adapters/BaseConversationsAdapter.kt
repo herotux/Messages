@@ -98,25 +98,28 @@ abstract class BaseConversationsAdapter(
 
             val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
             val confirmedBank = if (!conversation.isGroupConversation) BankConversationVerificationStore.getConfirmedBank(activity, conversation.threadId) else null
-            // Conversation-list bank detection is deliberately sender-only. Do not parse the SMS body/snippet here.
             val senderBank = if (!conversation.isGroupConversation) IranianBankSenderProfiles.find(conversation.phoneNumber) else null
             val bank = confirmedBank ?: senderBank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
             val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) IranianSenderIconResolver.resolve(activity, conversation.phoneNumber) else null
             val logoRes = bankLogoRes ?: senderLogoRes
 
-            if (bank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
-                DebugLog.write(activity, "SEPAH_UI_START thread=${conversation.threadId} title=${conversation.title} sender=${conversation.phoneNumber}")
-                DebugLog.write(activity, "SEPAH_UI_BANK confirmed=${confirmedBank?.id} senderProfile=${senderBank?.id} selected=${bank.id} logoRes=$bankLogoRes senderLogoRes=$senderLogoRes")
+            if (bank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH || senderBank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH || confirmedBank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
+                DebugLog.write(activity, "SEPAH_UI_START thread=${conversation.threadId} title=${conversation.title.take(80)} sender=${conversation.phoneNumber.take(80)} group=${conversation.isGroupConversation}")
+                DebugLog.write(activity, "SEPAH_UI_VERIFY confirmed=${confirmedBank?.id} senderProfile=${senderBank?.id} selected=${bank?.id}")
+                DebugLog.write(activity, "SEPAH_UI_LOGO bankLogoRes=$bankLogoRes senderLogoRes=$senderLogoRes finalLogoRes=$logoRes")
             }
 
             val logoApplied = logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)
-            if (bank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
+            if (bank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH || senderBank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH || confirmedBank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
                 DebugLog.write(activity, "SEPAH_UI_IMAGE_RESULT logoRes=$logoRes applied=$logoApplied imageViewId=${conversationImage.id}")
                 DebugLog.write(activity, "SEPAH_UI_END thread=${conversation.threadId}")
             }
 
             if (!logoApplied) {
+                if (senderBank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH || confirmedBank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
+                    DebugLog.write(activity, "SEPAH_UI_FALLBACK_CONTACT thread=${conversation.threadId} photoUri=${conversation.photoUri != null}")
+                }
                 SimpleContactsHelper(activity).loadContactImage(path = conversation.photoUri, imageView = conversationImage, placeholderName = conversation.title, placeholderImage = placeholder)
             }
         }
