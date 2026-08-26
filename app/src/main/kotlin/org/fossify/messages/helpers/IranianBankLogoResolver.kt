@@ -27,7 +27,16 @@ object IranianBankLogoResolver {
 
         val resourceId = context.resources.getIdentifier(resourceName, "drawable", context.packageName)
         if (trace) {
-            DebugLog.write(context, "BANK_LOGO_RESOLVE_RESULT bankId=${bank.id} resourceName=$resourceName resourceId=$resourceId found=${resourceId != 0}")
+            val typeName = if (resourceId != 0) runCatching { context.resources.getResourceTypeName(resourceId) }.getOrNull() else null
+            val entryName = if (resourceId != 0) runCatching { context.resources.getResourceEntryName(resourceId) }.getOrNull() else null
+            DebugLog.write(
+                context,
+                "BANK_LOGO_RESOLVE_RESULT bankId=${bank.id} resourceName=$resourceName resourceId=$resourceId " +
+                    "found=${resourceId != 0} type=$typeName entry=$entryName"
+            )
+            if (bank.id == IranianBankRegistry.BankId.SEPAH) {
+                DebugLog.write(context, "SEPAH_LOGO_RESOURCE_CHECK id=$resourceId type=$typeName entry=$entryName expected=drawable/$resourceName")
+            }
         }
         return resourceId.takeIf { it != 0 }
     }
