@@ -1,7 +1,11 @@
 package org.fossify.messages.helpers
 
+import android.util.Log
+
 /** Exact sender profiles observed in real Iranian bank SMS samples. */
 object IranianBankSenderProfiles {
+    private const val TAG = "IranianBankSender"
+
     private val normalizedSenders = mapOf(
         "+989820004747" to IranianBankRegistry.BankId.RESALAT,
         "98500014747" to IranianBankRegistry.BankId.RESALAT,
@@ -57,12 +61,9 @@ object IranianBankSenderProfiles {
         val normalized = normalize(sender)
         val id = normalizedSenders[normalized]
         if (id in tracedBanks) {
-            DebugLog.write(
-                null,
-                "BANK_SENDER_MATCH raw=${sender.take(80)} normalized=$normalized bankId=$id"
-            )
+            Log.d(TAG, "BANK_SENDER_MATCH raw=${sender.take(80)} normalized=$normalized bankId=$id")
         } else if (id == null && (sender.contains("MELLAT", true) || sender.contains("TEJARAT", true) || sender.contains("SEPAH", true) || sender.contains("MELLI", true) || sender.contains("TOSEE", true) || sender.contains("توسعه") || sender.contains("ملت") || sender.contains("تجارت") || sender.contains("سپه") || sender.contains("ملی"))) {
-            DebugLog.write(null, "BANK_SENDER_MISS raw=${sender.take(80)} normalized=$normalized")
+            Log.d(TAG, "BANK_SENDER_MISS raw=${sender.take(80)} normalized=$normalized")
         }
         return id?.let(IranianBankRegistry::findById)
     }
