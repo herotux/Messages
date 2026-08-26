@@ -60,12 +60,20 @@ object IranianBankSenderProfiles {
     fun find(sender: String): IranianBankRegistry.BankInfo? {
         val normalized = normalize(sender)
         val id = normalizedSenders[normalized]
+        if (sender.contains("SEPAH", true) || sender.contains("سپه", true) || normalized.contains("SEPAH")) {
+            safeLog("SEPAH_DETECT_START raw=${sender.take(80)} rawLength=${sender.length} normalized=$normalized normalizedLength=${normalized.length}")
+            safeLog("SEPAH_DETECT_PROFILE normalized=$normalized mappedBank=$id")
+        }
         if (id in tracedBanks) {
             safeLog("BANK_SENDER_MATCH raw=${sender.take(80)} normalized=$normalized bankId=$id")
         } else if (id == null && (sender.contains("MELLAT", true) || sender.contains("TEJARAT", true) || sender.contains("SEPAH", true) || sender.contains("MELLI", true) || sender.contains("TOSEE", true) || sender.contains("توسعه") || sender.contains("ملت") || sender.contains("تجارت") || sender.contains("سپه") || sender.contains("ملی"))) {
             safeLog("BANK_SENDER_MISS raw=${sender.take(80)} normalized=$normalized")
         }
-        return id?.let(IranianBankRegistry::findById)
+        val result = id?.let(IranianBankRegistry::findById)
+        if (id == IranianBankRegistry.BankId.SEPAH || result?.id == IranianBankRegistry.BankId.SEPAH) {
+            safeLog("SEPAH_DETECT_RESULT normalized=$normalized bankId=${result?.id} english=${result?.englishName} logoResource=${result?.logoResourceName}")
+        }
+        return result
     }
 
     private fun safeLog(message: String) {
