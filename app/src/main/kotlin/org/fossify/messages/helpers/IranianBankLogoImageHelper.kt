@@ -11,20 +11,28 @@ object IranianBankLogoImageHelper {
 
     fun setBankLogo(imageView: ImageView, resourceId: Int): Boolean {
         return try {
+            DebugLog.write(imageView.context, "BANK_LOGO_DRAWABLE_START resourceId=$resourceId imageViewId=${imageView.id} package=${imageView.context.packageName}")
             val drawable: Drawable? = AppCompatResources.getDrawable(imageView.context, resourceId)
             if (drawable == null) {
-                Log.e(TAG, "SEPAH_UI_DRAWABLE_NULL resourceId=$resourceId imageViewId=${imageView.id}")
-                if (resourceId != 0) {
-                    DebugLog.write(imageView.context, "SEPAH_UI_DRAWABLE_NULL resourceId=$resourceId imageViewId=${imageView.id}")
-                }
+                Log.e(TAG, "BANK_LOGO_DRAWABLE_NULL resourceId=$resourceId imageViewId=${imageView.id}")
+                DebugLog.write(imageView.context, "BANK_LOGO_DRAWABLE_NULL resourceId=$resourceId imageViewId=${imageView.id}")
                 return false
             }
+            imageView.setImageDrawable(null)
             imageView.setImageDrawable(drawable)
-            DebugLog.write(imageView.context, "SEPAH_UI_DRAWABLE_SET resourceId=$resourceId imageViewId=${imageView.id} drawable=${drawable.javaClass.simpleName}")
+            DebugLog.write(
+                imageView.context,
+                "BANK_LOGO_DRAWABLE_SET resourceId=$resourceId imageViewId=${imageView.id} " +
+                    "drawable=${drawable.javaClass.simpleName} intrinsic=${drawable.intrinsicWidth}x${drawable.intrinsicHeight}"
+            )
             true
         } catch (t: Throwable) {
             Log.e(TAG, "Unable to load bank logo resource: $resourceId", t)
-            DebugLog.write(imageView.context, "SEPAH_UI_DRAWABLE_EXCEPTION resourceId=$resourceId type=${t.javaClass.simpleName} message=${t.message}")
+            DebugLog.write(
+                imageView.context,
+                "BANK_LOGO_DRAWABLE_EXCEPTION resourceId=$resourceId imageViewId=${imageView.id} " +
+                    "type=${t.javaClass.simpleName} message=${t.message}"
+            )
             false
         }
     }
