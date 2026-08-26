@@ -11,14 +11,12 @@ import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.helpers.MessagingCache
-import org.fossify.messages.helpers.PerformanceDiagnostics
 
 class App : FossifyApp() {
     override val isAppLockFeatureAvailable = true
 
     override fun onCreate() {
         super.onCreate()
-        PerformanceDiagnostics.start(this)
 
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(
