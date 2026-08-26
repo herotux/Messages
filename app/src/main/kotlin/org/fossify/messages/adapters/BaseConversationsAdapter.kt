@@ -27,10 +27,10 @@ import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
 import org.fossify.messages.helpers.BankConversationVerificationStore
-import org.fossify.messages.helpers.BankSmsDetector
 import org.fossify.messages.helpers.DebugLog
 import org.fossify.messages.helpers.IranianBankLogoImageHelper
 import org.fossify.messages.helpers.IranianBankLogoResolver
+import org.fossify.messages.helpers.IranianBankSenderProfiles
 import org.fossify.messages.helpers.IranianSenderIconResolver
 import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.models.Conversation
@@ -98,14 +98,25 @@ abstract class BaseConversationsAdapter(
 
             val placeholder = if (conversation.isGroupConversation) SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title) else null
             val confirmedBank = if (!conversation.isGroupConversation) BankConversationVerificationStore.getConfirmedBank(activity, conversation.threadId) else null
-            val detectedBank = if (!conversation.isGroupConversation && confirmedBank == null) BankSmsDetector.detect(conversation.phoneNumber, conversation.snippet)?.bank else null
-            val bank = confirmedBank ?: detectedBank
+            // Conversation-list bank detection is deliberately sender-only. Do not parse the SMS body/snippet here.
+            val senderBank = if (!conversation.isGroupConversation) IranianBankSenderProfiles.find(conversation.phoneNumber) else null
+            val bank = confirmedBank ?: senderBank
             val bankLogoRes = bank?.let { IranianBankLogoResolver.resolve(activity, it) }
             val senderLogoRes = if (!conversation.isGroupConversation && bankLogoRes == null) IranianSenderIconResolver.resolve(activity, conversation.phoneNumber) else null
             val logoRes = bankLogoRes ?: senderLogoRes
-            if (logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)) {
-                // Bank/sender logo was applied successfully.
-            } else {
+
+            if (bank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
+                DebugLog.write(activity, "SEPAH_UI_START thread=${conversation.threadId} title=${conversation.title} sender=${conversation.phoneNumber}")
+                DebugLog.write(activity, "SEPAH_UI_BANK confirmed=${confirmedBank?.id} senderProfile=${senderBank?.id} selected=${bank.id} logoRes=$bankLogoRes senderLogoRes=$senderLogoRes")
+            }
+
+            val logoApplied = logoRes != null && IranianBankLogoImageHelper.setBankLogo(conversationImage, logoRes)
+            if (bank?.id == org.fossify.messages.helpers.IranianBankRegistry.BankId.SEPAH) {
+                DebugLog.write(activity, "SEPAH_UI_IMAGE_RESULT logoRes=$logoRes applied=$logoApplied imageViewId=${conversationImage.id}")
+                DebugLog.write(activity, "SEPAH_UI_END thread=${conversation.threadId}")
+            }
+
+            if (!logoApplied) {
                 SimpleContactsHelper(activity).loadContactImage(path = conversation.photoUri, imageView = conversationImage, placeholderName = conversation.title, placeholderImage = placeholder)
             }
         }
