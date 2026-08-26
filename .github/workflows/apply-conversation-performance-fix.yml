@@ -19,8 +19,8 @@ jobs:
           fetch-depth: 0
 
       - name: Patch conversation loading
-        shell: python
         run: |
+          python3 <<'PY'
           from pathlib import Path
 
           path = Path('app/src/main/kotlin/org/fossify/messages/extensions/Context.kt')
@@ -122,6 +122,7 @@ jobs:
 
           path.write_text(text, encoding='utf-8')
           print('patched', path)
+          PY
 
       - name: Verify source and compile
         run: ./gradlew :app:compileDebugKotlin --no-daemon
