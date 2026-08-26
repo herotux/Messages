@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Import Iranian bank SVG logos as Android VectorDrawable XML resources."""
+
 from __future__ import annotations
 
 import pathlib
@@ -8,16 +9,19 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "app/src/main/res/drawable"
+LOCAL = ROOT / "tools/bank-logo-sources"
 BASE_URL = "https://raw.githubusercontent.com/snapp-store/iranian-banks-react-icons/main/optimized/"
 
 # Android resource name -> verified upstream SVG filename.
-# Keep this list limited to files that actually exist upstream.
 LOGOS = {
     "bank_saderat": "saderat-color.svg",
     "bank_mellat": "mellat-color.svg",
-    "bank_tejarat": "tejarat-color.svg",
-    "bank_melli": "melli-color.svg",
-    "bank_sepah": "sepah-color.svg",
+
+    # These three are bundled locally from the SVG files supplied by the user.
+    "bank_tejarat": "bank_tejarat.svg",
+    "bank_melli": "bank_melli.svg",
+    "bank_sepah": "bank_sepah.svg",
+
     "bank_keshavarzi": "keshavarzi-color.svg",
     "bank_parsian": "parsian-color.svg",
     "bank_maskan": "maskan-color.svg",
@@ -44,6 +48,13 @@ LOGOS = {
 }
 
 
+LOCAL_LOGOS = {
+    "bank_tejarat",
+    "bank_melli",
+    "bank_sepah",
+}
+
+
 def fetch(url: str, dest: pathlib.Path) -> None:
     request = urllib.request.Request(
         url,
@@ -51,17 +62,27 @@ def fetch(url: str, dest: pathlib.Path) -> None:
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         data = response.read()
+
     if b"<svg" not in data.lower():
         raise RuntimeError(f"Downloaded file is not SVG: {url}")
+
     dest.write_bytes(data)
 
 
 def convert(svg_path: pathlib.Path, xml_path: pathlib.Path) -> None:
-    # Use npx so CI does not depend on a globally installed executable.
     subprocess.run(
         [
-            "npx", "--yes", "--package", "svg2vectordrawable@2.9.1",
-            "s2v", "-p", "3", "-i", str(svg_path), "-o", str(xml_path),
+            "npx",
+            "--yes",
+            "--package",
+            "svg2vectordrawable@2.9.1",
+            "s2v",
+            "-p",
+            "3",
+            "-i",
+            str(svg_path),
+            "-o",
+            str(xml_path),
         ],
         check=True,
     )
@@ -69,21 +90,34 @@ def convert(svg_path: pathlib.Path, xml_path: pathlib.Path) -> None:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
+
     tmp = ROOT / ".bank-logo-svg-tmp"
     tmp.mkdir(exist_ok=True)
+
     try:
         for resource_name, filename in LOGOS.items():
             svg_path = tmp / filename
             xml_path = OUT / f"{resource_name}.xml"
-            # Use the stable raw GitHub source for all imports. Wikimedia's
-            # redirect endpoint is rate-limited in GitHub Actions (HTTP 429),
-            # which previously caused the entire Android CI job to stop before
-            # Gradle tests/builds could even start.
-            url = BASE_URL + filename
-            print(f"download {url}")
-            fetch(url, svg_path)
+
+            if resource_name in LOCAL_LOGOS:
+                source = LOCAL / filename
+
+                if not source.is_file():
+                    raise RuntimeError(
+                        f"Local SVG is missing: {source}"
+                    )
+
+                print(f"local {source}")
+                svg_path.write_bytes(source.read_bytes())
+
+            else:
+                url = BASE_URL + filename
+                print(f"download {url}")
+                fetch(url, svg_path)
+
             convert(svg_path, xml_path)
             print(f"created {xml_path}")
+
     finally:
         for path in tmp.glob("*"):
             path.unlink(missing_ok=True)
