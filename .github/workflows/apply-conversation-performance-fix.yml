@@ -1,0 +1,135 @@
+name: Apply conversation performance fix
+
+on:
+  push:
+    branches:
+      - fix/bank-sender-only-and-sepah-logo-v4
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[optimizer-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/bank-sender-only-and-sepah-logo-v4
+          fetch-depth: 0
+
+      - name: Patch conversation loading
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('app/src/main/kotlin/org/fossify/messages/extensions/Context.kt')
+          text = path.read_text(encoding='utf-8')
+
+          old_setup = '''    val conversations = ArrayList<Conversation>()
+    val simpleContactHelper = SimpleContactsHelper(this)
+    val blockedNumbers = getBlockedNumbers()
+    val unreadMap = getUnreadCountsByThread()
+'''
+          new_setup = '''    val conversations = ArrayList<Conversation>()
+    val simpleContactHelper = SimpleContactsHelper(this)
+    val blockedNumbers = getBlockedNumbers()
+    val unreadMap = getUnreadCountsByThread()
+
+    // Conversation loading can contain hundreds of threads. Avoid one Room query per
+    // conversation for drafts and one ContentResolver query per recipient id.
+    val draftDates = try {
+        draftsDB.getAll().associate { it.threadId to (it.date / 1000) }
+    } catch (_: Exception) {
+        emptyMap()
+    }
+
+    val canonicalAddressMap = HashMap<Int, String>()
+    try {
+        val canonicalUri = Uri.withAppendedPath(MmsSms.CONTENT_URI, "canonical-addresses")
+        val canonicalProjection = arrayOf(Mms._ID, Mms.Addr.ADDRESS)
+        contentResolver.query(canonicalUri, canonicalProjection, null, null, null)?.use { canonicalCursor ->
+            val idIndex = canonicalCursor.getColumnIndex(Mms._ID)
+            val addressIndex = canonicalCursor.getColumnIndex(Mms.Addr.ADDRESS)
+            while (canonicalCursor.moveToNext()) {
+                if (idIndex >= 0 && addressIndex >= 0) {
+                    canonicalAddressMap[canonicalCursor.getInt(idIndex)] =
+                        canonicalCursor.getString(addressIndex) ?: ""
+                }
+            }
+        }
+    } catch (_: Exception) {
+    }
+
+    val contactCache = HashMap<String, NamePhoto>()
+    fun getCachedNamePhoto(number: String): NamePhoto =
+        contactCache.getOrPut(number) { getNameAndPhotoFromPhoneNumber(number) }
+'''
+          if old_setup not in text:
+              raise SystemExit('setup anchor not found')
+          text = text.replace(old_setup, new_setup, 1)
+
+          old_draft = '''            // drafts are stored locally they take priority over the original date
+            val draft = draftsDB.getDraftById(id)
+            if (draft != null) {
+                date = draft.date / 1000
+            }
+'''
+          new_draft = '''            // Drafts are loaded once above instead of querying Room for every thread.
+            draftDates[id]?.let { date = it }
+'''
+          if old_draft not in text:
+              raise SystemExit('draft anchor not found')
+          text = text.replace(old_draft, new_draft, 1)
+
+          old_numbers = '''            val phoneNumbers = getThreadPhoneNumbers(recipientIds)
+'''
+          new_numbers = '''            val phoneNumbers = ArrayList<String>(recipientIds.size)
+            recipientIds.forEach { recipientId ->
+                phoneNumbers.add(canonicalAddressMap[recipientId] ?: "")
+            }
+'''
+          if old_numbers not in text:
+              raise SystemExit('phone-number anchor not found')
+          text = text.replace(old_numbers, new_numbers, 1)
+
+          old_names = '''            val names = getThreadContactNames(phoneNumbers, privateContacts)
+            val title = TextUtils.join(", ", names.toTypedArray())
+            val photoUri =
+                if (phoneNumbers.size == 1) simpleContactHelper.getPhotoUriFromPhoneNumber(
+                    phoneNumbers.first()
+                ) else ""
+'''
+          new_names = '''            val namePhotos = phoneNumbers.map { number -> getCachedNamePhoto(number) }
+            val names = phoneNumbers.mapIndexed { index, number ->
+                val contactName = namePhotos[index].name
+                if (contactName != number) {
+                    contactName
+                } else {
+                    privateContacts.firstOrNull { it.doesHavePhoneNumber(number) }?.name ?: number
+                }
+            }
+            val title = TextUtils.join(", ", names.toTypedArray())
+            val photoUri = if (phoneNumbers.size == 1) {
+                namePhotos.firstOrNull()?.photoUri ?: ""
+            } else {
+                ""
+            }
+'''
+          if old_names not in text:
+              raise SystemExit('contact anchor not found')
+          text = text.replace(old_names, new_names, 1)
+
+          path.write_text(text, encoding='utf-8')
+          print('patched', path)
+
+      - name: Verify source and compile
+        run: ./gradlew :app:compileDebugKotlin --no-daemon
+
+      - name: Commit optimized loader
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/org/fossify/messages/extensions/Context.kt
+          git commit -m "perf: bulk-load conversation metadata [optimizer-applied]"
+          git push origin HEAD:fix/bank-sender-only-and-sepah-logo-v4
