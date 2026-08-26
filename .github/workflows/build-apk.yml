@@ -32,6 +32,19 @@ jobs:
           java-version: '17'
           cache: gradle
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Pillow
+        run: python3 -m pip install Pillow
+
+      - name: Generate PNG bank resources
+        run: |
+          rm -f app/src/main/res/drawable/bank_*.xml
+          python3 tools/import_iranian_bank_logos.py
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
