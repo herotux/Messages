@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - feat/iranian-bank-registry
-      - fix/bank-sender-only-and-sepah-logo-v4
   workflow_dispatch:
 
 permissions:
