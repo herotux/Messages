@@ -1,10 +1,10 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
-import android.provider.ContactsContract
-import android.telephony.PhoneNumberUtils
 import android.os.Handler
 import android.os.Looper
+import android.provider.ContactsContract
+import android.telephony.PhoneNumberUtils
 import org.fossify.messages.models.Conversation
 import java.util.concurrent.Executors
 
@@ -67,8 +67,15 @@ class PersonalConversationClassifier(context: Context) {
 
     private fun canonical(number: String?): String? {
         if (number.isNullOrBlank()) return null
-        val digits = PhoneNumberUtils.normalizeNumber(PhoneNumberUtils.replaceUnicodeDigits(number))
+
+        // PhoneNumberUtils may preserve a leading '+'. Remove it before applying
+        // the Iranian +98/0098 conversion so both forms behave identically.
+        val normalized = PhoneNumberUtils.normalizeNumber(
+            PhoneNumberUtils.replaceUnicodeDigits(number)
+        )
+        val digits = normalized.removePrefix("+")
         if (digits.isEmpty()) return null
+
         return when {
             digits.startsWith("0098") && digits.length == 14 -> "0" + digits.substring(4)
             digits.startsWith("98") && digits.length == 12 -> "0" + digits.substring(2)
