@@ -53,7 +53,6 @@ abstract class BaseConversationsAdapter(
     private var fontSize = activity.getTextSize()
     private var drafts = HashMap<Long, String>()
     private var recyclerViewState: Parcelable? = null
-
     private var allConversations = emptyList<Conversation>()
     private var activeConversationFilter: ((Conversation) -> Boolean)? = null
     private val bankCache = HashMap<Long, IranianBankRegistry.BankInfo?>()
@@ -82,8 +81,17 @@ abstract class BaseConversationsAdapter(
         saveRecyclerViewState()
         allConversations = newConversations.toList()
         bankCache.clear()
-        // Rules run against the already loaded conversation snapshot, never Telephony directly.
         runCatching { ConversationFolderRuleManager.applyAutomaticRules(activity, allConversations) }
+        submitVisibleList(commitCallback)
+    }
+
+    /** Re-evaluates routing rules against the already-loaded list without querying Telephony. */
+    fun refreshFolderRules() {
+        runCatching { ConversationFolderRuleManager.applyAutomaticRules(activity, allConversations) }
+        submitVisibleList()
+    }
+
+    private fun submitVisibleList(commitCallback: (() -> Unit)? = null) {
         val visibleConversations = activeConversationFilter?.let { predicate ->
             allConversations.filter(predicate)
         } ?: allConversations
