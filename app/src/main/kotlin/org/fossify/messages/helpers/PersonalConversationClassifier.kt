@@ -27,7 +27,7 @@ class PersonalConversationClassifier(context: Context) {
 
     fun ensureLoaded(onLoaded: (() -> Unit)? = null) {
         if (loaded) {
-            onLoaded?.let(mainHandler::post)
+            onLoaded?.let { mainHandler.post(it) }
             return
         }
         synchronized(this) {
@@ -55,7 +55,7 @@ class PersonalConversationClassifier(context: Context) {
             contactNumbers = numbers
             loaded = true
             loading = false
-            onLoaded?.let(mainHandler::post)
+            onLoaded?.let { mainHandler.post(it) }
         }
     }
 
