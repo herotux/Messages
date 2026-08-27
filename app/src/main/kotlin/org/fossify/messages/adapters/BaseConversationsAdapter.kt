@@ -16,6 +16,7 @@ import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.commons.extensions.getContrastColor
+import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.setupViewBackground
 import org.fossify.commons.helpers.FontHelper
@@ -52,6 +53,10 @@ abstract class BaseConversationsAdapter(
     private var drafts = HashMap<Long, String>()
     private var recyclerViewState: Parcelable? = null
 
+    // Full conversation source. UI folders filter this list without changing the Room/Telephony
+    // loading pipeline, so folder switching stays cheap and does not trigger a reload.
+    private var allConversations = emptyList<Conversation>()
+
     // Bank detection is presentation data. Never recompute it for every RecyclerView bind.
     // The list is refreshed when the conversation list changes, while recycled views only
     // render the cached result.
@@ -79,9 +84,26 @@ abstract class BaseConversationsAdapter(
         commitCallback: (() -> Unit)? = null,
     ) {
         saveRecyclerViewState()
+        allConversations = newConversations.toList()
         bankCache.clear()
         submitList(newConversations.toList(), commitCallback)
     }
+
+    /** Applies a local folder/filter to the already-loaded conversation list. */
+    fun filterConversations(predicate: (Conversation) -> Boolean) {
+        saveRecyclerViewState()
+        submitList(allConversations.filter(predicate))
+    }
+
+    /** Restores the complete conversation list without querying Telephony again. */
+    fun clearConversationFilter() {
+        saveRecyclerViewState()
+        submitList(allConversations)
+    }
+
+    /** Shared by the Telegram-style folder tabs and the row renderer. */
+    fun isBankConversation(conversation: Conversation): Boolean =
+        getBankForConversation(conversation) != null
 
     @SuppressLint("NotifyDataSetChanged")
     fun updateDrafts() {
