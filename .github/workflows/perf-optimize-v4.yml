@@ -1,3 +1,4 @@
+# [perf-opt] trigger verification on the exact Foss debug variant
 name: Apply conversation performance optimization
 
 on:
