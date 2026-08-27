@@ -5,7 +5,7 @@ package org.fossify.messages.views
  * Kotlin's standard mapIndexedNotNull extensions target Iterable/Array,
  * while BooleanArray is a primitive array.
  */
-private inline fun <R : Any> BooleanArray.mapIndexedNotNull(
+internal inline fun <R : Any> BooleanArray.mapIndexedNotNull(
     transform: (index: Int, value: Boolean) -> R?,
 ): List<R> {
     val result = ArrayList<R>()
