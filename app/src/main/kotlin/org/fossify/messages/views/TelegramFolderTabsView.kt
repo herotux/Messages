@@ -22,12 +22,11 @@ import org.json.JSONObject
 import kotlin.math.roundToInt
 
 /**
- * Telegram-inspired conversation folder tabs.
+ * Messages-native conversation folder tabs.
  *
- * The first version deliberately keeps folder state outside the SMS/Room schema so it
- * cannot slow down or corrupt the existing conversation loading pipeline. User folders
- * are stored locally and filter conversations by a user-defined keyword.
- * This can later be upgraded to explicit conversation membership without changing the UI.
+ * The tabs borrow the useful navigation architecture of modern messengers without
+ * copying another app's visual identity. Folder state lives outside SMS/Room so
+ * changing tabs never triggers a Telephony query.
  */
 class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
     private val tabsContainer = LinearLayout(context).apply {
@@ -45,16 +44,15 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
         isHorizontalScrollBarEnabled = false
         clipToPadding = false
         setBackgroundColor(context.getProperBackgroundColor())
-        addView(
-            tabsContainer,
-            LayoutParams(LayoutParams.WRAP_CONTENT, dp(48))
-        )
+        addView(tabsContainer, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48)))
         folders = loadFolders()
-        post {
-            adapter = rootView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.conversations_list)
-                ?.adapter as? BaseConversationsAdapter
-            rebuildTabs()
-        }
+        rebuildTabs()
+    }
+
+    /** Bind after the conversation adapter exists. Safe to call repeatedly. */
+    fun bindAdapter(newAdapter: BaseConversationsAdapter) {
+        adapter = newAdapter
+        applySelectedFilter()
     }
 
     private fun rebuildTabs() {
@@ -96,10 +94,7 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
             }
         }
         view.tag = id
-        tabsContainer.addView(
-            view,
-            LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT)
-        )
+        tabsContainer.addView(view, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT))
     }
 
     private fun updateSelection() {
@@ -114,14 +109,7 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
     }
 
     private fun applySelectedFilter() {
-        val currentAdapter = adapter ?: run {
-            post { adapter = rootView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.conversations_list)
-                ?.adapter as? BaseConversationsAdapter
-                applySelectedFilter()
-            }
-            return
-        }
-
+        val currentAdapter = adapter ?: return
         when (selectedId) {
             ALL_ID -> currentAdapter.clearConversationFilter()
             UNREAD_ID -> currentAdapter.filterConversations { !it.read }
@@ -143,14 +131,18 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
         }
     }
 
+    fun refreshForNewConversations() {
+        applySelectedFilter()
+    }
+
     private fun showCreateFolderDialog() {
         val nameInput = EditText(context).apply {
             hint = "نام پوشه"
-            singleLine = true
+            isSingleLine = true
         }
         val keywordInput = EditText(context).apply {
             hint = "کلمه یا عبارت برای فیلتر"
-            singleLine = true
+            isSingleLine = true
             inputType = InputType.TYPE_CLASS_TEXT
         }
         val box = LinearLayout(context).apply {
@@ -162,7 +154,7 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
 
         AlertDialog.Builder(context)
             .setTitle("پوشه جدید")
-            .setMessage("فعلاً پوشه با یک کلمه/عبارت مشخص می‌شود؛ بعداً می‌توانیم انتخاب دستی مکالمات را اضافه کنیم.")
+            .setMessage("پوشه روی مکالمات از قبل بارگذاری‌شده فیلتر می‌شود و برای تعویض پوشه دوباره پیامک‌ها را نمی‌خواند.")
             .setView(box)
             .setNegativeButton("لغو", null)
             .setPositiveButton("ایجاد") { _, _ ->
@@ -172,11 +164,7 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
                     Toast.makeText(context, "نام و فیلتر پوشه را وارد کنید", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                val folder = Folder(
-                    id = "custom_${System.currentTimeMillis()}",
-                    name = name,
-                    keyword = keyword
-                )
+                val folder = Folder("custom_${System.currentTimeMillis()}", name, keyword)
                 folders.add(folder)
                 saveFolders()
                 selectedId = folder.id
@@ -228,14 +216,13 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
 
-    private fun withAlpha(color: Int, alpha: Float): Int {
-        return Color.argb((Color.alpha(color) * alpha).roundToInt(), Color.red(color), Color.green(color), Color.blue(color))
-    }
+    private fun withAlpha(color: Int, alpha: Float): Int =
+        Color.argb((Color.alpha(color) * alpha).roundToInt(), Color.red(color), Color.green(color), Color.blue(color))
 
     private data class Folder(val id: String, val name: String, val keyword: String)
 
     companion object {
-        private const val PREFS_NAME = "telegram_folder_tabs"
+        private const val PREFS_NAME = "messages_folder_tabs"
         private const val FOLDERS_KEY = "folders"
         private const val ALL_ID = "__all__"
         private const val UNREAD_ID = "__unread__"
