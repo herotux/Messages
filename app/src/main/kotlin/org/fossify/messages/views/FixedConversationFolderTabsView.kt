@@ -164,3 +164,4 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
     private fun withAlpha(c:Int,a:Float)=Color.argb((255*a).toInt(),Color.red(c),Color.green(c),Color.blue(c))
     private fun dp(v:Int)=(v*resources.displayMetrics.density).roundToInt()
 }
+
