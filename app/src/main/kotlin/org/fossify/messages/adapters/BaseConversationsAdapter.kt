@@ -53,13 +53,14 @@ abstract class BaseConversationsAdapter(
     private var drafts = HashMap<Long, String>()
     private var recyclerViewState: Parcelable? = null
 
-    // Full conversation source. UI folders filter this list without changing the Room/Telephony
-    // loading pipeline, so folder switching stays cheap and does not trigger a reload.
+    // Full conversation source. Folder filters operate only on this in-memory list.
     private var allConversations = emptyList<Conversation>()
 
+    // Keep the selected folder predicate when fresh Telephony data replaces the list.
+    // This prevents a background refresh from unexpectedly jumping the user back to "همه".
+    private var activeConversationFilter: ((Conversation) -> Boolean)? = null
+
     // Bank detection is presentation data. Never recompute it for every RecyclerView bind.
-    // The list is refreshed when the conversation list changes, while recycled views only
-    // render the cached result.
     private val bankCache = HashMap<Long, IranianBankRegistry.BankInfo?>()
 
     init {
@@ -86,22 +87,27 @@ abstract class BaseConversationsAdapter(
         saveRecyclerViewState()
         allConversations = newConversations.toList()
         bankCache.clear()
-        submitList(newConversations.toList(), commitCallback)
+        val visibleConversations = activeConversationFilter?.let { predicate ->
+            allConversations.filter(predicate)
+        } ?: allConversations
+        submitList(visibleConversations, commitCallback)
     }
 
     /** Applies a local folder/filter to the already-loaded conversation list. */
     fun filterConversations(predicate: (Conversation) -> Boolean) {
         saveRecyclerViewState()
+        activeConversationFilter = predicate
         submitList(allConversations.filter(predicate))
     }
 
     /** Restores the complete conversation list without querying Telephony again. */
     fun clearConversationFilter() {
         saveRecyclerViewState()
+        activeConversationFilter = null
         submitList(allConversations)
     }
 
-    /** Shared by the Telegram-style folder tabs and the row renderer. */
+    /** Shared by the folder tabs and the row renderer. */
     fun isBankConversation(conversation: Conversation): Boolean =
         getBankForConversation(conversation) != null
 
