@@ -24,6 +24,7 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
 ) : ConversationFolderTabsView(context, attrs) {
     private var lastSelected: String? = null
     private var lastReorder = false
+    private var lastLabelsAt = 0L
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -54,7 +55,11 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
             wiggle(reorder)
         }
         if (reorder) installDrag()
-        updateLabels()
+        val now = android.os.SystemClock.uptimeMillis()
+        if (force || now - lastLabelsAt > 350L) {
+            lastLabelsAt = now
+            updateLabels()
+        }
     }
 
     private fun styleTabs(selected: String) {
@@ -143,7 +148,9 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
             if(box==null){
                 box=LinearLayout(context).apply{tag="folder_labels";orientation=LinearLayout.HORIZONTAL;gravity=android.view.Gravity.START}
                 item.addView(box,ConstraintLayout.LayoutParams(0,dp(23)).apply{startToStart=ConstraintLayout.LayoutParams.PARENT_ID;endToEnd=ConstraintLayout.LayoutParams.PARENT_ID;bottomToBottom=ConstraintLayout.LayoutParams.PARENT_ID;bottomMargin=dp(2);marginStart=dp(56);marginEnd=dp(56)})
-                item.setPadding(item.paddingLeft,item.paddingTop,item.paddingRight,item.paddingBottom+dp(25))
+                item.findViewById<View>(R.id.conversation_body_short)?.let { body ->
+                    (body.layoutParams as? ConstraintLayout.LayoutParams)?.let { lp -> lp.bottomMargin = dp(27); body.layoutParams = lp }
+                }
             }
             box.removeAllViews(); box.visibility=if(memberships.isEmpty())View.GONE else View.VISIBLE
             memberships.take(4).forEach{f->box.addView(TextView(context).apply{text=f.name;textSize=10f;maxLines=1;gravity=android.view.Gravity.CENTER;setTextColor(f.color.getContrastColor());setPadding(dp(7),0,dp(7),0);background=GradientDrawable().apply{cornerRadius=dp(9).toFloat();setColor(f.color)};layoutParams=LinearLayout.LayoutParams(-2,dp(20)).apply{marginEnd=dp(5)}})}
