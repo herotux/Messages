@@ -24,11 +24,11 @@ import kotlin.math.roundToInt
 /**
  * Messages-native conversation folder tabs.
  *
- * The navigation model is inspired by modern messenger folder UX, but the visual
- * identity remains Fossify Messages. Folder switching is strictly an in-memory
- * operation and never triggers a Telephony/Room reload.
+ * The navigation model follows a familiar, efficient folder-based messenger UX,
+ * while the visual identity remains Fossify Messages. Folder switching is strictly
+ * an in-memory operation and never triggers a Telephony/Room reload.
  */
-class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
+class ConversationFolderTabsView(context: Context) : HorizontalScrollView(context) {
     private val tabsContainer = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL

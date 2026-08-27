@@ -19,7 +19,7 @@
         android:scrollbars="none"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <org.fossify.messages.views.TelegramFolderTabsView
+        <org.fossify.messages.views.ConversationFolderTabsView
             android:id="@+id/folder_tabs"
             android:layout_width="match_parent"
             android:layout_height="48dp"
