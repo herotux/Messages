@@ -2,6 +2,7 @@ package org.fossify.messages.views
 
 import android.app.AlertDialog
 import android.content.Context
+import android.util.AttributeSet
 import android.graphics.Color
 import android.graphics.Typeface
 import android.text.InputType
@@ -28,7 +29,10 @@ import kotlin.math.roundToInt
  * while the visual identity remains Fossify Messages. Folder switching is strictly
  * an in-memory operation and never triggers a Telephony/Room reload.
  */
-class ConversationFolderTabsView(context: Context) : HorizontalScrollView(context) {
+class ConversationFolderTabsView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null
+) : HorizontalScrollView(context, attrs) {
     private val tabsContainer = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
