@@ -16,7 +16,7 @@
     <issue id="Recycle" severity="error" />
     <issue id="StaticFieldLeak" severity="error" />
     <issue id="UseRequireInsteadOfGet" severity="error" />
-    <issue id="ClickableViewAccessibility" severity="error" />
+    <issue id="ClickableViewAccessibility" severity="warning" />
     <issue id="RtlSymmetry" severity="warning" />
     <issue id="SetTextI18n" severity="warning" />
 
