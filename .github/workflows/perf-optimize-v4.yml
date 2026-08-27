@@ -23,8 +23,6 @@ jobs:
         run: |
           from pathlib import Path
 
-          # 1) Cache canonical-address-id -> phone number. This removes a ContentResolver
-          # query for every occurrence of the same recipient across conversations/refreshes.
           cache = Path('app/src/main/kotlin/org/fossify/messages/helpers/MessagingCache.kt')
           s = cache.read_text()
           old = '''object MessagingCache {\n    val namePhoto = LruCache<String, NamePhoto>(CACHE_SIZE)\n    internal val participantsCache = ThreadParticipantsCache(CACHE_SIZE)\n}'''
@@ -33,7 +31,6 @@ jobs:
               raise SystemExit('MessagingCache anchor not found')
           cache.write_text(s.replace(old, new, 1))
 
-          # 2) Use the cache in canonical-address lookup and avoid constructing a new\n          # SimpleContactsHelper for every phone number in a thread.
           ctx = Path('app/src/main/kotlin/org/fossify/messages/extensions/Context.kt')
           s = ctx.read_text()
           old = '''fun Context.getThreadContactNames(\n    phoneNumbers: List<String>,\n    privateContacts: ArrayList<SimpleContact>,\n): ArrayList<String> {\n    val names = ArrayList<String>()\n    phoneNumbers.forEach { number ->\n        val name = SimpleContactsHelper(this).getNameFromPhoneNumber(number)'''
@@ -55,7 +52,6 @@ jobs:
           s = s.replace(old, new, 1)
           ctx.write_text(s)
 
-          # 3) Remove repeated O(n^2) list scans while reconciling the cached conversation list.
           main = Path('app/src/main/kotlin/org/fossify/messages/activities/MainActivity.kt')
           s = main.read_text()
           old = '''            conversations.forEach { clonedConversation ->\n                val threadIds = cachedConversations.map { it.threadId }\n                if (!threadIds.contains(clonedConversation.threadId)) {\n                    conversationsDB.insertOrUpdate(clonedConversation)\n                    cachedConversations.add(clonedConversation)\n                }\n            }'''
@@ -92,7 +88,8 @@ jobs:
       - name: Verify patch
         run: |
           git diff --check
-          ./gradlew :app:compileDebugKotlin --no-daemon --stacktrace
+          ./gradlew :app:compileFossDebugKotlin --no-daemon --stacktrace
+          ./gradlew :app:assembleFossDebug --no-daemon --stacktrace
 
       - name: Commit optimization
         run: |
