@@ -19,10 +19,19 @@
         android:scrollbars="none"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        <org.fossify.messages.views.TelegramFolderTabsView
+            android:id="@+id/folder_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:clipToPadding="false"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp" />
+
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:id="@+id/main_coordinator_wrapper"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_below="@id/folder_tabs">
 
             <RelativeLayout
                 android:id="@+id/main_holder"
@@ -92,6 +101,7 @@
             android:id="@+id/search_holder"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_below="@id/folder_tabs"
             android:alpha="0"
             android:visibility="gone">
 
