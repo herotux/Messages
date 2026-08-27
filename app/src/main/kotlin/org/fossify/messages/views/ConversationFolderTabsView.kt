@@ -29,7 +29,7 @@ import org.fossify.messages.helpers.PersonalConversationClassifier
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-class ConversationFolderTabsView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : HorizontalScrollView(context, attrs) {
+open class ConversationFolderTabsView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : HorizontalScrollView(context, attrs) {
     private val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
     private val classifier = PersonalConversationClassifier(context)
     private var selectedId = ConversationFolderManager.getSelectedFolderId(context)
@@ -46,7 +46,7 @@ class ConversationFolderTabsView @JvmOverloads constructor(context: Context, att
         val rv = rootView.findViewById<RecyclerView>(R.id.conversations_list) ?: run { postDelayed({ attachSwipe() }, 100); return }
         if (rv.getTag(SWIPE_TAG) == true) return
         var downX = 0f; var downY = 0f; var claimed = false
-        rv.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+        rv.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener {
             override fun onInterceptTouchEvent(parent: RecyclerView, e: MotionEvent): Boolean {
                 when (e.actionMasked) {
                     MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y; claimed = false }
