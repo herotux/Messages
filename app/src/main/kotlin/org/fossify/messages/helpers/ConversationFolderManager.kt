@@ -70,7 +70,11 @@ object ConversationFolderManager {
         prefs(context).edit().putString(SELECTED, id).apply()
     }
 
-    fun getFolderMembership(context: Context, threadId: Long): Set<String> {
+    /** Returns the union of manual and automatic folder membership. */
+    fun getFolderMembership(context: Context, threadId: Long): Set<String> =
+        getManualMembership(context, threadId) + ConversationFolderRuleManager.getAutomaticMembership(context, threadId)
+
+    fun getManualMembership(context: Context, threadId: Long): Set<String> {
         val root = readMembers(context)
         val array = root.optJSONArray(threadId.toString()) ?: return emptySet()
         return buildSet {
@@ -118,6 +122,7 @@ object ConversationFolderManager {
             if (remaining.isNotEmpty()) updated.put(key, JSONArray(remaining))
         }
         prefs(context).edit().putString(MEMBERS, updated.toString()).apply()
+        ConversationFolderRuleManager.removeRulesForFolder(context, folderId)
         if (getSelectedFolderId(context) == folderId) setSelectedFolderId(context, ALL_ID)
     }
 
