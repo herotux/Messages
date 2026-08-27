@@ -31,14 +31,7 @@ object ConversationFolderManager {
 
     fun getFolders(context: Context): MutableList<Folder> {
         val raw = prefs(context).getString(FOLDERS, null)
-        if (raw.isNullOrEmpty()) {
-            return mutableListOf(
-                Folder(ALL_ID, "همه", true, true),
-                Folder(UNREAD_ID, "خوانده‌نشده", true, true),
-                Folder(BANKS_ID, "بانک‌ها", true, true),
-                Folder(PERSONAL_ID, "شخصی", true, true),
-            )
-        }
+        if (raw.isNullOrEmpty()) return defaultFolders()
         return try {
             val array = JSONArray(raw)
             MutableList(array.length()) { index ->
@@ -51,12 +44,7 @@ object ConversationFolderManager {
                 )
             }
         } catch (_: Exception) {
-            mutableListOf(
-                Folder(ALL_ID, "همه", true, true),
-                Folder(UNREAD_ID, "خوانده‌نشده", true, true),
-                Folder(BANKS_ID, "بانک‌ها", true, true),
-                Folder(PERSONAL_ID, "شخصی", true, true),
-            )
+            defaultFolders()
         }
     }
 
@@ -92,11 +80,8 @@ object ConversationFolderManager {
 
     fun setFolderMembership(context: Context, threadId: Long, folderIds: Set<String>) {
         val root = readMembers(context)
-        if (folderIds.isEmpty()) {
-            root.remove(threadId.toString())
-        } else {
-            root.put(threadId.toString(), JSONArray(folderIds.toList()))
-        }
+        if (folderIds.isEmpty()) root.remove(threadId.toString())
+        else root.put(threadId.toString(), JSONArray(folderIds.toList()))
         prefs(context).edit().putString(MEMBERS, root.toString()).apply()
     }
 
@@ -142,12 +127,20 @@ object ConversationFolderManager {
         val keys = root.keys()
         while (keys.hasNext()) {
             val key = keys.next()
-            if (key.toLongOrNull() in validThreadIds) {
+            val threadId = key.toLongOrNull()
+            if (threadId != null && threadId in validThreadIds) {
                 root.optJSONArray(key)?.let { updated.put(key, it) }
             }
         }
         prefs(context).edit().putString(MEMBERS, updated.toString()).apply()
     }
+
+    private fun defaultFolders() = mutableListOf(
+        Folder(ALL_ID, "همه", true, true),
+        Folder(UNREAD_ID, "خوانده‌نشده", true, true),
+        Folder(BANKS_ID, "بانک‌ها", true, true),
+        Folder(PERSONAL_ID, "شخصی", true, true),
+    )
 
     private fun readMembers(context: Context): JSONObject {
         val raw = prefs(context).getString(MEMBERS, null)
