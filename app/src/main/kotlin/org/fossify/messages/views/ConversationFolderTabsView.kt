@@ -330,11 +330,9 @@ class ConversationFolderTabsView @JvmOverloads constructor(
         }
 
         fun folderName(folderId: String) = customFolders.firstOrNull { it.id == folderId }?.name ?: "پوشه حذف‌شده"
-
         fun summary(rule: ConversationFolderRuleManager.Rule): String {
             val modeText = if (rule.mode == ConversationFolderRuleManager.MatchMode.ONE) "یکی از موارد" else "همه موارد"
-            val words = rule.keywords.joinToString("، ")
-            return "${folderName(rule.folderId)} • $modeText • $words"
+            return "${folderName(rule.folderId)} • $modeText • ${rule.keywords.joinToString("، ")}" 
         }
 
         fun rebuildRows() {
@@ -352,14 +350,12 @@ class ConversationFolderTabsView @JvmOverloads constructor(
                 }
             }
             container.addView(add)
-
             if (working.isEmpty()) {
                 container.addView(TextView(context).apply {
                     text = "هنوز قانون خودکاری تعریف نشده است."
                     setPadding(0, dp(12), 0, dp(12))
                 })
             }
-
             working.forEachIndexed { index, rule ->
                 val row = LinearLayout(context).apply {
                     orientation = LinearLayout.HORIZONTAL
@@ -424,14 +420,9 @@ class ConversationFolderTabsView @JvmOverloads constructor(
         }
 
         val folderSpinner = Spinner(context)
-        val folderNames = customFolders.map { it.name }
-        folderSpinner.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, folderNames)
-        val initialFolder = customFolders.indexOfFirst { it.id == existing?.folderId }.coerceAtLeast(0)
-        folderSpinner.setSelection(initialFolder)
-        root.addView(TextView(context).apply {
-            text = "پوشه مقصد"
-            setPadding(0, dp(6), 0, dp(2))
-        })
+        folderSpinner.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, customFolders.map { it.name })
+        folderSpinner.setSelection(customFolders.indexOfFirst { it.id == existing?.folderId }.coerceAtLeast(0))
+        root.addView(TextView(context).apply { text = "پوشه مقصد"; setPadding(0, dp(6), 0, dp(2)) })
         root.addView(folderSpinner)
 
         val keywords = EditText(context).apply {
@@ -440,10 +431,7 @@ class ConversationFolderTabsView @JvmOverloads constructor(
             gravity = Gravity.TOP
             setText(existing?.keywords?.joinToString("\n") ?: "")
         }
-        root.addView(TextView(context).apply {
-            text = "موارد جستجو"
-            setPadding(0, dp(12), 0, dp(2))
-        })
+        root.addView(TextView(context).apply { text = "موارد جستجو"; setPadding(0, dp(12), 0, dp(2)) })
         root.addView(keywords)
 
         val modeGroup = RadioGroup(context).apply { orientation = RadioGroup.VERTICAL }
@@ -452,10 +440,7 @@ class ConversationFolderTabsView @JvmOverloads constructor(
         modeGroup.addView(one)
         modeGroup.addView(all)
         if (existing?.mode == ConversationFolderRuleManager.MatchMode.ALL) all.isChecked = true else one.isChecked = true
-        root.addView(TextView(context).apply {
-            text = "نحوه تطبیق"
-            setPadding(0, dp(12), 0, dp(2))
-        })
+        root.addView(TextView(context).apply { text = "نحوه تطبیق"; setPadding(0, dp(12), 0, dp(2)) })
         root.addView(modeGroup)
 
         val messageField = CheckBox(context).apply {
@@ -470,10 +455,7 @@ class ConversationFolderTabsView @JvmOverloads constructor(
             text = "شماره فرستنده"
             isChecked = existing?.fields?.contains(ConversationFolderRuleManager.MatchField.PHONE) ?: false
         }
-        root.addView(TextView(context).apply {
-            text = "در کجا جستجو شود"
-            setPadding(0, dp(12), 0, dp(2))
-        })
+        root.addView(TextView(context).apply { text = "در کجا جستجو شود"; setPadding(0, dp(12), 0, dp(2)) })
         root.addView(messageField)
         root.addView(titleField)
         root.addView(phoneField)
@@ -490,7 +472,7 @@ class ConversationFolderTabsView @JvmOverloads constructor(
                     .distinct()
                 val fields = buildSet {
                     if (messageField.isChecked) add(ConversationFolderRuleManager.MatchField.MESSAGE)
-                    if (titleField.isChecked) add(ConversationFolderRuleRuleManager.MatchField.TITLE)
+                    if (titleField.isChecked) add(ConversationFolderRuleManager.MatchField.TITLE)
                     if (phoneField.isChecked) add(ConversationFolderRuleManager.MatchField.PHONE)
                 }
                 if (words.isEmpty()) {
@@ -523,9 +505,7 @@ class ConversationFolderTabsView @JvmOverloads constructor(
             return
         }
         val labels = customFolders.map { it.name }.toTypedArray()
-        val checked = customFolders.map { folder ->
-            threadIds.all { ConversationFolderManager.getFolderMembership(context, it).contains(folder.id) }
-        }.toBooleanArray()
+        val checked = customFolders.map { folder -> threadIds.all { ConversationFolderManager.getFolderMembership(context, it).contains(folder.id) } }.toBooleanArray()
         AlertDialog.Builder(context)
             .setTitle("قرار دادن در پوشه‌ها")
             .setMultiChoiceItems(labels, checked) { _, which, isChecked -> checked[which] = isChecked }
@@ -542,8 +522,7 @@ class ConversationFolderTabsView @JvmOverloads constructor(
     }
 
     private fun withAlpha(color: Int, alpha: Float): Int = Color.argb(
-        (Color.alpha(color) * alpha).roundToInt(),
-        Color.red(color), Color.green(color), Color.blue(color)
+        (Color.alpha(color) * alpha).roundToInt(), Color.red(color), Color.green(color), Color.blue(color)
     )
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
