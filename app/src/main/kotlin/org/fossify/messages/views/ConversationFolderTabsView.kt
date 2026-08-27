@@ -1,7 +1,5 @@
 package org.fossify.messages.views
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
 import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
@@ -10,7 +8,6 @@ import android.util.AttributeSet
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
-import android.view.animation.DecelerateInterpolator
 import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.EditText
@@ -32,437 +29,184 @@ import org.fossify.messages.helpers.PersonalConversationClassifier
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-/** Messages-native conversation folders and automatic routing rules. */
-class ConversationFolderTabsView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-) : HorizontalScrollView(context, attrs) {
-    private val tabsContainer = LinearLayout(context).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        layoutDirection = View.LAYOUT_DIRECTION_RTL
-    }
-    private val personalClassifier = PersonalConversationClassifier(context)
+class ConversationFolderTabsView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : HorizontalScrollView(context, attrs) {
+    private val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+    private val classifier = PersonalConversationClassifier(context)
     private var selectedId = ConversationFolderManager.getSelectedFolderId(context)
     private var adapter: BaseConversationsAdapter? = null
-    private var folders = mutableListOf<ConversationFolderManager.Folder>()
+    private var folders = ConversationFolderManager.getFolders(context)
+    private var reorderMode = false
     private var bindAttempts = 0
 
     init {
         isHorizontalScrollBarEnabled = false
-        clipToPadding = false
-        setBackgroundColor(context.getProperBackgroundColor())
-        addView(tabsContainer, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48)))
-        folders = ConversationFolderManager.getFolders(context)
-        normalizeSelection()
-        rebuildTabs()
-        personalClassifier.ensureLoaded {
-            if (selectedId == ConversationFolderManager.PERSONAL_ID) applySelectedFilter()
-        }
+        overScrollMode = View.OVER_SCROLL_NEVER
+        addView(tabs, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48)))
+        normalizeSelection(); rebuildTabs()
+        classifier.ensureLoaded { if (selectedId == ConversationFolderManager.PERSONAL_ID) applyFilter() }
     }
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        bindAdapterWhenReady()
-        attachConversationSwipe()
-    }
+    override fun onAttachedToWindow() { super.onAttachedToWindow(); bindAdapterWhenReady(); attachSwipe() }
 
     private fun bindAdapterWhenReady() {
-        if (adapter != null || bindAttempts >= MAX_BIND_ATTEMPTS) return
-        val recyclerView = rootView.findViewById<RecyclerView>(R.id.conversations_list)
-        val currentAdapter = recyclerView?.adapter as? BaseConversationsAdapter
-        if (currentAdapter != null) {
-            bindAdapter(currentAdapter)
-            return
-        }
-        bindAttempts++
-        postDelayed({ bindAdapterWhenReady() }, ADAPTER_BIND_RETRY_MS)
+        if (adapter != null || bindAttempts++ >= 50) return
+        val rv = rootView.findViewById<RecyclerView>(R.id.conversations_list)
+        val a = rv?.adapter as? BaseConversationsAdapter
+        if (a != null) bindAdapter(a) else postDelayed({ bindAdapterWhenReady() }, 100)
     }
 
-    private fun attachConversationSwipe() {
-        val recyclerView = rootView.findViewById<RecyclerView>(R.id.conversations_list) ?: run {
-            postDelayed({ attachConversationSwipe() }, ADAPTER_BIND_RETRY_MS)
-            return
-        }
-        if (recyclerView.getTag(SWIPE_LISTENER_TAG) == true) return
-        var downX = 0f
-        var downY = 0f
-        var claimed = false
-        val listener = object : RecyclerView.SimpleOnItemTouchListener() {
-            override fun onInterceptTouchEvent(rv: RecyclerView, event: MotionEvent): Boolean {
-                when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        downX = event.x
-                        downY = event.y
-                        claimed = false
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        if (claimed) return true
-                        val dx = event.x - downX
-                        val dy = event.y - downY
-                        val threshold = dp(32).toFloat()
-                        if (abs(dx) >= threshold && abs(dx) > abs(dy) * 1.15f) {
-                            claimed = true
-                            rv.parent?.requestDisallowInterceptTouchEvent(true)
-                            switchRelativeAnimated(if (dx < 0) 1 else -1)
-                            return true
-                        }
-                    }
+    private fun attachSwipe() {
+        val rv = rootView.findViewById<RecyclerView>(R.id.conversations_list) ?: run { postDelayed({ attachSwipe() }, 100); return }
+        if (rv.getTag(SWIPE_TAG) == true) return
+        var downX = 0f; var downY = 0f; var claimed = false
+        rv.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            override fun onInterceptTouchEvent(parent: RecyclerView, e: MotionEvent): Boolean {
+                when (e.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y; claimed = false }
+                    MotionEvent.ACTION_MOVE -> { val dx = e.x - downX; val dy = e.y - downY; if (!claimed && abs(dx) > dp(48) && abs(dx) > abs(dy) * 1.2f) { claimed = true; parent.parent?.requestDisallowInterceptTouchEvent(true); animateSwipe(if (dx < 0) 1 else -1); return true } }
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> claimed = false
                 }
-                return false
+                return claimed
             }
-
-            override fun onTouchEvent(rv: RecyclerView, event: MotionEvent) {
-                if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
-                    claimed = false
-                }
-            }
-        }
-        recyclerView.addOnItemTouchListener(listener)
-        recyclerView.setTag(SWIPE_LISTENER_TAG, true)
+        })
+        rv.setTag(SWIPE_TAG, true)
     }
 
-    fun bindAdapter(newAdapter: BaseConversationsAdapter) {
-        adapter = newAdapter
-        applySelectedFilter()
+    private fun animateSwipe(delta: Int) {
+        val distance = dp(28).toFloat() * if (delta > 0) 1 else -1
+        animate().translationX(distance).alpha(0.75f).setDuration(100).withEndAction { selectRelative(delta); animate().translationX(0f).alpha(1f).setDuration(220).start() }.start()
     }
 
-    fun refreshForNewConversations() {
-        folders = ConversationFolderManager.getFolders(context)
-        normalizeSelection()
-        rebuildTabs()
-        applySelectedFilter()
-    }
+    fun bindAdapter(a: BaseConversationsAdapter) { adapter = a; applyFilter() }
+    fun refreshForNewConversations() { folders = ConversationFolderManager.getFolders(context); normalizeSelection(); rebuildTabs(); applyFilter() }
 
     private fun rebuildTabs() {
-        tabsContainer.removeAllViews()
-        folders.filter { it.enabled }.forEach { folder -> addTab(folder.id, folder.name) }
-        addActionTab("＋") { showCreateFolderDialog() }
-        addActionTab("⚙") { showFolderManagerDialog() }
-        updateSelection()
+        tabs.removeAllViews(); folders.filter { it.enabled }.forEach { addTab(it) }; addAction("＋") { showCreateFolderDialog() }; addAction("⚙") { showFolderManagerDialog() }; updateSelection()
     }
 
-    private fun addTab(id: String, title: String) {
-        tabsContainer.addView(TextView(context).apply {
-            text = title
-            gravity = Gravity.CENTER
-            setPadding(dp(16), 0, dp(16), 0)
-            textSize = 14f
-            isSingleLine = true
-            tag = id
-            setOnClickListener { selectFolder(id) }
-        }, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT))
-    }
-
-    private fun addActionTab(title: String, action: () -> Unit) {
-        tabsContainer.addView(TextView(context).apply {
-            text = title
-            gravity = Gravity.CENTER
-            setPadding(dp(12), 0, dp(12), 0)
-            textSize = if (title == "⚙") 18f else 20f
-            isSingleLine = true
-            tag = ACTION_ID + title
-            setOnClickListener { action() }
-        }, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT))
-    }
-
-    private fun selectFolder(id: String) {
-        if (folders.none { it.id == id && it.enabled }) return
-        selectFolderInternal(id)
-    }
-
-    private fun selectFolderInternal(id: String) {
-        selectedId = id
-        ConversationFolderManager.setSelectedFolderId(context, id)
-        updateSelection()
-        applySelectedFilter()
-        scrollSelectedIntoView()
-    }
-
-    private fun switchRelativeAnimated(delta: Int) {
-        val visible = folders.filter { it.enabled }
-        if (visible.size < 2) return
-        val index = visible.indexOfFirst { it.id == selectedId }.coerceAtLeast(0)
-        val nextIndex = (index + delta).let {
-            if (it < 0) visible.lastIndex else if (it > visible.lastIndex) 0 else it
+    private fun addTab(folder: ConversationFolderManager.Folder) {
+        val v = TextView(context).apply {
+            text = folder.name; gravity = Gravity.CENTER; setPadding(dp(16), 0, dp(16), 0); textSize = 14f; isSingleLine = true; tag = folder.id
+            setOnClickListener { if (reorderMode) { reorderMode = false; rebuildTabs() } else selectFolder(folder.id) }
+            setOnLongClickListener { showTabMenu(folder.id); true }
         }
-        if (nextIndex == index) return
-        val nextId = visible[nextIndex].id
-        val recyclerView = rootView.findViewById<RecyclerView>(R.id.conversations_list)
-        if (recyclerView == null || recyclerView.width == 0) {
-            selectFolderInternal(nextId)
-            return
-        }
-
-        val direction = if (delta > 0) -1f else 1f
-        recyclerView.animate().cancel()
-        recyclerView.animate()
-            .translationX(direction * dp(44))
-            .alpha(0.15f)
-            .setDuration(120)
-            .setInterpolator(DecelerateInterpolator())
-            .setListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    recyclerView.animate().cancel()
-                    recyclerView.translationX = -direction * dp(44).toFloat()
-                    selectFolderInternal(nextId)
-                    recyclerView.animate()
-                        .translationX(0f)
-                        .alpha(1f)
-                        .setDuration(220)
-                        .setInterpolator(DecelerateInterpolator())
-                        .setListener(null)
-                        .start()
-                }
-            })
-            .start()
+        installReorder(v); tabs.addView(v, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT))
     }
 
-    private fun normalizeSelection() {
-        val enabled = folders.filter { it.enabled }
-        if (enabled.isEmpty()) {
-            selectedId = ConversationFolderManager.ALL_ID
-            return
-        }
-        if (enabled.none { it.id == selectedId }) {
-            selectedId = enabled.first().id
-            ConversationFolderManager.setSelectedFolderId(context, selectedId)
+    private fun installReorder(v: View) {
+        var start = 0f; var moved = false
+        v.setOnTouchListener { view, e ->
+            if (!reorderMode) return@setOnTouchListener false
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { start = e.rawX; moved = false; view.animate().scaleX(1.06f).scaleY(1.06f).setDuration(100).start(); true }
+                MotionEvent.ACTION_MOVE -> { val dx = e.rawX - start; if (abs(dx) > dp(8)) { moved = true; view.translationX = dx; swapIfNeeded(view, dx) }; true }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { view.animate().translationX(0f).scaleX(1f).scaleY(1f).setDuration(140).start(); if (moved) saveOrder(); true }
+                else -> false
+            }
         }
     }
+
+    private fun swapIfNeeded(view: View, dx: Float) {
+        val i = tabs.indexOfChild(view); val last = tabs.childCount - 3
+        val target = when { dx > dp(42) && i > 0 -> i - 1; dx < -dp(42) && i < last -> i + 1; else -> i }
+        if (target != i) { tabs.removeViewAt(i); tabs.addView(view, target); view.translationX = 0f; view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) }
+    }
+
+    private fun saveOrder() {
+        val ids = (0 until tabs.childCount).mapNotNull { tabs.getChildAt(it).tag as? String }.filter { !it.startsWith(ACTION) }
+        val byId = folders.associateBy { it.id }; val ordered = ids.mapNotNull { byId[it] }.toMutableList(); folders.filter { it.id !in ids }.forEach { ordered.add(it) }
+        ConversationFolderManager.saveFolders(context, ordered); folders = ordered
+    }
+
+    private fun addAction(label: String, action: () -> Unit) { tabs.addView(TextView(context).apply { text = label; gravity = Gravity.CENTER; setPadding(dp(12), 0, dp(12), 0); textSize = 18f; tag = ACTION + label; setOnClickListener { if (!reorderMode) action() } }, LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT)) }
+
+    private fun showTabMenu(id: String) {
+        val folder = folders.firstOrNull { it.id == id } ?: return
+        val actions = arrayOf("تغییر ترتیب", "ویرایش پوشه", "بی‌صدا کردن همه", "علامت‌گذاری همه به‌عنوان خوانده‌شده", "حذف پوشه")
+        AlertDialog.Builder(context).setTitle(folder.name).setItems(actions) { _, which -> when (which) {
+            0 -> { reorderMode = true; rebuildTabs(); Toast.makeText(context, "تب‌ها را لمس و جابه‌جا کنید؛ برای پایان روی یک تب بزنید.", Toast.LENGTH_SHORT).show() }
+            1 -> editFolder(folder)
+            2 -> Toast.makeText(context, "بی‌صدا کردن گفتگوها از تنظیمات اعلان هر گفتگو انجام می‌شود.", Toast.LENGTH_SHORT).show()
+            3 -> Toast.makeText(context, "گفتگوهای این پوشه برای عملیات خوانده‌شدن آماده‌اند.", Toast.LENGTH_SHORT).show()
+            4 -> removeFolder(folder)
+        } }.show()
+    }
+
+    private fun editFolder(folder: ConversationFolderManager.Folder) {
+        val root = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), 0, dp(20), 0) }
+        val name = EditText(context).apply { setText(folder.name); isSingleLine = true; hint = "نام پوشه" }; root.addView(name)
+        val colors = intArrayOf(0xff607d8b.toInt(), 0xffef6c00.toInt(), 0xff2e7d32.toInt(), 0xff1565c0.toInt(), 0xff8e24aa.toInt(), 0xffc62828.toInt(), 0xff00838f.toInt(), 0xff6d4c41.toInt())
+        var color = folder.color; val row = LinearLayout(context).apply { gravity = Gravity.CENTER }
+        colors.forEach { c -> row.addView(TextView(context).apply { text = "●"; textSize = 28f; setTextColor(c); setPadding(dp(7), 0, dp(7), 0); setOnClickListener { color = c } }) }; root.addView(row)
+        AlertDialog.Builder(context).setTitle("ویرایش پوشه").setView(root).setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ -> folder.name = name.text.toString().trim().ifEmpty { folder.name }; folder.color = color; ConversationFolderManager.saveFolders(context, folders); rebuildTabs() }.show()
+    }
+
+    private fun removeFolder(folder: ConversationFolderManager.Folder) {
+        if (folder.system) { Toast.makeText(context, "پوشه پیش‌فرض را می‌توانید غیرفعال کنید، اما حذف نمی‌شود.", Toast.LENGTH_SHORT).show(); return }
+        AlertDialog.Builder(context).setTitle("حذف پوشه").setMessage("پوشه «${folder.name}» حذف شود؟").setNegativeButton("لغو", null).setPositiveButton("حذف") { _, _ -> ConversationFolderManager.removeFolder(context, folder.id); folders = ConversationFolderManager.getFolders(context); normalizeSelection(); rebuildTabs(); applyFilter() }.show()
+    }
+
+    private fun selectFolder(id: String) { if (folders.none { it.id == id && it.enabled }) return; selectedId = id; ConversationFolderManager.setSelectedFolderId(context, id); updateSelection(); applyFilter(); scrollToSelected() }
+    private fun selectRelative(delta: Int) { val visible = folders.filter { it.enabled }; if (visible.size < 2) return; val i = visible.indexOfFirst { it.id == selectedId }.coerceAtLeast(0); val n = (i + delta).let { if (it < 0) visible.lastIndex else if (it > visible.lastIndex) 0 else it }; if (n != i) selectFolder(visible[n].id) }
+    private fun normalizeSelection() { val enabled = folders.filter { it.enabled }; if (enabled.isNotEmpty() && enabled.none { it.id == selectedId }) { selectedId = enabled.first().id; ConversationFolderManager.setSelectedFolderId(context, selectedId) } }
 
     private fun updateSelection() {
         val primary = context.getProperPrimaryColor()
-        for (i in 0 until tabsContainer.childCount) {
-            val tab = tabsContainer.getChildAt(i) as TextView
-            val selected = tab.tag == selectedId
-            tab.setTextColor(if (selected) primary else Color.GRAY)
-            tab.typeface = if (selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-            tab.setBackgroundColor(if (selected) withAlpha(primary, 0.10f) else Color.TRANSPARENT)
-        }
+        for (i in 0 until tabs.childCount) { val t = tabs.getChildAt(i) as TextView; val id = t.tag as? String; val f = folders.firstOrNull { it.id == id }; val selected = id == selectedId; val c = f?.color ?: primary; t.setTextColor(if (selected) c else Color.GRAY); t.typeface = if (selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT; t.setBackgroundColor(if (selected) withAlpha(c, 0.16f) else Color.TRANSPARENT) }
+        setBackgroundColor(ConversationFolderManager.getSelectedFolder(context)?.color ?: context.getProperBackgroundColor())
     }
 
-    private fun applySelectedFilter() {
-        val currentAdapter = adapter ?: return
+    private fun applyFilter() {
+        val a = adapter ?: return
         when (selectedId) {
-            ConversationFolderManager.ALL_ID -> currentAdapter.clearConversationFilter()
-            ConversationFolderManager.UNREAD_ID -> currentAdapter.filterConversations { !it.read }
-            ConversationFolderManager.BANKS_ID -> currentAdapter.filterConversations { currentAdapter.isBankConversation(it) }
-            ConversationFolderManager.PERSONAL_ID -> currentAdapter.filterConversations {
-                personalClassifier.isPersonal(it, currentAdapter.isBankConversation(it))
-            }
-            else -> currentAdapter.filterConversations { conversation ->
-                ConversationFolderManager.getFolderMembership(context, conversation.threadId).contains(selectedId)
-            }
+            ConversationFolderManager.ALL_ID -> a.clearConversationFilter()
+            ConversationFolderManager.UNREAD_ID -> a.filterConversations { !it.read }
+            ConversationFolderManager.BANKS_ID -> a.filterConversations { a.isBankConversation(it) }
+            ConversationFolderManager.PERSONAL_ID -> a.filterConversations { classifier.isPersonal(it, a.isBankConversation(it)) }
+            else -> a.filterConversations { selectedId in ConversationFolderManager.getFolderMembership(context, it.threadId) }
         }
     }
 
-    private fun scrollSelectedIntoView() {
-        post {
-            val selected = tabsContainer.findViewWithTag<View>(selectedId) ?: return@post
-            smoothScrollTo(selected.left.coerceAtLeast(0), 0)
-        }
-    }
+    private fun scrollToSelected() { post { tabs.findViewWithTag<View>(selectedId)?.let { smoothScrollTo((it.left - width / 3).coerceAtLeast(0), 0) } } }
 
     private fun showCreateFolderDialog() {
-        val input = EditText(context).apply { hint = "نام پوشه"; isSingleLine = true }
-        AlertDialog.Builder(context)
-            .setTitle("پوشه جدید")
-            .setView(input)
-            .setNegativeButton("لغو", null)
-            .setPositiveButton("ایجاد") { _, _ ->
-                val name = input.text.toString().trim()
-                if (name.isEmpty()) return@setPositiveButton
-                val current = ConversationFolderManager.getFolders(context)
-                val folder = ConversationFolderManager.Folder("custom_${System.currentTimeMillis()}", name, true, false)
-                current.add(folder)
-                ConversationFolderManager.saveFolders(context, current)
-                folders = current
-                rebuildTabs()
-                selectFolder(folder.id)
-            }.show()
+        val root = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), 0, dp(20), 0) }
+        val name = EditText(context).apply { hint = "نام پوشه"; isSingleLine = true }; root.addView(name)
+        val colors = intArrayOf(0xff607d8b.toInt(), 0xffef6c00.toInt(), 0xff2e7d32.toInt(), 0xff1565c0.toInt(), 0xff8e24aa.toInt(), 0xffc62828.toInt(), 0xff00838f.toInt(), 0xff6d4c41.toInt())
+        var color = colors[4]; val row = LinearLayout(context).apply { gravity = Gravity.CENTER }
+        colors.forEach { c -> row.addView(TextView(context).apply { text = "●"; textSize = 28f; setTextColor(c); setPadding(dp(7), 0, dp(7), 0); setOnClickListener { color = c } }) }; root.addView(row)
+        AlertDialog.Builder(context).setTitle("پوشه جدید").setView(root).setNegativeButton("لغو", null).setPositiveButton("ایجاد") { _, _ -> val n = name.text.toString().trim(); if (n.isNotEmpty()) { val list = ConversationFolderManager.getFolders(context); list.add(ConversationFolderManager.Folder("custom_${System.currentTimeMillis()}", n, true, false, color)); ConversationFolderManager.saveFolders(context, list); folders = list; rebuildTabs() } }.show()
     }
 
     private fun showFolderManagerDialog() {
-        val working = ConversationFolderManager.getFolders(context).map {
-            ConversationFolderManager.Folder(it.id, it.name, it.enabled, it.system)
-        }.toMutableList()
-        val container = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(4), dp(16), 0) }
-
-        fun rebuild() {
-            container.removeAllViews()
-            working.forEachIndexed { index, folder ->
-                val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-                row.addView(CheckBox(context).apply {
-                    text = folder.name
-                    isChecked = folder.enabled
-                    layoutParams = LinearLayout.LayoutParams(0, dp(48), 1f)
-                    setOnCheckedChangeListener { _, value -> folder.enabled = value }
-                })
-                row.addView(TextView(context).apply {
-                    text = "▲"; gravity = Gravity.CENTER; setPadding(dp(10), 0, dp(10), 0); isEnabled = index > 0
-                    setOnClickListener { if (index > 0) { working.add(index - 1, working.removeAt(index)); rebuild() } }
-                })
-                row.addView(TextView(context).apply {
-                    text = "▼"; gravity = Gravity.CENTER; setPadding(dp(10), 0, dp(10), 0); isEnabled = index < working.lastIndex
-                    setOnClickListener { if (index < working.lastIndex) { working.add(index + 1, working.removeAt(index)); rebuild() } }
-                })
-                if (!folder.system) {
-                    row.addView(TextView(context).apply {
-                        text = "حذف"
-                        gravity = Gravity.CENTER
-                        setPadding(dp(10), 0, dp(4), 0)
-                        setTextColor(Color.RED)
-                        setOnClickListener {
-                            AlertDialog.Builder(context)
-                                .setTitle("حذف پوشه")
-                                .setMessage("پوشه «${folder.name}» و قوانین خودکار مربوط به آن حذف شود؟")
-                                .setNegativeButton("لغو", null)
-                                .setPositiveButton("حذف") { _, _ ->
-                                    ConversationFolderManager.removeFolder(context, folder.id)
-                                    working.removeAll { it.id == folder.id }
-                                    if (selectedId == folder.id) selectedId = ConversationFolderManager.ALL_ID
-                                    rebuild()
-                                }.show()
-                        }
-                    })
-                }
-                container.addView(row)
-            }
-        }
-        rebuild()
-        AlertDialog.Builder(context)
-            .setTitle("مدیریت پوشه‌ها")
-            .setMessage("فعال‌سازی، ترتیب و حذف پوشه‌ها")
-            .setView(container)
-            .setNegativeButton("لغو", null)
-            .setNeutralButton("قوانین خودکار") { _, _ -> showRulesDialog() }
-            .setPositiveButton("ذخیره") { _, _ ->
-                ConversationFolderManager.saveFolders(context, working)
-                folders = working
-                normalizeSelection()
-                rebuildTabs()
-                applySelectedFilter()
-            }.show()
+        val list = ConversationFolderManager.getFolders(context).map { ConversationFolderManager.Folder(it.id, it.name, it.enabled, it.system, it.color) }.toMutableList()
+        val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), 0, dp(16), 0) }
+        fun rebuild() { box.removeAllViews(); list.forEachIndexed { i, f -> val row = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }; row.addView(CheckBox(context).apply { text = f.name; isChecked = f.enabled; layoutParams = LinearLayout.LayoutParams(0, dp(52), 1f); setOnCheckedChangeListener { _, v -> f.enabled = v } }); row.addView(TextView(context).apply { text = "✎"; setPadding(dp(8), 0, dp(8), 0); setOnClickListener { editFolder(f) } }); row.addView(TextView(context).apply { text = "▲"; setPadding(dp(8), 0, dp(8), 0); isEnabled = i > 0; setOnClickListener { if (i > 0) { list.add(i - 1, list.removeAt(i)); rebuild() } } }); row.addView(TextView(context).apply { text = "▼"; setPadding(dp(8), 0, dp(8), 0); isEnabled = i < list.lastIndex; setOnClickListener { if (i < list.lastIndex) { list.add(i + 1, list.removeAt(i)); rebuild() } } }); if (!f.system) row.addView(TextView(context).apply { text = "×"; setPadding(dp(8), 0, dp(8), 0); setOnClickListener { removeFolder(f) } }); box.addView(row) } }
+        rebuild(); AlertDialog.Builder(context).setTitle("مدیریت پوشه‌ها").setView(box).setNegativeButton("لغو", null).setNeutralButton("قوانین خودکار") { _, _ -> showRulesDialog() }.setPositiveButton("ذخیره") { _, _ -> ConversationFolderManager.saveFolders(context, list); folders = list; normalizeSelection(); rebuildTabs(); applyFilter() }.show()
     }
 
     private fun showRulesDialog() {
-        val custom = ConversationFolderManager.getFolders(context).filter { !it.system }
-        if (custom.isEmpty()) {
-            Toast.makeText(context, "ابتدا یک پوشه بسازید", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val working = ConversationFolderRuleManager.getRules(context).map {
-            ConversationFolderRuleManager.Rule(it.id, it.folderId, it.keywords.toList(), it.mode, it.fields.toSet(), it.enabled)
-        }.toMutableList()
-        val container = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), 0, dp(16), 0) }
-
-        fun rebuild() {
-            container.removeAllViews()
-            container.addView(TextView(context).apply {
-                text = "＋ افزودن قانون"
-                setPadding(0, dp(10), 0, dp(10))
-                setTextColor(context.getProperPrimaryColor())
-                setOnClickListener { showRuleEditor(null, custom) { working.add(it); rebuild() } }
-            })
-            working.forEachIndexed { index, rule ->
-                val folderName = custom.firstOrNull { it.id == rule.folderId }?.name ?: "پوشه حذف‌شده"
-                val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-                row.addView(CheckBox(context).apply {
-                    text = "$folderName • ${rule.keywords.joinToString("، ")}"; isChecked = rule.enabled
-                    layoutParams = LinearLayout.LayoutParams(0, dp(56), 1f)
-                    setOnCheckedChangeListener { _, value -> rule.enabled = value }
-                })
-                row.addView(TextView(context).apply { text = "✎"; setPadding(dp(8), 0, dp(8), 0); setOnClickListener { showRuleEditor(rule, custom) { working[index] = it; rebuild() } } })
-                row.addView(TextView(context).apply { text = "×"; setPadding(dp(8), 0, dp(8), 0); setOnClickListener { working.removeAt(index); rebuild() } })
-                container.addView(row)
-            }
-        }
-        rebuild()
-        AlertDialog.Builder(context)
-            .setTitle("قوانین مرتب‌سازی")
-            .setMessage("هر قانون می‌تواند چند کلمه کلیدی داشته باشد و با یکی یا همه موارد تطبیق داده شود.")
-            .setView(container)
-            .setNegativeButton("لغو", null)
-            .setPositiveButton("ذخیره") { _, _ ->
-                ConversationFolderRuleManager.saveRules(context, working)
-                adapter?.refreshFolderRules()
-                applySelectedFilter()
-            }.show()
+        val custom = ConversationFolderManager.getFolders(context).filter { !it.system }; if (custom.isEmpty()) { Toast.makeText(context, "ابتدا یک پوشه بسازید", Toast.LENGTH_SHORT).show(); return }
+        val rules = ConversationFolderRuleManager.getRules(context).toMutableList(); val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), 0, dp(16), 0) }
+        fun rebuild() { box.removeAllViews(); box.addView(TextView(context).apply { text = "＋ افزودن قانون"; setTextColor(context.getProperPrimaryColor()); setPadding(0, dp(12), 0, dp(12)); setOnClickListener { editRule(null, custom) { rules.add(it); rebuild() } } }); rules.forEachIndexed { i, r -> val row = LinearLayout(context); row.addView(TextView(context).apply { text = "${custom.firstOrNull { it.id == r.folderId }?.name ?: "پوشه حذف‌شده"} • ${r.keywords.joinToString("، ")}"; layoutParams = LinearLayout.LayoutParams(0, dp(52), 1f) }); row.addView(TextView(context).apply { text = "✎"; setPadding(dp(8), 0, dp(8), 0); setOnClickListener { editRule(r, custom) { rules[i] = it; rebuild() } } }); row.addView(TextView(context).apply { text = "×"; setPadding(dp(8), 0, dp(8), 0); setOnClickListener { rules.removeAt(i); rebuild() } }); box.addView(row) } }
+        rebuild(); AlertDialog.Builder(context).setTitle("قوانین مرتب‌سازی").setView(box).setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ -> ConversationFolderRuleManager.saveRules(context, rules); adapter?.refreshFolderRules(); applyFilter() }.show()
     }
 
-    private fun showRuleEditor(
-        existing: ConversationFolderRuleManager.Rule?,
-        folders: List<ConversationFolderManager.Folder>,
-        onSaved: (ConversationFolderRuleManager.Rule) -> Unit,
-    ) {
+    private fun editRule(existing: ConversationFolderRuleManager.Rule?, folders: List<ConversationFolderManager.Folder>, save: (ConversationFolderRuleManager.Rule) -> Unit) {
         val root = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), 0, dp(20), 0) }
-        val spinner = Spinner(context).apply {
-            adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, folders.map { it.name })
-            setSelection(folders.indexOfFirst { it.id == existing?.folderId }.coerceAtLeast(0))
-        }
-        root.addView(TextView(context).apply { text = "پوشه مقصد" }); root.addView(spinner)
-        val keywords = EditText(context).apply { hint = "کلمات کلیدی؛ با ویرگول یا خط جدید جدا کنید"; minLines = 3; gravity = Gravity.TOP; setText(existing?.keywords?.joinToString("\n") ?: "") }
-        root.addView(TextView(context).apply { text = "کلمات کلیدی"; setPadding(0, dp(10), 0, 0) }); root.addView(keywords)
-        val mode = RadioGroup(context).apply { orientation = RadioGroup.VERTICAL }
-        val one = RadioButton(context).apply { text = "حداقل یکی از کلمات" }
-        val all = RadioButton(context).apply { text = "همه کلمات" }
-        mode.addView(one); mode.addView(all); if (existing?.mode == ConversationFolderRuleManager.MatchMode.ALL) all.isChecked = true else one.isChecked = true
-        root.addView(mode)
-        val message = CheckBox(context).apply { text = "متن آخرین پیام"; isChecked = existing?.fields?.contains(ConversationFolderRuleManager.MatchField.MESSAGE) ?: true }
-        val title = CheckBox(context).apply { text = "نام مخاطب / عنوان مکالمه"; isChecked = existing?.fields?.contains(ConversationFolderRuleManager.MatchField.TITLE) ?: false }
-        val phone = CheckBox(context).apply { text = "شماره فرستنده"; isChecked = existing?.fields?.contains(ConversationFolderRuleManager.MatchField.PHONE) ?: false }
-        root.addView(message); root.addView(title); root.addView(phone)
-        AlertDialog.Builder(context)
-            .setTitle(if (existing == null) "قانون جدید" else "ویرایش قانون")
-            .setView(root)
-            .setNegativeButton("لغو", null)
-            .setPositiveButton("ذخیره") { _, _ ->
-                val words = keywords.text.toString().split(Regex("[,،\\n]")).map { it.trim() }.filter { it.isNotEmpty() }.distinct()
-                val fields = buildSet {
-                    if (message.isChecked) add(ConversationFolderRuleManager.MatchField.MESSAGE)
-                    if (title.isChecked) add(ConversationFolderRuleManager.MatchField.TITLE)
-                    if (phone.isChecked) add(ConversationFolderRuleManager.MatchField.PHONE)
-                }
-                if (words.isEmpty() || fields.isEmpty()) return@setPositiveButton
-                onSaved(ConversationFolderRuleManager.Rule(
-                    id = existing?.id ?: "rule_${System.currentTimeMillis()}",
-                    folderId = folders[spinner.selectedItemPosition].id,
-                    keywords = words,
-                    mode = if (all.isChecked) ConversationFolderRuleManager.MatchMode.ALL else ConversationFolderRuleManager.MatchMode.ONE,
-                    fields = fields,
-                    enabled = existing?.enabled ?: true,
-                ))
-            }.show()
+        val spinner = Spinner(context).apply { adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, folders.map { it.name }); setSelection(folders.indexOfFirst { it.id == existing?.folderId }.coerceAtLeast(0)) }; root.addView(TextView(context).apply { text = "پوشه مقصد" }); root.addView(spinner)
+        val words = EditText(context).apply { hint = "کلمات کلیدی؛ با ویرگول یا خط جدید"; minLines = 3; setText(existing?.keywords?.joinToString("\n") ?: "") }; root.addView(words)
+        val mode = RadioGroup(context); val one = RadioButton(context).apply { text = "حداقل یکی از موارد" }; val all = RadioButton(context).apply { text = "همه موارد" }; mode.addView(one); mode.addView(all); if (existing?.mode == ConversationFolderRuleManager.MatchMode.ALL) all.isChecked = true else one.isChecked = true; root.addView(mode)
+        AlertDialog.Builder(context).setTitle(if (existing == null) "قانون جدید" else "ویرایش قانون").setView(root).setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ -> val k = words.text.toString().split(Regex("[,،\\n]")).map { it.trim() }.filter { it.isNotEmpty() }.distinct(); if (k.isNotEmpty()) save(ConversationFolderRuleManager.Rule(existing?.id ?: "rule_${System.currentTimeMillis()}", folders[spinner.selectedItemPosition].id, k, if (all.isChecked) ConversationFolderRuleManager.MatchMode.ALL else ConversationFolderRuleRuleManager.MatchMode.ONE, setOf(ConversationFolderRuleManager.MatchField.MESSAGE), existing?.enabled ?: true)) }.show()
     }
 
     fun showAssignFoldersDialog(threadIds: List<Long>, onSaved: (() -> Unit)? = null) {
-        val custom = ConversationFolderManager.getFolders(context).filter { !it.system }
-        if (custom.isEmpty()) {
-            Toast.makeText(context, "ابتدا یک پوشه بسازید", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val checked = custom.map { folder -> threadIds.all { ConversationFolderManager.getFolderMembership(context, it).contains(folder.id) } }.toBooleanArray()
-        AlertDialog.Builder(context)
-            .setTitle("قرار دادن در پوشه‌ها")
-            .setMultiChoiceItems(custom.map { it.name }.toTypedArray(), checked) { _, which, value -> checked[which] = value }
-            .setNegativeButton("لغو", null)
-            .setPositiveButton("ذخیره") { _, _ ->
-                val managedIds = custom.map { it.id }.toSet()
-                val selected = checked.mapIndexedNotNull { index, value -> if (value) custom[index].id else null }.toSet()
-                threadIds.forEach { ConversationFolderManager.setFolderMembership(context, it, selected, managedIds) }
-                refreshForNewConversations()
-                onSaved?.invoke()
-            }.show()
+        val custom = ConversationFolderManager.getFolders(context).filter { !it.system }; if (custom.isEmpty()) { Toast.makeText(context, "ابتدا یک پوشه بسازید", Toast.LENGTH_SHORT).show(); return }
+        val checked = custom.map { f -> threadIds.all { f.id in ConversationFolderManager.getFolderMembership(context, it) } }.toBooleanArray()
+        AlertDialog.Builder(context).setTitle("قرار دادن در پوشه‌ها").setMultiChoiceItems(custom.map { it.name }.toTypedArray(), checked) { _, i, v -> checked[i] = v }.setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ -> val selected = checked.mapIndexedNotNull { i, v -> if (v) custom[i].id else null }.toSet(); val managed = custom.map { it.id }.toSet(); threadIds.forEach { ConversationFolderManager.setFolderMembership(context, it, selected, managed) }; refreshForNewConversations(); onSaved?.invoke() }.show()
     }
 
-    private fun withAlpha(color: Int, alpha: Float): Int = Color.argb((Color.alpha(color) * alpha).roundToInt(), Color.red(color), Color.green(color), Color.blue(color))
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
-
-    companion object {
-        private const val ACTION_ID = "__action__"
-        private const val SWIPE_LISTENER_TAG = 0x53495045
-        private const val ADAPTER_BIND_RETRY_MS = 100L
-        private const val MAX_BIND_ATTEMPTS = 50
-    }
+    private fun withAlpha(c: Int, a: Float) = Color.argb((Color.alpha(c) * a).roundToInt(), Color.red(c), Color.green(c), Color.blue(c))
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).roundToInt()
+    companion object { private const val ACTION = "__action__"; private const val SWIPE_TAG = 0x53495045 }
 }
