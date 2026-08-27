@@ -46,7 +46,7 @@ open class ConversationFolderTabsView @JvmOverloads constructor(context: Context
         val rv = rootView.findViewById<RecyclerView>(R.id.conversations_list) ?: run { postDelayed({ attachSwipe() }, 100); return }
         if (rv.getTag(SWIPE_TAG) == true) return
         var downX = 0f; var downY = 0f; var claimed = false
-        rv.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener {
+        rv.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
             override fun onInterceptTouchEvent(parent: RecyclerView, e: MotionEvent): Boolean {
                 when (e.actionMasked) {
                     MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y; claimed = false }
