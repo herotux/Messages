@@ -12,11 +12,11 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.recyclerview.widget.RecyclerView
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.messages.R
 import org.fossify.messages.adapters.BaseConversationsAdapter
-import org.fossify.messages.models.Conversation
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.roundToInt
@@ -24,9 +24,9 @@ import kotlin.math.roundToInt
 /**
  * Messages-native conversation folder tabs.
  *
- * The tabs borrow the useful navigation architecture of modern messengers without
- * copying another app's visual identity. Folder state lives outside SMS/Room so
- * changing tabs never triggers a Telephony query.
+ * The navigation model is inspired by modern messenger folder UX, but the visual
+ * identity remains Fossify Messages. Folder switching is strictly an in-memory
+ * operation and never triggers a Telephony/Room reload.
  */
 class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
     private val tabsContainer = LinearLayout(context).apply {
@@ -39,6 +39,7 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
     private var selectedId = ALL_ID
     private var adapter: BaseConversationsAdapter? = null
     private var folders = mutableListOf<Folder>()
+    private var bindAttempts = 0
 
     init {
         isHorizontalScrollBarEnabled = false
@@ -47,6 +48,23 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
         addView(tabsContainer, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48)))
         folders = loadFolders()
         rebuildTabs()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        bindAdapterWhenReady()
+    }
+
+    private fun bindAdapterWhenReady() {
+        if (adapter != null || bindAttempts >= MAX_BIND_ATTEMPTS) return
+        val recyclerView = rootView.findViewById<RecyclerView>(R.id.conversations_list)
+        val currentAdapter = recyclerView?.adapter as? BaseConversationsAdapter
+        if (currentAdapter != null) {
+            bindAdapter(currentAdapter)
+            return
+        }
+        bindAttempts++
+        postDelayed({ bindAdapterWhenReady() }, ADAPTER_BIND_RETRY_MS)
     }
 
     /** Bind after the conversation adapter exists. Safe to call repeatedly. */
@@ -229,5 +247,7 @@ class TelegramFolderTabsView(context: Context) : HorizontalScrollView(context) {
         private const val BANKS_ID = "__banks__"
         private const val PERSONAL_ID = "__personal__"
         private const val ADD_ID = "__add__"
+        private const val ADAPTER_BIND_RETRY_MS = 100L
+        private const val MAX_BIND_ATTEMPTS = 50
     }
 }
