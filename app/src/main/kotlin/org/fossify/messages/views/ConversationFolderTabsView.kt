@@ -1,5 +1,7 @@
 package org.fossify.messages.views
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
@@ -8,6 +10,7 @@ import android.util.AttributeSet
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.DecelerateInterpolator
 import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.EditText
@@ -76,11 +79,6 @@ class ConversationFolderTabsView @JvmOverloads constructor(
         postDelayed({ bindAdapterWhenReady() }, ADAPTER_BIND_RETRY_MS)
     }
 
-    /**
-     * Use RecyclerView.OnItemTouchListener rather than setOnTouchListener.
-     * RecyclerView can intercept the gesture itself; OnItemTouchListener is invoked
-     * before RecyclerView's own scrolling and can safely take over horizontal swipes.
-     */
     private fun attachConversationSwipe() {
         val recyclerView = rootView.findViewById<RecyclerView>(R.id.conversations_list) ?: run {
             postDelayed({ attachConversationSwipe() }, ADAPTER_BIND_RETRY_MS)
@@ -102,11 +100,11 @@ class ConversationFolderTabsView @JvmOverloads constructor(
                         if (claimed) return true
                         val dx = event.x - downX
                         val dy = event.y - downY
-                        val threshold = dp(48).toFloat()
-                        if (abs(dx) >= threshold && abs(dx) > abs(dy) * 1.2f) {
+                        val threshold = dp(32).toFloat()
+                        if (abs(dx) >= threshold && abs(dx) > abs(dy) * 1.15f) {
                             claimed = true
                             rv.parent?.requestDisallowInterceptTouchEvent(true)
-                            selectRelative(if (dx < 0) 1 else -1)
+                            switchRelativeAnimated(if (dx < 0) 1 else -1)
                             return true
                         }
                     }
@@ -171,6 +169,10 @@ class ConversationFolderTabsView @JvmOverloads constructor(
 
     private fun selectFolder(id: String) {
         if (folders.none { it.id == id && it.enabled }) return
+        selectFolderInternal(id)
+    }
+
+    private fun selectFolderInternal(id: String) {
         selectedId = id
         ConversationFolderManager.setSelectedFolderId(context, id)
         updateSelection()
@@ -178,12 +180,43 @@ class ConversationFolderTabsView @JvmOverloads constructor(
         scrollSelectedIntoView()
     }
 
-    private fun selectRelative(delta: Int) {
+    private fun switchRelativeAnimated(delta: Int) {
         val visible = folders.filter { it.enabled }
         if (visible.size < 2) return
         val index = visible.indexOfFirst { it.id == selectedId }.coerceAtLeast(0)
-        val next = (index + delta).let { if (it < 0) visible.lastIndex else if (it > visible.lastIndex) 0 else it }
-        if (next != index) selectFolder(visible[next].id)
+        val nextIndex = (index + delta).let {
+            if (it < 0) visible.lastIndex else if (it > visible.lastIndex) 0 else it
+        }
+        if (nextIndex == index) return
+        val nextId = visible[nextIndex].id
+        val recyclerView = rootView.findViewById<RecyclerView>(R.id.conversations_list)
+        if (recyclerView == null || recyclerView.width == 0) {
+            selectFolderInternal(nextId)
+            return
+        }
+
+        val direction = if (delta > 0) -1f else 1f
+        recyclerView.animate().cancel()
+        recyclerView.animate()
+            .translationX(direction * dp(44))
+            .alpha(0.15f)
+            .setDuration(120)
+            .setInterpolator(DecelerateInterpolator())
+            .setListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    recyclerView.animate().cancel()
+                    recyclerView.translationX = -direction * dp(44).toFloat()
+                    selectFolderInternal(nextId)
+                    recyclerView.animate()
+                        .translationX(0f)
+                        .alpha(1f)
+                        .setDuration(220)
+                        .setInterpolator(DecelerateInterpolator())
+                        .setListener(null)
+                        .start()
+                }
+            })
+            .start()
     }
 
     private fun normalizeSelection() {
@@ -245,8 +278,8 @@ class ConversationFolderTabsView @JvmOverloads constructor(
                 current.add(folder)
                 ConversationFolderManager.saveFolders(context, current)
                 folders = current
-                selectFolder(folder.id)
                 rebuildTabs()
+                selectFolder(folder.id)
             }.show()
     }
 
@@ -274,13 +307,33 @@ class ConversationFolderTabsView @JvmOverloads constructor(
                     text = "▼"; gravity = Gravity.CENTER; setPadding(dp(10), 0, dp(10), 0); isEnabled = index < working.lastIndex
                     setOnClickListener { if (index < working.lastIndex) { working.add(index + 1, working.removeAt(index)); rebuild() } }
                 })
+                if (!folder.system) {
+                    row.addView(TextView(context).apply {
+                        text = "حذف"
+                        gravity = Gravity.CENTER
+                        setPadding(dp(10), 0, dp(4), 0)
+                        setTextColor(Color.RED)
+                        setOnClickListener {
+                            AlertDialog.Builder(context)
+                                .setTitle("حذف پوشه")
+                                .setMessage("پوشه «${folder.name}» و قوانین خودکار مربوط به آن حذف شود؟")
+                                .setNegativeButton("لغو", null)
+                                .setPositiveButton("حذف") { _, _ ->
+                                    ConversationFolderManager.removeFolder(context, folder.id)
+                                    working.removeAll { it.id == folder.id }
+                                    if (selectedId == folder.id) selectedId = ConversationFolderManager.ALL_ID
+                                    rebuild()
+                                }.show()
+                        }
+                    })
+                }
                 container.addView(row)
             }
         }
         rebuild()
         AlertDialog.Builder(context)
             .setTitle("مدیریت پوشه‌ها")
-            .setMessage("فعال‌سازی و ترتیب پوشه‌ها")
+            .setMessage("فعال‌سازی، ترتیب و حذف پوشه‌ها")
             .setView(container)
             .setNegativeButton("لغو", null)
             .setNeutralButton("قوانین خودکار") { _, _ -> showRulesDialog() }
