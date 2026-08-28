@@ -6,6 +6,7 @@ import android.graphics.drawable.GradientDrawable
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -82,6 +83,13 @@ class ConversationFolderLabelsView @JvmOverloads constructor(
         val holder = runCatching { recyclerView.getChildViewHolder(itemRoot) }.getOrNull() ?: return
         val threadId = holder.itemId
         if (threadId == RecyclerView.NO_ID) return
+
+        // The older adapter-side renderer used this tag. Remove it so there is only
+        // one label row and the XML-defined view controls its own constraints.
+        (itemRoot as? ViewGroup)?.let { root ->
+            val old = root.findViewWithTag<View>("conversation_folder_labels")
+            if (old != null && old !== this) root.removeView(old)
+        }
 
         val folders = ConversationFolderManager.getFolders(context)
             .filter { it.enabled && !it.system }
