@@ -6,7 +6,10 @@ package org.fossify.messages.helpers
  * imply that the message is a bank transaction.
  */
 object IranianSenderIconRegistry {
-    enum class Category { BANK, TELECOM, UTILITY, GOVERNMENT, BUSINESS }
+
+    enum class Category {
+        BANK, TELECOM, UTILITY, GOVERNMENT, BUSINESS
+    }
 
     data class SenderInfo(
         val id: String,
@@ -17,20 +20,192 @@ object IranianSenderIconRegistry {
     )
 
     private val senders = listOf(
-        SenderInfo("SHAHR_BANK", "بانک شهر", Category.BANK, listOf("BANKSHAHR", "SHAHRBANK", "BANK SHAHR", "Bank Shahr", "بانک شهر"), "bank_shahr"),
-        SenderInfo("SEPAH_BANK", "بانک سپه", Category.BANK, listOf("BANKSEPAH", "SEPAHBANK", "BANK SEPAH", "Bank Sepah", "بانک سپه", "SEPAH BANK", "SEPAH  BANK"), "bank_sepah"),
-        SenderInfo("TEJARAT_BANK", "بانک تجارت", Category.BANK, listOf("BANKTEJARAT", "TEJARATBANK", "BANK TEJARAT", "TejaratBank", "بانک تجارت"), "bank_tejarat"),
-        SenderInfo("MELLI_BANK", "بانک ملی ایران", Category.BANK, listOf("BANKMELLI", "BANKMELLIIRAN", "BANK MELLI", "Bank Melli", "بانک ملی", "بانک ملی ایران", "+98700717"), "bank_melli"),
-        SenderInfo("IRANCELL", "ایرانسل", Category.TELECOM, listOf("IRANCELL", ".IRANCELL.", "IrancelleTo"), "sender_irancell"),
-        SenderInfo("MOKHABERAT", "مخابرات ایران", Category.TELECOM, listOf("MOKHABERAT", "مخابرات"), "sender_mokhaberat"),
-        SenderInfo("GAS_KURDISTAN", "گاز کردستان", Category.UTILITY, listOf("+984040102020", "گاز کردستان"), "sender_gas"),
-        SenderInfo("ELECTRICITY_KURDISTAN", "برق کردستان", Category.UTILITY, listOf("+98404014013900", "برق کردستان"), "sender_electricity"),
-        SenderInfo("SAKHD", "ساخد", Category.GOVERNMENT, listOf("+9860009621", "ساخد"), "sender_sakhd"),
+
+        // Banks
+        SenderInfo(
+            "SHAHR_BANK",
+            "بانک شهر",
+            Category.BANK,
+            listOf(
+                "BANKSHAHR",
+                "SHAHRBANK",
+                "BANK SHAHR",
+                "Bank Shahr",
+                "بانک شهر"
+            ),
+            "bank_shahr"
+        ),
+
+        SenderInfo(
+            "SEPAH_BANK",
+            "بانک سپه",
+            Category.BANK,
+            listOf(
+                "BANKSEPAH",
+                "SEPAHBANK",
+                "BANK SEPAH",
+                "Bank Sepah",
+                "بانک سپه",
+                "SEPAH BANK",
+                "SEPAH  BANK"
+            ),
+            "bank_sepah"
+        ),
+
+        SenderInfo(
+            "TEJARAT_BANK",
+            "بانک تجارت",
+            Category.BANK,
+            listOf(
+                "BANKTEJARAT",
+                "TEJARATBANK",
+                "BANK TEJARAT",
+                "TejaratBank",
+                "بانک تجارت"
+            ),
+            "bank_tejarat"
+        ),
+
+        SenderInfo(
+            "MELLI_BANK",
+            "بانک ملی ایران",
+            Category.BANK,
+            listOf(
+                "BANKMELLI",
+                "BANKMELLIIRAN",
+                "BANK MELLI",
+                "Bank Melli",
+                "بانک ملی",
+                "بانک ملی ایران",
+                "+98700717"
+            ),
+            "bank_melli"
+        ),
+
+        // Hamrah Aval
+        SenderInfo(
+            "HAMRAH_AVAL",
+            "همراه اول",
+            Category.TELECOM,
+            listOf(
+                "HAMRAHAVAL",
+                "+9898999",
+                "HAMRAH AVAL",
+                "Ewano",
+                "+98988989",
+                "MCI-ROAMING",
+                "+989889000831",
+                "988989",
+                "HamraheMan",
+                "Hamrah-5G",
+                "+988989",
+                "+9889000831",
+                "MCI Net",
+                "MCI Cloud",
+                "MCI Rond",
+                "MCI Club",
+                "MCI Package",
+                "MCI 5G",
+                "MCI-CIP",
+                "MCI Voice",
+                "MCI Mag",
+                "MCIWorldCup"
+            ),
+            "hamrah_avval"
+        ),
+
+        // Irancell
+        SenderInfo(
+            "IRANCELL",
+            "ایرانسل",
+            Category.TELECOM,
+            listOf(
+                "IRANCELL",
+                "*4444#",
+                "E-Charge",
+                "+987575",
+                "+982022",
+                "+982027",
+                "+982028",
+                "IrancellMix",
+                "Irancell4U",
+                "My_Irancell",
+                "IrancellMKP",
+                "IrancellOff",
+                "IrancellApp",
+                "BaIrancell",
+                ".IRANCELL.",
+                "9008",
+                "IrancelleTo"
+            ),
+            "irancell"
+        ),
+
+        // Rightel
+        SenderInfo(
+            "RIGHTEL",
+            "رایتل",
+            Category.TELECOM,
+            listOf(
+                "RIGHTEL",
+                "رایتل",
+                "RighTel",
+                "RIGHTEL-",
+                "RIGHTEL.IR"
+            ),
+            "rightel"
+        ),
+
+        SenderInfo(
+            "MOKHABERAT",
+            "مخابرات ایران",
+            Category.TELECOM,
+            listOf(
+                "MOKHABERAT",
+                "مخابرات"
+            ),
+            "sender_mokhaberat"
+        ),
+
+        SenderInfo(
+            "GAS_KURDISTAN",
+            "گاز کردستان",
+            Category.UTILITY,
+            listOf(
+                "+984040102020",
+                "گاز کردستان"
+            ),
+            "sender_gas"
+        ),
+
+        SenderInfo(
+            "ELECTRICITY_KURDISTAN",
+            "برق کردستان",
+            Category.UTILITY,
+            listOf(
+                "+98404014013900",
+                "برق کردستان"
+            ),
+            "sender_electricity"
+        ),
+
+        SenderInfo(
+            "SAKHD",
+            "ساخد",
+            Category.GOVERNMENT,
+            listOf(
+                "+9860009621",
+                "ساخد"
+            ),
+            "sender_sakhd"
+        ),
     )
 
-    private val aliases = senders.flatMap { sender ->
-        sender.senderAliases.map { normalize(it) to sender }
-    }.toMap()
+    private val aliases = senders
+        .flatMap { sender ->
+            sender.senderAliases.map { normalize(it) to sender }
+        }
+        .toMap()
 
     fun find(sender: String?): SenderInfo? {
         if (sender.isNullOrBlank()) return null
@@ -39,9 +214,15 @@ object IranianSenderIconRegistry {
 
     fun all(): List<SenderInfo> = senders
 
-    private fun normalize(value: String): String = value
-        .trim()
-        .replace("\u200C", "")
-        .replace(" ", "")
-        .uppercase()
+    private fun normalize(value: String): String = buildString {
+        value
+            .trim()
+            .replace("\u200C", "")
+            .uppercase()
+            .forEach { char ->
+                if (char.isLetterOrDigit()) {
+                    append(char)
+                }
+            }
+    }
 }

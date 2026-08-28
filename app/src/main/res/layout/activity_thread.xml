@@ -19,6 +19,12 @@
             app:menu="@menu/menu_thread"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 
+        <org.fossify.messages.helpers.BankConversationVerificationView
+            android:id="@+id/bank_conversation_verification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
     </org.fossify.commons.views.MyAppBarLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout

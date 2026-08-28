@@ -30,7 +30,8 @@ import org.fossify.messages.models.RecycleBinMessage
         RecycleBinMessage::class,
         Draft::class
     ],
-    version = 11
+    version = 11,
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class MessagesDatabase : RoomDatabase() {

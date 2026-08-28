@@ -17,6 +17,7 @@ class App : FossifyApp() {
 
     override fun onCreate() {
         super.onCreate()
+
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(
                 ContactsContract.Contacts.CONTENT_URI,

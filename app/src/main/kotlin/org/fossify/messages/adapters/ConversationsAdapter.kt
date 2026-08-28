@@ -28,6 +28,7 @@ import org.fossify.messages.extensions.updateConversationArchivedStatus
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.messaging.isShortCodeWithLetters
 import org.fossify.messages.models.Conversation
+import org.fossify.messages.views.ConversationFolderTabsView
 
 class ConversationsAdapter(
     activity: SimpleActivity,
@@ -51,11 +52,12 @@ class ConversationsAdapter(
                 isSingleSelection && !isGroupConversation
             findItem(R.id.cab_dial_number).isVisible =
                 isSingleSelection && !isGroupConversation &&
-                        !isShortCodeWithLetters(selectedConversation.phoneNumber)
+                    !isShortCodeWithLetters(selectedConversation.phoneNumber)
             findItem(R.id.cab_copy_number).isVisible = isSingleSelection && !isGroupConversation
             findItem(R.id.cab_rename_conversation).isVisible =
                 isSingleSelection && isGroupConversation
             findItem(R.id.cab_conversation_details).isVisible = isSingleSelection
+            findItem(R.id.cab_assign_folders).isVisible = true
             findItem(R.id.cab_mark_as_read).isVisible = selectedItems.any { !it.read }
             findItem(R.id.cab_mark_as_unread).isVisible = selectedItems.any { it.read }
             findItem(R.id.cab_archive).isVisible = archiveAvailable
@@ -65,9 +67,7 @@ class ConversationsAdapter(
 
     override fun actionItemPressed(id: Int) {
         val selectedItems = getSelectedItems()
-        if (selectedItems.isEmpty()) {
-            return
-        }
+        if (selectedItems.isEmpty()) return
 
         when (id) {
             R.id.cab_add_number_to_contact -> addNumberToContact()
@@ -79,7 +79,7 @@ class ConversationsAdapter(
             R.id.cab_rename_conversation -> renameConversation(selectedItems.first())
             R.id.cab_conversation_details ->
                 activity.launchConversationDetails(selectedItems.first().threadId)
-
+            R.id.cab_assign_folders -> assignFolders(selectedItems)
             R.id.cab_mark_as_read -> markAsRead()
             R.id.cab_mark_as_unread -> markAsUnread()
             R.id.cab_pin_conversation -> pinConversation(true)
@@ -88,12 +88,16 @@ class ConversationsAdapter(
         }
     }
 
+    private fun assignFolders(conversations: List<Conversation>) {
+        val folderTabs = activity.findViewById<ConversationFolderTabsView>(R.id.folder_tabs)
+        folderTabs?.showAssignFoldersDialog(conversations.map { it.threadId }) {
+            finishActMode()
+        } ?: finishActMode()
+    }
+
     private fun tryBlocking() {
-        if (activity.isOrWasThankYouInstalled()) {
-            askConfirmBlock()
-        } else {
-            FeatureLockedDialog(activity) { }
-        }
+        if (activity.isOrWasThankYouInstalled()) askConfirmBlock()
+        else FeatureLockedDialog(activity) { }
     }
 
     private fun askConfirmBlock() {
@@ -103,25 +107,15 @@ class ConversationsAdapter(
             resources.getString(org.fossify.commons.R.string.block_confirmation),
             numbersString
         )
-
-        ConfirmationDialog(activity, question) {
-            blockNumbers()
-        }
+        ConfirmationDialog(activity, question) { blockNumbers() }
     }
 
     private fun blockNumbers() {
-        if (selectedKeys.isEmpty()) {
-            return
-        }
-
+        if (selectedKeys.isEmpty()) return
         val numbersToBlock = getSelectedItems()
         val newList = currentList.toMutableList().apply { removeAll(numbersToBlock) }
-
         ensureBackgroundThread {
-            numbersToBlock.map { it.phoneNumber }.forEach { number ->
-                activity.addBlockedNumber(number)
-            }
-
+            numbersToBlock.map { it.phoneNumber }.forEach { number -> activity.addBlockedNumber(number) }
             activity.runOnUiThread {
                 submitList(newList)
                 finishActMode()
@@ -131,9 +125,7 @@ class ConversationsAdapter(
 
     private fun dialNumber() {
         val conversation = getSelectedItems().firstOrNull() ?: return
-        activity.dialNumber(conversation.phoneNumber) {
-            finishActMode()
-        }
+        activity.dialNumber(conversation.phoneNumber) { finishActMode() }
     }
 
     private fun copyNumberToClipboard() {
@@ -145,89 +137,59 @@ class ConversationsAdapter(
     private fun askConfirmDelete() {
         val itemsCnt = selectedKeys.size
         val items = resources.getQuantityString(R.plurals.delete_conversations, itemsCnt, itemsCnt)
-
         val baseString = org.fossify.commons.R.string.deletion_confirmation
         val question = String.format(resources.getString(baseString), items)
-
         ConfirmationDialog(activity, question) {
-            ensureBackgroundThread {
-                deleteConversations()
-            }
+            ensureBackgroundThread { deleteConversations() }
         }
     }
 
     private fun askConfirmArchive() {
         val itemsCnt = selectedKeys.size
         val items = resources.getQuantityString(R.plurals.delete_conversations, itemsCnt, itemsCnt)
-
         val baseString = R.string.archive_confirmation
         val question = String.format(resources.getString(baseString), items)
-
         ConfirmationDialog(activity, question) {
-            ensureBackgroundThread {
-                archiveConversations()
-            }
+            ensureBackgroundThread { archiveConversations() }
         }
     }
 
     private fun archiveConversations() {
-        if (selectedKeys.isEmpty()) {
-            return
-        }
-
-        val conversationsToRemove =
-            currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
+        if (selectedKeys.isEmpty()) return
+        val conversationsToRemove = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
         conversationsToRemove.forEach {
             activity.updateConversationArchivedStatus(it.threadId, true)
             activity.notificationManager.cancel(it.threadId.hashCode())
         }
-
-        val newList = try {
-            currentList.toMutableList().apply { removeAll(conversationsToRemove) }
-        } catch (ignored: Exception) {
-            currentList.toMutableList()
-        }
-
+        val newList = try { currentList.toMutableList().apply { removeAll(conversationsToRemove) } }
+        catch (_: Exception) { currentList.toMutableList() }
         activity.runOnUiThread {
             if (newList.none { selectedKeys.contains(it.hashCode()) }) {
                 refreshConversations()
                 finishActMode()
             } else {
                 submitList(newList)
-                if (newList.isEmpty()) {
-                    refreshConversations()
-                }
+                if (newList.isEmpty()) refreshConversations()
             }
         }
     }
 
     private fun deleteConversations() {
-        if (selectedKeys.isEmpty()) {
-            return
-        }
-
-        val conversationsToRemove =
-            currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
+        if (selectedKeys.isEmpty()) return
+        val conversationsToRemove = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
         conversationsToRemove.forEach {
             activity.deleteConversation(it.threadId)
             activity.notificationManager.cancel(it.threadId.hashCode())
         }
-
-        val newList = try {
-            currentList.toMutableList().apply { removeAll(conversationsToRemove) }
-        } catch (ignored: Exception) {
-            currentList.toMutableList()
-        }
-
+        val newList = try { currentList.toMutableList().apply { removeAll(conversationsToRemove) } }
+        catch (_: Exception) { currentList.toMutableList() }
         activity.runOnUiThread {
             if (newList.none { selectedKeys.contains(it.hashCode()) }) {
                 refreshConversations()
                 finishActMode()
             } else {
                 submitList(newList)
-                if (newList.isEmpty()) {
-                    refreshConversations()
-                }
+                if (newList.isEmpty()) refreshConversations()
             }
         }
     }
@@ -248,33 +210,19 @@ class ConversationsAdapter(
     }
 
     private fun markAsRead() {
-        if (selectedKeys.isEmpty()) {
-            return
-        }
-
-        val conversationsMarkedAsRead =
-            currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
+        if (selectedKeys.isEmpty()) return
+        val conversationsMarkedAsRead = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
         ensureBackgroundThread {
-            conversationsMarkedAsRead.filter { conversation -> !conversation.read }.forEach {
-                activity.markThreadMessagesRead(it.threadId)
-            }
-
+            conversationsMarkedAsRead.filter { !it.read }.forEach { activity.markThreadMessagesRead(it.threadId) }
             refreshConversationsAndFinishActMode()
         }
     }
 
     private fun markAsUnread() {
-        if (selectedKeys.isEmpty()) {
-            return
-        }
-
-        val conversationsMarkedAsUnread =
-            currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
+        if (selectedKeys.isEmpty()) return
+        val conversationsMarkedAsUnread = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
         ensureBackgroundThread {
-            conversationsMarkedAsUnread.filter { conversation -> conversation.read }.forEach {
-                activity.markThreadMessagesUnread(it.threadId)
-            }
-
+            conversationsMarkedAsUnread.filter { it.read }.forEach { activity.markThreadMessagesUnread(it.threadId) }
             refreshConversationsAndFinishActMode()
         }
     }
@@ -291,19 +239,10 @@ class ConversationsAdapter(
 
     private fun pinConversation(pin: Boolean) {
         val conversations = getSelectedItems()
-        if (conversations.isEmpty()) {
-            return
-        }
-
-        if (pin) {
-            activity.config.addPinnedConversations(conversations)
-        } else {
-            activity.config.removePinnedConversations(conversations)
-        }
-
-        getSelectedItemPositions().forEach {
-            notifyItemChanged(it)
-        }
+        if (conversations.isEmpty()) return
+        if (pin) activity.config.addPinnedConversations(conversations)
+        else activity.config.removePinnedConversations(conversations)
+        getSelectedItemPositions().forEach { notifyItemChanged(it) }
         refreshConversationsAndFinishActMode()
     }
 

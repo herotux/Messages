@@ -1,14 +1,44 @@
 package org.fossify.messages.helpers
+
+/** Conservative offline detector for Iranian bank SMS messages. */
 object BankSmsDetector {
- data class Detection(val bank:IranianBankRegistry.BankInfo)
- fun detect(sender:String?,message:String?):Detection?{
-  val s=normalize(sender);val m=normalize(message);val b=when{
-   s=="+982122333333"||s.contains("sepah")||s.contains("sepa")||s.contains("627648")||m.contains("بانک سپه")->IranianBankRegistry.byId("sepah")
-   s.contains("170019")||s.contains("melli")||m.contains("بانک ملی")->IranianBankRegistry.byId("melli")
-   s.contains("200010")||s.contains("tejarat")||m.contains("بانک تجارت")->IranianBankRegistry.byId("tejarat")
-   else->null
-  }
-  return b?.let(::Detection)
- }
- private fun normalize(v:String?)=v.orEmpty().replace('ي','ی').replace('ك','ک').replace('۰','0').replace('۱','1').replace('۲','2').replace('۳','3').replace('۴','4').replace('۵','5').replace('۶','6').replace('۷','7').replace('۸','8').replace('۹','9').lowercase().replace(" ","")
+    enum class Confidence { HIGH, MEDIUM }
+    enum class Reason { VERIFIED_SENDER, IBAN, CARD_NUMBER, TRANSACTION_CONTEXT, EXPLICIT_BANK_NAME }
+
+    data class Detection(
+        val bank: IranianBankRegistry.BankInfo,
+        val confidence: Confidence,
+        val reason: Reason,
+        val score: Int,
+        val reasons: List<Reason>,
+    )
+
+    /**
+     * Bank identity is intentionally derived only from the SMS sender.
+     * Body text, card numbers, IBANs and bank names must never identify a bank.
+     */
+    fun detect(sender: String, body: String): Detection? {
+        IranianBankSenderProfiles.find(sender)?.let {
+            return Detection(
+                bank = it,
+                confidence = Confidence.HIGH,
+                reason = Reason.VERIFIED_SENDER,
+                score = 100,
+                reasons = listOf(Reason.VERIFIED_SENDER),
+            )
+        }
+
+        IranianBankRegistry.findBySmsSender(sender)?.let {
+            return Detection(
+                bank = it,
+                confidence = Confidence.HIGH,
+                reason = Reason.VERIFIED_SENDER,
+                score = 100,
+                reasons = listOf(Reason.VERIFIED_SENDER),
+            )
+        }
+
+        // Keep the body parameter for API compatibility, but deliberately do not inspect it.
+        return null
+    }
 }
