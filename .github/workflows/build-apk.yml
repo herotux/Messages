@@ -10,17 +10,74 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  migrate-ui:
+    name: Migrate complete UI feature set
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+
+      - name: Skip migration for normal builds
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'fix/ui-theme-bank-migration-v2' }}
+        run: echo "No UI migration requested."
+
+      - name: Merge complete UI feature set
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin fix/folder-ui-stability-v2:refs/remotes/origin/fix/folder-ui-stability-v2
+          git merge --no-commit --no-ff -X theirs origin/fix/folder-ui-stability-v2 || true
+          git diff --name-only --diff-filter=U | while IFS= read -r path; do
+            case "$path" in
+              commons/*|build.gradle.kts|settings.gradle.kts|gradle.properties|gradle/*|buildSrc/*|build-logic/*|app/build.gradle.kts|.github/workflows/*)
+                git checkout --ours -- "$path"
+                ;;
+              *)
+                git checkout --theirs -- "$path"
+                ;;
+            esac
+          done
+          git add -A
+          git diff --cached --check
+
+      - name: Verify migrated tree
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew testCoreDebugUnitTest --stacktrace
+
+      - name: Commit migrated tree
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
+        run: |
+          if git diff --cached --quiet; then
+            echo "Migration already applied."
+          else
+            git commit -m "migration: restore complete UI theme tabs and bank features"
+            git push origin HEAD:fix/ui-theme-bank-migration-v2
+          fi
+
   test-and-build:
     name: Test and build APKs
+    needs: migrate-ui
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
     steps:
-      - name: Checkout
+      - name: Checkout latest PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
