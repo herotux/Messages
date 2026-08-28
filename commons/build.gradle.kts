@@ -2,12 +2,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.library)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.parcelize)
-    alias(libs.plugins.detekt)
+    alias(commonsLibs.plugins.library)
+    alias(commonsLibs.plugins.ksp)
+    alias(commonsLibs.plugins.kotlinSerialization)
+    alias(commonsLibs.plugins.compose.compiler)
+    alias(commonsLibs.plugins.parcelize)
+    alias(commonsLibs.plugins.detekt)
     `maven-publish`
 }
 
@@ -16,60 +16,37 @@ version = findProperty("VERSION")?.toString() ?: System.getenv("VERSION") ?: "1.
 
 android {
     namespace = "org.fossify.commons"
-
     compileSdk = commonsLibs.versions.app.build.compileSDKVersion.get().toInt()
-
     defaultConfig {
         minSdk = commonsLibs.versions.app.build.minimumSDK.get().toInt()
         vectorDrawables.useSupportLibrary = true
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
+        ksp { arg("room.schemaLocation", "$projectDir/schemas") }
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             consumerProguardFiles("consumer-rules.pro")
         }
     }
-
-    publishing {
-        singleVariant("release") {}
-    }
-
-    buildFeatures {
-        viewBinding = true
-        compose = true
-    }
-
+    publishing { singleVariant("release") {} }
+    buildFeatures { viewBinding = true; compose = true }
     compileOptions {
-        val currentJavaVersionFromLibs =
-            JavaVersion.valueOf(commonsLibs.versions.app.build.javaVersion.get())
-        sourceCompatibility = currentJavaVersionFromLibs
-        targetCompatibility = currentJavaVersionFromLibs
+        val javaVersion = JavaVersion.valueOf(commonsLibs.versions.app.build.javaVersion.get())
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
     }
-
     tasks.withType<KotlinCompile> {
-        compilerOptions.jvmTarget.set(
-            JvmTarget.fromTarget(project.commonsLibs.versions.app.build.kotlinJVMTarget.get())
-        )
-        compilerOptions.freeCompilerArgs.set(
-            listOf(
-                "-opt-in=kotlin.RequiresOptIn",
-                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-                "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
-                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-                "-opt-in=com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi",
-                "-Xcontext-receivers"
-            )
-        )
+        compilerOptions.jvmTarget.set(JvmTarget.fromTarget(commonsLibs.versions.app.build.kotlinJVMTarget.get()))
+        compilerOptions.freeCompilerArgs.set(listOf(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+            "-opt-in=com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi",
+            "-Xcontext-receivers"
+        ))
     }
-
     lint {
         checkReleaseBuilds = false
         abortOnError = true
@@ -77,17 +54,12 @@ android {
         baseline = file("lint-baseline.xml")
         lintConfig = rootProject.file("lint.xml")
     }
-
-    sourceSets {
-        getByName("main").java.directories.add("src/main/kotlin")
-    }
+    sourceSets { getByName("main").java.directories.add("src/main/kotlin") }
 }
 
 publishing.publications {
     create<MavenPublication>("release") {
-        afterEvaluate {
-            from(components["release"])
-        }
+        afterEvaluate { from(components["release"]) }
     }
 }
 
@@ -108,12 +80,10 @@ dependencies {
     implementation(commonsLibs.androidx.biometric.ktx)
     implementation(commonsLibs.androidx.lifecycle.process)
     implementation(commonsLibs.ez.vcard)
-
     implementation(commonsLibs.bundles.lifecycle)
     implementation(commonsLibs.bundles.compose)
     implementation(commonsLibs.compose.view.binding)
     debugImplementation(commonsLibs.bundles.compose.preview)
-
     api(commonsLibs.joda.time)
     api(commonsLibs.recyclerView.fastScroller)
     api(commonsLibs.reprint)
@@ -123,11 +93,9 @@ dependencies {
     api(commonsLibs.androidx.appcompat)
     api(commonsLibs.material)
     api(commonsLibs.gson)
-
     implementation(commonsLibs.glide.compose)
     api(commonsLibs.glide)
     ksp(commonsLibs.glide.compiler)
-
     api(commonsLibs.bundles.room)
     ksp(commonsLibs.androidx.room.compiler)
     detektPlugins(commonsLibs.compose.detekt)
