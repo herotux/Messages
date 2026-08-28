@@ -5,7 +5,7 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.LayerDrawable
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.MotionEvent
@@ -24,14 +24,25 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
 ) : ConversationFolderTabsView(context, attrs) {
     private var lastSelected: String? = null
     private var lastReorder = false
+    private var preDrawInstalled = false
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        installPreDrawFix()
         post { sync(true) }
     }
 
+    private fun installPreDrawFix() {
+        if (preDrawInstalled) return
+        preDrawInstalled = true
+        viewTreeObserver.addOnPreDrawListener {
+            setBackgroundColor(context.getProperBackgroundColor())
+            styleTabs(ConversationFolderManager.getSelectedFolderId(context))
+            true
+        }
+    }
+
     override fun dispatchDraw(canvas: android.graphics.Canvas) {
-        // The folder color must never tint the header/surface.
         setBackgroundColor(context.getProperBackgroundColor())
         sync()
         super.dispatchDraw(canvas)
@@ -39,12 +50,7 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
 
     private fun sync(force: Boolean = false) {
         val selected = ConversationFolderManager.getSelectedFolderId(context)
-        if (force || selected != lastSelected) {
-            lastSelected = selected
-        }
-
-        // Parent updateSelection() currently changes tab backgrounds. Re-apply the
-        // intended Telegram/Material appearance on every draw so the surface stays themed.
+        if (force || selected != lastSelected) lastSelected = selected
         styleTabs(selected)
 
         val reorder = privateBool("reorderMode")
@@ -55,18 +61,13 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
         if (reorder) installDrag()
     }
 
-    /**
-     * Telegram-style tabs:
-     * - transparent surface
-     * - folder color is used only for the folder label text
-     * - active tab has a short theme-primary bottom indicator
-     * - ripple comes from the Material selectable background attribute
-     */
+    /** No filled tab state; active tab gets an exact full-width bottom indicator. */
     private fun styleTabs(selected: String) {
         val tabs = privateField("tabs") as? LinearLayout ?: return
         val folders = ConversationFolderManager.getFolders(context).associateBy { it.id }
         val primary = context.getProperPrimaryColor()
 
+        tabs.overlay.clear()
         for (i in 0 until tabs.childCount) {
             val v = tabs.getChildAt(i) as? TextView ?: continue
             val id = v.tag as? String
@@ -78,20 +79,18 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
             v.alpha = if (active) 1f else 0.82f
             v.gravity = Gravity.CENTER
             v.setPadding(dp(16), 0, dp(16), 0)
-            v.background = if (active && folder != null) {
-                LayerDrawable(arrayOf(ColorDrawable(Color.TRANSPARENT), ColorDrawable(primary))).apply {
-                    setLayerGravity(1, Gravity.BOTTOM)
-                    setLayerWidth(1, dp(32))
-                    setLayerHeight(1, dp(2))
-                }
-            } else {
-                ColorDrawable(Color.TRANSPARENT)
-            }
+            v.background = ColorDrawable(Color.TRANSPARENT)
             v.foreground = selectableItemBackgroundBorderless()
+
+            if (active && v.width > 0 && tabs.height > 0) {
+                val indicator = ColorDrawable(primary)
+                indicator.setBounds(v.left, tabs.height - dp(2), v.right, tabs.height)
+                tabs.overlay.add(indicator)
+            }
         }
     }
 
-    private fun selectableItemBackgroundBorderless(): android.graphics.drawable.Drawable? = runCatching {
+    private fun selectableItemBackgroundBorderless(): Drawable? = runCatching {
         val value = android.util.TypedValue()
         context.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true)
         if (value.resourceId != 0) context.getDrawable(value.resourceId) else null
