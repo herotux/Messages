@@ -2,12 +2,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(commonsLibs.plugins.library)
-    alias(commonsLibs.plugins.ksp)
-    alias(commonsLibs.plugins.kotlinSerialization)
-    alias(commonsLibs.plugins.compose.compiler)
-    alias(commonsLibs.plugins.parcelize)
-    alias(commonsLibs.plugins.detekt)
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.parcelize)
+    alias(libs.plugins.detekt)
     `maven-publish`
 }
 
@@ -16,9 +16,9 @@ version = findProperty("VERSION")?.toString() ?: System.getenv("VERSION") ?: "1.
 
 android {
     namespace = "org.fossify.commons"
-    compileSdk = commonsLibs.versions.app.build.compileSDKVersion.get().toInt()
+    compileSdk = libs.versions.app.build.compileSDKVersion.get().toInt()
     defaultConfig {
-        minSdk = commonsLibs.versions.app.build.minimumSDK.get().toInt()
+        minSdk = libs.versions.app.build.minimumSDK.get().toInt()
         vectorDrawables.useSupportLibrary = true
         ksp { arg("room.schemaLocation", "$projectDir/schemas") }
     }
@@ -32,12 +32,12 @@ android {
     publishing { singleVariant("release") {} }
     buildFeatures { viewBinding = true; compose = true }
     compileOptions {
-        val javaVersion = JavaVersion.valueOf(commonsLibs.versions.app.build.javaVersion.get())
+        val javaVersion = JavaVersion.valueOf(libs.versions.app.build.javaVersion.get())
         sourceCompatibility = javaVersion
         targetCompatibility = javaVersion
     }
     tasks.withType<KotlinCompile> {
-        compilerOptions.jvmTarget.set(JvmTarget.fromTarget(commonsLibs.versions.app.build.kotlinJVMTarget.get()))
+        compilerOptions.jvmTarget.set(JvmTarget.fromTarget(libs.versions.app.build.kotlinJVMTarget.get()))
         compilerOptions.freeCompilerArgs.set(listOf(
             "-opt-in=kotlin.RequiresOptIn",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
