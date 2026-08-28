@@ -1,55 +1,10 @@
-name: Merge UI migration safely
+name: UI migration helper
 
 on:
-  pull_request:
-    branches:
-      - refactor/internalize-commons
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
-  migrate:
-    if: ${{ github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' && !startsWith(github.event.pull_request.head.sha, 'migration:') }}
+  info:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
-      - name: Checkout migration branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: fix/ui-theme-bank-migration-v2
-
-      - name: Fetch UI feature branch
-        run: git fetch origin fix/folder-ui-stability-v2:refs/remotes/origin/fix/folder-ui-stability-v2
-
-      - name: Merge complete UI feature set
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git merge --no-commit --no-ff -X theirs origin/fix/folder-ui-stability-v2 || true
-          git diff --name-only --diff-filter=U | while IFS= read -r path; do
-            case "$path" in
-              commons/*|build.gradle.kts|settings.gradle.kts|gradle.properties|gradle/*|buildSrc/*|build-logic/*|app/build.gradle.kts|.github/workflows/*)
-                git checkout --ours -- "$path"
-                ;;
-              *)
-                git checkout --theirs -- "$path"
-                ;;
-            esac
-          done
-          git add -A
-          git diff --cached --check
-          git status --short
-
-      - name: Verify migration before commit
-        run: |
-          chmod +x ./gradlew
-          ./gradlew testCoreDebugUnitTest --stacktrace
-
-      - name: Commit migration
-        run: |
-          git commit -m "migration: restore complete UI theme tabs and bank features"
-          git push origin HEAD:fix/ui-theme-bank-migration-v2
+      - run: echo "UI migration is handled by the Android CI PR job."
