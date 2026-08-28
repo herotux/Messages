@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.library)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.compose.compiler)
@@ -56,7 +56,7 @@ android {
 
     tasks.withType<KotlinCompile> {
         compilerOptions.jvmTarget.set(
-            JvmTarget.fromTarget(commonsLibs.versions.app.build.kotlinJVMTarget.get())
+            JvmTarget.fromTarget(project.commonsLibs.versions.app.build.kotlinJVMTarget.get())
         )
         compilerOptions.freeCompilerArgs.set(
             listOf(
