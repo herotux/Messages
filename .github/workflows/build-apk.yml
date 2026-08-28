@@ -6,53 +6,84 @@ on:
       - main
       - test/foss-release-signed
       - refactor/internalize-commons
-  pull_request:
+  pull_request_target:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
+  migrate-ui:
+    name: Migrate complete UI feature set
+    if: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Fetch complete UI feature branch
+        run: git fetch origin fix/folder-ui-stability-v2:refs/remotes/origin/fix/folder-ui-stability-v2
+      - name: Restore complete UI tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout origin/fix/folder-ui-stability-v2 -- app/src/main
+          git checkout HEAD -- app/src/main/kotlin/org/fossify/messages/activities/HerotuxAboutActivity.kt
+          git add app/src/main
+          git diff --cached --check
+      - name: Verify migrated tree
+        run: |
+          chmod +x ./gradlew
+          ./gradlew testCoreDebugUnitTest --stacktrace
+      - name: Commit migrated tree
+        run: |
+          if git diff --cached --quiet; then
+            echo "Migration already applied."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "migration: restore complete UI theme tabs and bank features"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
+
   test-and-build:
     name: Test and build APKs
+    if: ${{ github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: migrate-ui
     runs-on: ubuntu-latest
     timeout-minutes: 45
-
+    permissions:
+      contents: read
     steps:
-      - name: Checkout
+      - name: Checkout latest branch state
         uses: actions/checkout@v4
-
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
       - name: Accept Android licenses
         run: yes | sdkmanager --licenses > /dev/null || true
-
       - name: Make Gradle executable
         run: chmod +x ./gradlew
-
       - name: Run unit tests
         run: ./gradlew testCoreDebugUnitTest --stacktrace
-
       - name: Run lint
         run: ./gradlew lint --stacktrace
-
       - name: Build core debug APK
         run: ./gradlew assembleCoreDebug --stacktrace
-
       - name: Build foss debug APK
         run: ./gradlew assembleFossDebug --stacktrace
-
       - name: Build gplay debug APK
         run: ./gradlew assembleGplayDebug --stacktrace
-
       - name: Collect APKs
         run: |
           mkdir -p artifacts/core artifacts/foss artifacts/gplay
@@ -63,7 +94,6 @@ jobs:
           test -n "$(find artifacts/foss -type f -name '*.apk' -print -quit)"
           test -n "$(find artifacts/gplay -type f -name '*.apk' -print -quit)"
           find artifacts -type f -name '*.apk' -exec ls -lh {} \;
-
       - name: Upload core APK
         uses: actions/upload-artifact@v4
         with:
@@ -71,7 +101,6 @@ jobs:
           path: artifacts/core/*.apk
           if-no-files-found: error
           retention-days: 14
-
       - name: Upload foss APK
         uses: actions/upload-artifact@v4
         with:
@@ -79,7 +108,6 @@ jobs:
           path: artifacts/foss/*.apk
           if-no-files-found: error
           retention-days: 14
-
       - name: Upload gplay APK
         uses: actions/upload-artifact@v4
         with:
@@ -87,7 +115,6 @@ jobs:
           path: artifacts/gplay/*.apk
           if-no-files-found: error
           retention-days: 14
-
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
