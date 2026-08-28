@@ -2,11 +2,15 @@ package org.fossify.messages.adapters
 
 import android.annotation.SuppressLint
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Parcelable
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -28,6 +32,7 @@ import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
 import org.fossify.messages.helpers.BankConversationVerificationStore
+import org.fossify.messages.helpers.ConversationFolderManager
 import org.fossify.messages.helpers.ConversationFolderRuleManager
 import org.fossify.messages.helpers.IranianBankLogoImageHelper
 import org.fossify.messages.helpers.IranianBankLogoResolver
@@ -85,7 +90,6 @@ abstract class BaseConversationsAdapter(
         submitVisibleList(commitCallback)
     }
 
-    /** Re-evaluates routing rules against the already-loaded list without querying Telephony. */
     fun refreshFolderRules() {
         runCatching { ConversationFolderRuleManager.applyAutomaticRules(activity, allConversations) }
         submitVisibleList()
@@ -218,6 +222,7 @@ abstract class BaseConversationsAdapter(
             conversationDate.setTypeface(customTypeface, style)
             arrayListOf(conversationAddress, conversationBodyShort, conversationDate).forEach { it.setTextColor(textColor) }
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
+            bindFolderLabels(root, conversation)
             val placeholder = if (conversation.isGroupConversation) {
                 SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title)
             } else null
@@ -238,6 +243,68 @@ abstract class BaseConversationsAdapter(
             }
         }
     }
+
+    /**
+     * Bind folder membership directly during RecyclerView binding. This is intentionally
+     * done here rather than from the tabs View, because RecyclerView recycles its children
+     * and the label must exist immediately on both the main list and filtered folder list.
+     */
+    private fun bindFolderLabels(root: ConstraintLayout, conversation: Conversation) {
+        val folders = ConversationFolderManager.getFolders(activity)
+            .filter { !it.system && it.enabled }
+            .associateBy { it.id }
+        val memberships = ConversationFolderManager.getFolderMembership(activity, conversation.threadId)
+            .mapNotNull { folders[it] }
+            .take(4)
+
+        var box = root.findViewWithTag<LinearLayout>(FOLDER_LABELS_TAG)
+        if (box == null) {
+            box = LinearLayout(activity).apply {
+                tag = FOLDER_LABELS_TAG
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                clipToPadding = false
+            }
+            val lp = ConstraintLayout.LayoutParams(0, dp(20)).apply {
+                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                marginStart = dp(56)
+                marginEnd = dp(56)
+            }
+            root.addView(box, lp)
+        }
+
+        box.removeAllViews()
+        box.visibility = if (memberships.isEmpty()) View.GONE else View.VISIBLE
+        root.findViewById<View>(org.fossify.messages.R.id.conversation_body_short)?.let { body ->
+            (body.layoutParams as? ConstraintLayout.LayoutParams)?.let { lp ->
+                lp.bottomMargin = if (memberships.isEmpty()) 0 else dp(24)
+                body.layoutParams = lp
+            }
+        }
+
+        memberships.forEach { folder ->
+            box.addView(TextView(activity).apply {
+                text = folder.name
+                textSize = 10f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                gravity = Gravity.CENTER
+                setTextColor(folder.color.getContrastColor())
+                setPadding(dp(8), 0, dp(8), 0)
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(10).toFloat()
+                    setColor(folder.color)
+                }
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(20)).apply {
+                    marginEnd = dp(5)
+                }
+            })
+        }
+    }
+
+    private fun dp(value: Int) = (value * activity.resources.displayMetrics.density).roundToInt()
 
     private fun setupBadgeCount(view: TextView, isUnread: Boolean, count: Int) {
         view.apply {
@@ -273,5 +340,6 @@ abstract class BaseConversationsAdapter(
 
     companion object {
         private const val MAX_UNREAD_BADGE_COUNT = 99
+        private const val FOLDER_LABELS_TAG = "conversation_folder_labels"
     }
 }
