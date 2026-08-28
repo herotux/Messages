@@ -1,7 +1,8 @@
 <resources>
-
-    <style name="AppTheme" parent="AppTheme.Base" />
-
+    <style name="AppTheme" parent="AppTheme.Base">
+        <item name="android:fontFamily">@font/vazirmatn_regular</item>
+        <item name="fontFamily">@font/vazirmatn_regular</item>
+    </style>
     <style name="roundedImageView" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/normal_margin</item>
