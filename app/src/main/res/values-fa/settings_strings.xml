@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_folders_section">پوشه‌های مکالمات</string>
+    <string name="settings_show_folders">نمایش پوشه‌های مکالمات</string>
+    <string name="settings_show_folders_summary">نمایش تب‌های پوشه در بالای فهرست مکالمات</string>
+</resources>
