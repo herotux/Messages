@@ -6,34 +6,28 @@ on:
       - main
       - test/foss-release-signed
       - refactor/internalize-commons
-  pull_request:
+  pull_request_target:
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   migrate-ui:
     name: Migrate complete UI feature set
+    if: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
-      - name: Checkout target branch
+      - name: Checkout migration branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Skip migration for normal builds
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'fix/ui-theme-bank-migration-v2' }}
-        run: echo "No UI migration requested."
-
-      - name: Fetch UI feature branch
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
+      - name: Fetch complete UI feature branch
         run: git fetch origin fix/folder-ui-stability-v2:refs/remotes/origin/fix/folder-ui-stability-v2
 
-      - name: Replace app source and resources with complete UI feature set
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
+      - name: Restore complete UI tree
         shell: bash
         run: |
           set -euo pipefail
@@ -42,30 +36,33 @@ jobs:
           git add app/src/main
           git diff --cached --check
 
-      - name: Verify migration before commit
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
+      - name: Verify migrated tree
         run: |
           chmod +x ./gradlew
           ./gradlew testCoreDebugUnitTest --stacktrace
 
       - name: Commit migrated tree
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
         run: |
           if git diff --cached --quiet; then
             echo "Migration already applied."
           else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "migration: restore complete UI theme tabs and bank features"
-            git push origin HEAD:fix/ui-theme-bank-migration-v2
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
           fi
 
   test-and-build:
     name: Test and build APKs
+    if: ${{ github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository }}
     needs: migrate-ui
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
 
     steps:
-      - name: Checkout latest PR branch
+      - name: Checkout latest branch state
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
