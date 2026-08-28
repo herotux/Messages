@@ -141,7 +141,7 @@ detekt {
 }
 
 dependencies {
-    implementation(libs.fossify.commons)
+    implementation(project(":commons"))
     implementation(libs.eventbus)
     implementation(libs.indicator.fast.scroll)
     implementation(libs.mmslib)
