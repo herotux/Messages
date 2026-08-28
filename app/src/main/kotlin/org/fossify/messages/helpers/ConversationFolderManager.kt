@@ -19,6 +19,7 @@ object ConversationFolderManager {
     private const val MEMBERS = "members"
     private const val EXCLUDED = "excluded_members"
     private const val SELECTED = "selected_folder"
+    private const val FOLDERS_VISIBLE = "folders_visible"
     const val ALL_ID = "__all__"
     const val UNREAD_ID = "__unread__"
     const val BANKS_ID = "__banks__"
@@ -26,6 +27,13 @@ object ConversationFolderManager {
     const val DEFAULT_COLOR = 0xff607d8b.toInt()
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    fun areFoldersVisible(context: Context): Boolean = prefs(context).getBoolean(FOLDERS_VISIBLE, true)
+
+    fun setFoldersVisible(context: Context, visible: Boolean) {
+        prefs(context).edit().putBoolean(FOLDERS_VISIBLE, visible).apply()
+        if (!visible) setSelectedFolderId(context, ALL_ID)
+    }
 
     fun getFolders(context: Context): MutableList<Folder> {
         val raw = prefs(context).getString(FOLDERS, null)
