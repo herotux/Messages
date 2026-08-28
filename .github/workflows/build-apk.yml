@@ -55,16 +55,36 @@ jobs:
 
       - name: Collect APKs
         run: |
-          mkdir -p artifacts
-          find app/build/outputs/apk -type f -name '*.apk' -exec cp {} artifacts/ \;
-          test -n "$(find artifacts -type f -name '*.apk' -print -quit)"
-          ls -lh artifacts
+          mkdir -p artifacts/core artifacts/foss artifacts/gplay
+          cp app/build/outputs/apk/core/debug/*.apk artifacts/core/
+          cp app/build/outputs/apk/foss/debug/*.apk artifacts/foss/
+          cp app/build/outputs/apk/gplay/debug/*.apk artifacts/gplay/
+          test -n "$(find artifacts/core -type f -name '*.apk' -print -quit)"
+          test -n "$(find artifacts/foss -type f -name '*.apk' -print -quit)"
+          test -n "$(find artifacts/gplay -type f -name '*.apk' -print -quit)"
+          find artifacts -type f -name '*.apk' -exec ls -lh {} \;
 
-      - name: Upload APK artifacts
+      - name: Upload core APK
         uses: actions/upload-artifact@v4
         with:
-          name: fossify-messages-debug-apks
-          path: artifacts/*.apk
+          name: messages-core-debug-apk
+          path: artifacts/core/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload foss APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: messages-foss-debug-apk
+          path: artifacts/foss/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload gplay APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: messages-gplay-debug-apk
+          path: artifacts/gplay/*.apk
           if-no-files-found: error
           retention-days: 14
 
