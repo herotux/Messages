@@ -13,11 +13,7 @@ import org.fossify.commons.extensions.getContrastColor
 import org.fossify.messages.helpers.ConversationFolderManager
 import kotlin.math.roundToInt
 
-/**
- * Stable folder-label renderer owned by the conversation item itself.
- * It resolves the RecyclerView holder's thread id, so labels survive recycling,
- * filtering and switching between the main list and a folder list.
- */
+/** Stable folder-label renderer owned by each conversation item. */
 class ConversationFolderLabelsView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
@@ -25,6 +21,7 @@ class ConversationFolderLabelsView @JvmOverloads constructor(
 
     private var lastThreadId = Long.MIN_VALUE
     private var lastMembershipKey = ""
+    private var observedRecyclerView: RecyclerView? = null
 
     init {
         orientation = HORIZONTAL
@@ -33,14 +30,56 @@ class ConversationFolderLabelsView @JvmOverloads constructor(
         clipChildren = false
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        visibility = View.VISIBLE
+        post {
+            attachObserver()
+            refreshLabels()
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        observedRecyclerView?.adapter?.unregisterAdapterDataObserver(observer)
+        observedRecyclerView = null
+        super.onDetachedFromWindow()
+    }
+
     override fun onDraw(canvas: android.graphics.Canvas) {
         refreshLabels()
         super.onDraw(canvas)
     }
 
+    private val observer = object : RecyclerView.AdapterDataObserver() {
+        override fun onChanged() = refreshSoon()
+        override fun onItemRangeChanged(positionStart: Int, itemCount: Int) = refreshSoon()
+        override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = refreshSoon()
+        override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) = refreshSoon()
+        override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) = refreshSoon()
+    }
+
+    private fun refreshSoon() {
+        post {
+            visibility = View.VISIBLE
+            lastThreadId = Long.MIN_VALUE
+            lastMembershipKey = ""
+            refreshLabels()
+        }
+    }
+
+    private fun attachObserver() {
+        val recyclerView = findRecyclerView() ?: return
+        if (observedRecyclerView === recyclerView) return
+        observedRecyclerView?.adapter?.unregisterAdapterDataObserver(observer)
+        observedRecyclerView = recyclerView
+        recyclerView.adapter?.registerAdapterDataObserver(observer)
+    }
+
     private fun refreshLabels() {
         val recyclerView = findRecyclerView() ?: return
-        val holder = runCatching { recyclerView.getChildViewHolder(parent as View) }.getOrNull() ?: return
+        attachObserver()
+        val itemRoot = parent as? View ?: return
+        val holder = runCatching { recyclerView.getChildViewHolder(itemRoot) }.getOrNull() ?: return
         val threadId = holder.itemId
         if (threadId == RecyclerView.NO_ID) return
 
@@ -52,10 +91,7 @@ class ConversationFolderLabelsView @JvmOverloads constructor(
             .take(4)
         val key = memberships.joinToString("|") { "${it.id}:${it.name}:${it.color}" }
 
-        if (threadId == lastThreadId && key == lastMembershipKey) {
-            visibility = if (memberships.isEmpty()) View.GONE else View.VISIBLE
-            return
-        }
+        if (threadId == lastThreadId && key == lastMembershipKey) return
 
         lastThreadId = threadId
         lastMembershipKey = key
