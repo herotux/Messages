@@ -28,29 +28,21 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'fix/ui-theme-bank-migration-v2' }}
         run: echo "No UI migration requested."
 
-      - name: Merge complete UI feature set
+      - name: Fetch UI feature branch
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
+        run: git fetch origin fix/folder-ui-stability-v2:refs/remotes/origin/fix/folder-ui-stability-v2
+
+      - name: Replace app source and resources with complete UI feature set
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin fix/folder-ui-stability-v2:refs/remotes/origin/fix/folder-ui-stability-v2
-          git merge --no-commit --no-ff -X theirs origin/fix/folder-ui-stability-v2 || true
-          git diff --name-only --diff-filter=U | while IFS= read -r path; do
-            case "$path" in
-              commons/*|build.gradle.kts|settings.gradle.kts|gradle.properties|gradle/*|buildSrc/*|build-logic/*|app/build.gradle.kts|.github/workflows/*)
-                git checkout --ours -- "$path"
-                ;;
-              *)
-                git checkout --theirs -- "$path"
-                ;;
-            esac
-          done
-          git add -A
+          git checkout origin/fix/folder-ui-stability-v2 -- app/src/main
+          git checkout HEAD -- app/src/main/kotlin/org/fossify/messages/activities/HerotuxAboutActivity.kt
+          git add app/src/main
           git diff --cached --check
 
-      - name: Verify migrated tree
+      - name: Verify migration before commit
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/ui-theme-bank-migration-v2' }}
         run: |
           chmod +x ./gradlew
