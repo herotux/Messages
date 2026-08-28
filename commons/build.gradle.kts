@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.android.library)
+    id("com.android.library")
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.compose.compiler)
@@ -11,7 +11,7 @@ plugins {
     `maven-publish`
 }
 
-group = "org.fossify"
+group = "org.fossify.commons"
 version = findProperty("VERSION")?.toString() ?: System.getenv("VERSION") ?: "1.0.0"
 
 android {
