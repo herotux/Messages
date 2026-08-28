@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - test/foss-release-signed
+      - refactor/internalize-commons
   pull_request:
   workflow_dispatch:
 
