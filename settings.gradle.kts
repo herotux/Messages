@@ -13,5 +13,11 @@ dependencyResolutionManagement {
         maven { setUrl("https://www.jitpack.io") }
         mavenLocal()
     }
+    versionCatalogs {
+        create("commonsLibs") {
+            from(files("gradle/commons.versions.toml"))
+        }
+    }
 }
 include(":app")
+include(":commons")
