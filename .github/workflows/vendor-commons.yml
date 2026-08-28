@@ -1,0 +1,96 @@
+name: Vendor Fossify Commons
+
+on:
+  push:
+    branches:
+      - refactor/internalize-commons
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v5
+        with:
+          ref: refactor/internalize-commons
+          fetch-depth: 0
+
+      - name: Vendor Commons 6.1.6
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf commons /tmp/fossify-commons
+          git clone --depth 1 --branch 6.1.6 https://github.com/FossifyOrg/commons.git /tmp/fossify-commons
+          cp -R /tmp/fossify-commons/commons ./commons
+          cp /tmp/fossify-commons/gradle/libs.versions.toml ./gradle/commons.versions.toml
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          build = Path("commons/build.gradle.kts")
+          text = build.read_text()
+
+          text = text.replace(
+              'alias(libs.plugins.library)',
+              'alias(libs.plugins.android.library)'
+          )
+          text = text.replace(
+              'alias(libs.plugins.compose.compiler)',
+              'alias(libs.plugins.compose.compiler)'
+          )
+          text = text.replace(
+              'alias(libs.plugins.parcelize)',
+              'alias(libs.plugins.parcelize)'
+          )
+
+          # Keep the root project's plugin versions, while using the vendored
+          # catalog for Commons' library coordinates and bundles.
+          lines = []
+          for line in text.splitlines():
+              if 'alias(libs.plugins.' in line:
+                  lines.append(line)
+              else:
+                  lines.append(line.replace('libs.', 'commonsLibs.'))
+          build.write_text('\n'.join(lines) + '\n')
+
+          settings = Path("settings.gradle.kts")
+          text = settings.read_text()
+          marker = '    repositories {\n        google()\n        mavenCentral()\n        maven { setUrl("https://www.jitpack.io") }\n        mavenLocal()\n    }\n'
+          replacement = marker + '''    versionCatalogs {\n        create("commonsLibs") {\n            from(files("gradle/commons.versions.toml"))\n        }\n    }\n'''
+          if 'commonsLibs' not in text:
+              text = text.replace(marker, replacement)
+          settings.write_text(text)
+          PY
+
+      - name: Remove remote Commons dependency metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path("gradle/libs.versions.toml")
+          text = p.read_text()
+          text = text.replace('commons = "6.1.6"\n', '')
+          text = text.replace('fossify-commons = { module = "org.fossify:commons", version.ref = "commons" }\n', '')
+          p.write_text(text)
+          PY
+
+      - name: Commit vendored Commons
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add commons gradle/commons.versions.toml gradle/libs.versions.toml settings.gradle.kts .github/workflows/vendor-commons.yml
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "build: vendor Fossify Commons 6.1.6"
+          git push origin HEAD:refactor/internalize-commons
