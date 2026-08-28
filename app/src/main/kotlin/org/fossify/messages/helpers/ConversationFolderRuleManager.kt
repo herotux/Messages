@@ -15,5 +15,5 @@ object ConversationFolderRuleManager {
  fun applyAutomaticRules(c:Context,conversations:List<Conversation>){val rules=getRules(c).filter{it.enabled&&it.keywords.isNotEmpty()};val root=readAuto(c);conversations.forEach{conversation->val ids=rules.filter{it.folderId in ConversationFolderManager.getFolders(c).map{f->f.id}&&matches(conversation,it)}.map{it.folderId};if(ids.isEmpty())root.remove(conversation.threadId.toString())else root.put(conversation.threadId.toString(),JSONArray(ids))};prefs(c).edit().putString(AUTO_MEMBERS,root.toString()).apply()}
  private fun matches(c:Conversation,r:Rule):Boolean{val texts=listOf(c.snippet,c.title,c.phoneNumber).map(::normalize);val keys=r.keywords.map(::normalize);return if(r.mode==MatchMode.ONE)keys.any{k->texts.any{it.contains(k)}}else keys.all{k->texts.any{it.contains(k)}}}
  private fun normalize(v:String)=v.replace('ي','ی').replace('ى','ی').replace('ك','ک').replace('۰','0').replace('۱','1').replace('۲','2').replace('۳','3').replace('۴','4').replace('۵','5').replace('۶','6').replace('۷','7').replace('۸','8').replace('۹','9').lowercase().trim()
- private fun readAuto(c:Context)=try{JSONObject(prefs(c).getString(AUTO_MEMBERS,null)? : "{}")}catch(_:Exception){JSONObject()}
+ private fun readAuto(c:Context)=try{JSONObject(prefs(c).getString(AUTO_MEMBERS,null) ?: "{}")}catch(_:Exception){JSONObject()}
 }
