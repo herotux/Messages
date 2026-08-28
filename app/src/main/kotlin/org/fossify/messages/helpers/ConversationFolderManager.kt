@@ -19,6 +19,7 @@ object ConversationFolderManager {
     private const val MEMBERS = "members"
     private const val EXCLUDED = "excluded_members"
     private const val SELECTED = "selected_folder"
+    private const val FOLDERS_ENABLED = "folders_enabled"
     const val ALL_ID = "__all__"
     const val UNREAD_ID = "__unread__"
     const val BANKS_ID = "__banks__"
@@ -26,6 +27,13 @@ object ConversationFolderManager {
     const val DEFAULT_COLOR = 0xff607d8b.toInt()
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    fun areFoldersEnabled(context: Context): Boolean = prefs(context).getBoolean(FOLDERS_ENABLED, true)
+
+    fun setFoldersEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(FOLDERS_ENABLED, enabled).apply()
+        if (!enabled) setSelectedFolderId(context, ALL_ID)
+    }
 
     fun getFolders(context: Context): MutableList<Folder> {
         val raw = prefs(context).getString(FOLDERS, null)
@@ -45,7 +53,7 @@ object ConversationFolderManager {
         prefs(context).edit().putString(FOLDERS, array.toString()).apply()
     }
 
-    fun getEnabledFolders(context: Context): List<Folder> = getFolders(context).filter { it.enabled }
+    fun getEnabledFolders(context: Context): List<Folder> = if (areFoldersEnabled(context)) getFolders(context).filter { it.enabled } else emptyList()
     fun getSelectedFolderId(context: Context): String = prefs(context).getString(SELECTED, ALL_ID) ?: ALL_ID
     fun setSelectedFolderId(context: Context, id: String) = prefs(context).edit().putString(SELECTED, id).apply()
     fun getFolder(context: Context, id: String): Folder? = getFolders(context).firstOrNull { it.id == id }
