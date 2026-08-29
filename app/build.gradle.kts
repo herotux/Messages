@@ -161,6 +161,8 @@ dependencies {
     implementation(libs.ez.vcard)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bundles.room)
+    implementation(libs.zxing)
+    implementation(libs.mlkit.text.recognition)
     ksp(libs.androidx.room.compiler)
     detektPlugins(libs.compose.detekt)
     testImplementation("junit:junit:4.13.2")
