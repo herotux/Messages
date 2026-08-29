@@ -1,5 +1,6 @@
 package org.fossify.messages.dialogs
 
+import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.app.TimePickerDialog.OnTimeSetListener
 import android.text.format.DateFormat
@@ -83,20 +84,14 @@ class ScheduleMessageDialog(
         val year = dateTime?.year ?: calendar.get(Calendar.YEAR)
         val monthOfYear = dateTime?.monthOfYear?.minus(1) ?: calendar.get(Calendar.MONTH)
         val dayOfMonth = dateTime?.dayOfMonth ?: calendar.get(Calendar.DAY_OF_MONTH)
-        val dateSetListener = OnDateSetListener { _, y, m, d -> dateSet(y, m, d) }
+        val dateSetListener = DatePickerDialog.OnDateSetListener { _, y, m, d -> dateSet(y, m, d) }
         TimeAwareDatePickerDialog(activity, dateSetListener, year, monthOfYear, dayOfMonth).show()
     }
 
     private fun showJalaliDatePicker() {
         val currentJalali = PersianDateHelper.toJalaliDate(calendar)
-        val selected = dateTime?.let { PersianDateHelper.toJalaliDate(Calendar.getInstance().apply { timeInMillis = it.millis }) }
-            ?: currentJalali
-        val yearPicker = NumberPicker(activity).apply {
-            minValue = currentJalali.first
-            maxValue = currentJalali.first + 10
-            value = selected.first.coerceIn(minValue, maxValue)
-            wrapSelectorWheel = false
-        }
+        val selected = dateTime?.let { PersianDateHelper.toJalaliDate(Calendar.getInstance().apply { timeInMillis = it.millis }) } ?: currentJalali
+        val yearPicker = NumberPicker(activity).apply { minValue = currentJalali.first; maxValue = currentJalali.first + 10; value = selected.first.coerceIn(minValue, maxValue); wrapSelectorWheel = false }
         val monthPicker = NumberPicker(activity).apply { minValue = 1; maxValue = 12; value = selected.second; wrapSelectorWheel = false }
         val dayPicker = NumberPicker(activity).apply { minValue = 1; maxValue = PersianDateHelper.daysInJalaliMonth(selected.first, selected.second); value = selected.third.coerceAtMost(maxValue); wrapSelectorWheel = false }
         yearPicker.setOnValueChangedListener { _, _, new -> dayPicker.maxValue = PersianDateHelper.daysInJalaliMonth(new, monthPicker.value); if (dayPicker.value > dayPicker.maxValue) dayPicker.value = dayPicker.maxValue }
@@ -109,19 +104,12 @@ class ScheduleMessageDialog(
             addView(monthPicker, android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             addView(dayPicker, android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
-        val dialog = activity.getAlertDialogBuilder()
-            .setTitle("انتخاب تاریخ")
-            .setView(container)
-            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
-            .setPositiveButton(org.fossify.commons.R.string.ok, null)
-            .create()
+        val dialog = activity.getAlertDialogBuilder().setTitle("انتخاب تاریخ").setView(container).setNegativeButton(org.fossify.commons.R.string.cancel, null).setPositiveButton(org.fossify.commons.R.string.ok, null).create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val gregorian = PersianDateHelper.jalaliToGregorian(yearPicker.value, monthPicker.value, dayPicker.value)
-                if (gregorian != null) {
-                    dateSet(gregorian.get(Calendar.YEAR), gregorian.get(Calendar.MONTH), gregorian.get(Calendar.DAY_OF_MONTH))
-                    dialog.dismiss()
-                } else activity.toast(R.string.must_pick_time_in_the_future)
+                if (gregorian != null) { dateSet(gregorian.get(Calendar.YEAR), gregorian.get(Calendar.MONTH), gregorian.get(Calendar.DAY_OF_MONTH)); dialog.dismiss() }
+                else activity.toast(R.string.must_pick_time_in_the_future)
             }
         }
         dialog.show()
@@ -169,10 +157,10 @@ class ScheduleMessageDialog(
 
 private class TimeAwareDatePickerDialog(
     activity: BaseSimpleActivity,
-    listener: OnDateSetListener,
+    listener: DatePickerDialog.OnDateSetListener,
     year: Int,
     month: Int,
     day: Int
-) : android.app.DatePickerDialog(activity, activity.getDatePickerDialogTheme(), listener, year, month, day) {
+) : DatePickerDialog(activity, activity.getDatePickerDialogTheme(), listener, year, month, day) {
     init { datePicker.minDate = System.currentTimeMillis() }
 }
