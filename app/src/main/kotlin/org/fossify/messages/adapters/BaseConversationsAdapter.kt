@@ -18,7 +18,6 @@ import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
 import org.fossify.commons.adapters.MyRecyclerViewListAdapter
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beVisibleIf
-import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getTextSize
@@ -75,10 +74,7 @@ abstract class BaseConversationsAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun updateFontSize() {
-        fontSize = activity.getTextSize()
-        notifyDataSetChanged()
-    }
+    fun updateFontSize() { fontSize = activity.getTextSize(); notifyDataSetChanged() }
 
     fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) {
         saveRecyclerViewState()
@@ -88,41 +84,17 @@ abstract class BaseConversationsAdapter(
         submitVisibleList(commitCallback)
     }
 
-    fun refreshFolderRules() {
-        runCatching { ConversationFolderRuleManager.applyAutomaticRules(activity, allConversations) }
-        submitVisibleList()
-    }
-
-    private fun submitVisibleList(commitCallback: (() -> Unit)? = null) {
-        val visibleConversations = activeConversationFilter?.let { predicate -> allConversations.filter(predicate) } ?: allConversations
-        submitList(visibleConversations, commitCallback)
-    }
-
-    fun filterConversations(predicate: (Conversation) -> Boolean) {
-        saveRecyclerViewState()
-        activeConversationFilter = predicate
-        submitList(allConversations.filter(predicate))
-    }
-
-    fun clearConversationFilter() {
-        saveRecyclerViewState()
-        activeConversationFilter = null
-        submitList(allConversations)
-    }
-
+    fun refreshFolderRules() { runCatching { ConversationFolderRuleManager.applyAutomaticRules(activity, allConversations) }; submitVisibleList() }
+    private fun submitVisibleList(commitCallback: (() -> Unit)? = null) { val visibleConversations = activeConversationFilter?.let { predicate -> allConversations.filter(predicate) } ?: allConversations; submitList(visibleConversations, commitCallback) }
+    fun filterConversations(predicate: (Conversation) -> Boolean) { saveRecyclerViewState(); activeConversationFilter = predicate; submitList(allConversations.filter(predicate)) }
+    fun clearConversationFilter() { saveRecyclerViewState(); activeConversationFilter = null; submitList(allConversations) }
     fun isBankConversation(conversation: Conversation): Boolean = getBankForConversation(conversation) != null
 
     @SuppressLint("NotifyDataSetChanged")
     fun updateDrafts() {
         ensureBackgroundThread {
-            val newDrafts = HashMap<Long, String>()
-            fetchDrafts(newDrafts)
-            activity.runOnUiThread {
-                if (drafts.hashCode() != newDrafts.hashCode()) {
-                    drafts = newDrafts
-                    notifyDataSetChanged()
-                }
-            }
+            val newDrafts = HashMap<Long, String>(); fetchDrafts(newDrafts)
+            activity.runOnUiThread { if (drafts.hashCode() != newDrafts.hashCode()) { drafts = newDrafts; notifyDataSetChanged() } }
         }
     }
 
@@ -134,10 +106,7 @@ abstract class BaseConversationsAdapter(
     override fun onActionModeCreated() {}
     override fun onActionModeDestroyed() {}
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemConversationBinding.inflate(layoutInflater, parent, false)
-        return createViewHolder(binding.root)
-    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = createViewHolder(ItemConversationBinding.inflate(layoutInflater, parent, false).root)
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val conversation = getItem(position)
@@ -146,16 +115,8 @@ abstract class BaseConversationsAdapter(
     }
 
     override fun getItemId(position: Int) = getItem(position).threadId
-
-    override fun onViewRecycled(holder: ViewHolder) {
-        super.onViewRecycled(holder)
-        if (!activity.isDestroyed && !activity.isFinishing) Glide.with(activity).clear(ItemConversationBinding.bind(holder.itemView).conversationImage)
-    }
-
-    private fun fetchDrafts(drafts: HashMap<Long, String>) {
-        drafts.clear()
-        for ((threadId, draft) in activity.getAllDrafts()) drafts[threadId] = draft
-    }
+    override fun onViewRecycled(holder: ViewHolder) { super.onViewRecycled(holder); if (!activity.isDestroyed && !activity.isFinishing) Glide.with(activity).clear(ItemConversationBinding.bind(holder.itemView).conversationImage) }
+    private fun fetchDrafts(drafts: HashMap<Long, String>) { drafts.clear(); for ((threadId, draft) in activity.getAllDrafts()) drafts[threadId] = draft }
 
     private fun getBankForConversation(conversation: Conversation): IranianBankRegistry.BankInfo? {
         if (conversation.isGroupConversation) return null
@@ -179,7 +140,16 @@ abstract class BaseConversationsAdapter(
             conversationAddress.apply { text = conversation.title; setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f) }
             conversationBodyShort.apply { text = smsDraft ?: conversation.snippet; setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f) }
             conversationDate.apply {
-                text = if (activity.config.usePersianCalendar) PersianDateHelper.toPersianDigits(PersianDateHelper.formatMonthName(conversation.date * 1000L)) else (conversation.date * 1000L).formatDateOrTime(context = activity, hideTimeOnOtherDays = true, showCurrentYear = false)
+                text = if (activity.config.usePersianCalendar) {
+                    PersianDateHelper.formatConversationList(conversation.date * 1000L, activity.config.dateFormat, activity.config.use24HourFormat)
+                } else {
+                    org.fossify.commons.extensions.formatDateOrTime(
+                        conversation.date * 1000L,
+                        context = activity,
+                        hideTimeOnOtherDays = true,
+                        showCurrentYear = false
+                    )
+                }
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
             }
             val isUnread = !conversation.read
@@ -208,29 +178,16 @@ abstract class BaseConversationsAdapter(
         var box = root.findViewWithTag<LinearLayout>(FOLDER_LABELS_TAG)
         if (box == null) {
             box = LinearLayout(activity).apply { tag = FOLDER_LABELS_TAG; orientation = LinearLayout.HORIZONTAL; gravity = Gravity.START or Gravity.CENTER_VERTICAL; clipToPadding = false }
-            val lp = ConstraintLayout.LayoutParams(0, dp(20)).apply {
-                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-                marginStart = dp(56)
-                marginEnd = dp(56)
-            }
+            val lp = ConstraintLayout.LayoutParams(0, dp(20)).apply { startToStart = ConstraintLayout.LayoutParams.PARENT_ID; endToEnd = ConstraintLayout.LayoutParams.PARENT_ID; bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID; marginStart = dp(56); marginEnd = dp(56) }
             root.addView(box, lp)
         }
         box.removeAllViews()
         box.visibility = if (memberships.isEmpty()) View.GONE else View.VISIBLE
-        root.findViewById<View>(org.fossify.messages.R.id.conversation_body_short)?.let { body ->
-            (body.layoutParams as? ConstraintLayout.LayoutParams)?.let { lp -> lp.bottomMargin = if (memberships.isEmpty()) 0 else dp(24); body.layoutParams = lp }
-        }
+        root.findViewById<View>(org.fossify.messages.R.id.conversation_body_short)?.let { body -> (body.layoutParams as? ConstraintLayout.LayoutParams)?.let { lp -> lp.bottomMargin = if (memberships.isEmpty()) 0 else dp(24); body.layoutParams = lp } }
         memberships.forEach { folder ->
             box.addView(TextView(activity).apply {
-                text = folder.name
-                textSize = 10f
-                maxLines = 1
-                ellipsize = android.text.TextUtils.TruncateAt.END
-                gravity = Gravity.CENTER
-                setTextColor(folder.color.getContrastColor())
-                setPadding(dp(8), 0, dp(8), 0)
+                text = folder.name; textSize = 10f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; gravity = Gravity.CENTER
+                setTextColor(folder.color.getContrastColor()); setPadding(dp(8), 0, dp(8), 0)
                 background = GradientDrawable().apply { cornerRadius = dp(10).toFloat(); setColor(folder.color) }
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(20)).apply { marginEnd = dp(5) }
             })
@@ -242,11 +199,7 @@ abstract class BaseConversationsAdapter(
     private fun setupBadgeCount(view: TextView, isUnread: Boolean, count: Int) {
         view.apply {
             beVisibleIf(isUnread)
-            if (isUnread) {
-                text = when { count > MAX_UNREAD_BADGE_COUNT -> "$MAX_UNREAD_BADGE_COUNT+"; count == 0 -> ""; else -> count.toString() }
-                setTextColor(properPrimaryColor.getContrastColor())
-                background?.applyColorFilter(properPrimaryColor)
-            }
+            if (isUnread) { text = when { count > MAX_UNREAD_BADGE_COUNT -> "$MAX_UNREAD_BADGE_COUNT+"; count == 0 -> ""; else -> count.toString() }; setTextColor(properPrimaryColor.getContrastColor()); background?.applyColorFilter(properPrimaryColor) }
         }
     }
 
