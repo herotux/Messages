@@ -2,6 +2,9 @@ package org.fossify.messages.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.CompoundButton
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import org.fossify.commons.activities.ManageBlockedNumbersActivity
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
@@ -38,7 +41,6 @@ import org.fossify.messages.dialogs.ExportMessagesDialog
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.emptyMessagesRecycleBin
 import org.fossify.messages.extensions.messagesDB
-import org.fossify.messages.helpers.ConversationFolderManager
 import org.fossify.messages.helpers.FILE_SIZE_100_KB
 import org.fossify.messages.helpers.FILE_SIZE_1_MB
 import org.fossify.messages.helpers.FILE_SIZE_200_KB
@@ -106,7 +108,6 @@ class SettingsActivity : SimpleActivity() {
         setupEnableDeliveryReports()
         setupSendLongMessageAsMMS()
         setupGroupMessageAsMMS()
-        setupFoldersVisibility()
         setupKeepConversationsArchived()
         setupLockScreenVisibility()
         setupMMSFileSizeLimit()
@@ -124,7 +125,6 @@ class SettingsActivity : SimpleActivity() {
             binding.settingsGeneralSettingsLabel,
             binding.settingsOutgoingMessagesLabel,
             binding.settingsNotificationsLabel,
-            binding.settingsFoldersLabel,
             binding.settingsArchivedMessagesLabel,
             binding.settingsRecycleBinLabel,
             binding.settingsSecurityLabel,
@@ -132,13 +132,8 @@ class SettingsActivity : SimpleActivity() {
         ).forEach { it.setTextColor(getProperPrimaryColor()) }
     }
 
-    private fun setupFoldersVisibility() = binding.apply {
-        settingsFoldersVisibility.isChecked = ConversationFolderManager.areFoldersVisible(this@SettingsActivity)
-        settingsFoldersVisibilityHolder.setOnClickListener {
-            settingsFoldersVisibility.toggle()
-            ConversationFolderManager.setFoldersVisible(this@SettingsActivity, settingsFoldersVisibility.isChecked)
-            refreshConversations()
-        }
+    fun refreshConversationsFromHero() {
+        refreshConversations()
     }
 
     private fun setupMessagesExport() {
@@ -238,9 +233,14 @@ class SettingsActivity : SimpleActivity() {
         settingsEnableDeliveryReportsHolder.setOnClickListener { settingsEnableDeliveryReports.toggle(); config.enableDeliveryReports = settingsEnableDeliveryReports.isChecked }
     }
 
-    private fun setupSendLongMessageAsMMS() = binding.apply {
-        settingsSendLongMessageMms.isChecked = config.sendLongMessageMMS
-        settingsSendLongMessageMmsHolder.setOnClickListener { settingsSendLongMessageMms.toggle(); config.sendLongMessageMMS = settingsSendLongMessageMMS.isChecked }
+    private fun setupSendLongMessageAsMMS() {
+        val switch = findViewById<CompoundButton>(R.id.settings_send_long_message_mms)
+        val holder = findViewById<View>(R.id.settings_send_long_message_mms_holder)
+        switch.isChecked = config.sendLongMessageMMS
+        holder.setOnClickListener {
+            switch.isChecked = !switch.isChecked
+            config.sendLongMessageMMS = switch.isChecked
+        }
     }
 
     private fun setupGroupMessageAsMMS() = binding.apply {
@@ -298,16 +298,18 @@ class SettingsActivity : SimpleActivity() {
     private fun updateRecycleBinButtons() = binding.apply { settingsEmptyRecycleBinHolder.beVisibleIf(config.useRecycleBin) }
 
     private fun setupEmptyRecycleBin() {
+        val sizeView = findViewById<TextView>(R.id.settings_empty_recycle_bin_size)
+        val holder = findViewById<View>(R.id.settings_empty_recycle_bin_holder)
         ensureBackgroundThread {
             recycleBinMessages = messagesDB.getArchivedCount()
-            runOnUiThread { settingsEmptyRecycleBinSize.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages) }
+            runOnUiThread { sizeView.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages) }
         }
-        binding.settingsEmptyRecycleBinHolder.setOnClickListener {
+        holder.setOnClickListener {
             if (recycleBinMessages == 0) toast(org.fossify.commons.R.string.recycle_bin_empty) else {
                 ConfirmationDialog(activity = this@SettingsActivity, message = "", messageId = R.string.empty_recycle_bin_messages_confirmation, positive = org.fossify.commons.R.string.yes, negative = org.fossify.commons.R.string.no) {
                     ensureBackgroundThread { emptyMessagesRecycleBin() }
                     recycleBinMessages = 0
-                    binding.settingsEmptyRecycleBinSize.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages)
+                    sizeView.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages)
                 }
             }
         }
