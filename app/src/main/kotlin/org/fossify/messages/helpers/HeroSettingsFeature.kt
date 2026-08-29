@@ -60,7 +60,7 @@ object HeroSettingsFeature {
         calendarRow.setOnClickListener {
             calendarSwitch.isChecked = !calendarSwitch.isChecked
             context.config.usePersianCalendar = calendarSwitch.isChecked
-            context.refreshConversations()
+            context.refreshConversationsFromHero()
         }
 
         val bankRow = LinearLayout(context).apply {
@@ -107,7 +107,7 @@ object HeroSettingsFeature {
         foldersRow.setOnClickListener {
             foldersSwitch.isChecked = !foldersSwitch.isChecked
             ConversationFolderManager.setFoldersVisible(context, foldersSwitch.isChecked)
-            context.refreshConversations()
+            context.refreshConversationsFromHero()
         }
 
         val heroContainer = LinearLayout(context).apply {
