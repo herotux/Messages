@@ -17,13 +17,12 @@ import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.messages.R
-import org.fossify.messages.extensions.messagesDB
+import org.fossify.messages.extensions.getMessagesDB
 import org.fossify.messages.models.BankAccount
 import java.util.Locale
 import kotlin.math.max
@@ -55,11 +54,11 @@ object BankAccountsFeature {
     fun formatIban(value: String): String = normalizeIban(value).chunked(4).joinToString(" ")
 
     fun getAccounts(context: Context): List<BankAccount> = try {
-        context.messagesDB.BankAccountsDao().getAll()
+        context.getMessagesDB().BankAccountsDao().getAll()
     } catch (_: Exception) { emptyList() }
 
     fun save(context: Context, existing: BankAccount?, bankId: String, card: String, holder: String, iban: String) {
-        val dao = context.messagesDB.BankAccountsDao()
+        val dao = context.getMessagesDB().BankAccountsDao()
         val now = System.currentTimeMillis()
         val account = BankAccount(
             id = existing?.id ?: 0,
@@ -74,7 +73,7 @@ object BankAccountsFeature {
     }
 
     fun delete(context: Context, account: BankAccount) {
-        try { context.messagesDB.BankAccountsDao().delete(account) } catch (_: Exception) { }
+        try { context.getMessagesDB().BankAccountsDao().delete(account) } catch (_: Exception) { }
     }
 
     fun bankFor(account: BankAccount): IranianBankRegistry.BankInfo? = try {
@@ -117,7 +116,7 @@ object BankAccountsFeature {
         }
         val scroll = HorizontalScrollView(context).apply {
             isHorizontalScrollBarEnabled = false
-            addView(cardsHolder, HorizontalScrollView.LayoutParams(-1, dp(context, 220)))
+            addView(cardsHolder, ViewGroup.LayoutParams(-1, dp(context, 220)))
         }
         root.addView(scroll)
 
@@ -229,7 +228,7 @@ object BankAccountsFeature {
         val accounts = getAccounts(context)
         val scroll = HorizontalScrollView(context).apply { isHorizontalScrollBarEnabled = false }
         val holder = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        scroll.addView(holder, HorizontalScrollView.LayoutParams(-1, dp(context, 210)))
+        scroll.addView(holder, ViewGroup.LayoutParams(-1, dp(context, 210)))
         accounts.forEach { account -> holder.addView(createCardView(context, account) { onSelected(account); dialog.dismiss() }, LinearLayout.LayoutParams(dp(context, 310), dp(context, 190)).apply { marginEnd = dp(context, 12) }) }
         if (accounts.isEmpty()) holder.addView(TextView(context).apply { text = title(context, "ابتدا یک کارت در تنظیمات اضافه کنید", "Add a bank card in Settings first"); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(-1, -1))
         root.addView(scroll)
@@ -255,7 +254,6 @@ object BankAccountsFeature {
                 showCardPicker(activity) { account ->
                     val edit = activity.findViewById<EditText>(R.id.thread_type_message)
                     if (edit != null) {
-                        val bank = bankFor(account)
                         val text = buildString {
                             append(title(activity, "شماره کارت", "Card number")); append(": "); append(formatCard(account.cardNumber))
                             if (account.holderName.isNotBlank()) { append("\n"); append(title(activity, "به نام", "Name")); append(": "); append(account.holderName) }
@@ -287,7 +285,7 @@ object BankAccountsFeature {
         }
         if (list.getTag(R.id.bank_card_feature_tag) != true) {
             list.addOnChildAttachStateChangeListener(listener)
-            list.tag = true
+            list.setTag(R.id.bank_card_feature_tag, true)
         }
         for (i in 0 until list.childCount) decorateTree(list.getChildAt(i), activity)
     }
@@ -350,7 +348,7 @@ object BankAccountsFeature {
             setOnClickListener { showBankAccountManager(activity) }
         }
         row.addView(TextView(activity).apply { text = title(activity, "مدیریت کارت‌های بانکی و شماره شبا", "Manage bank cards and IBAN"); textSize = 16f; setTextColor(activity.getProperTextColor()) })
-        row.addView(TextView(activity).apply { text = title(activity, "افزودن، ویرایش و حذف کارت‌ها", "Add, edit and delete cards"); textSize = 12f; setTextColor(Color.GRAY); setPadding(0, dp(activity, 4), 0, 0) })
+        row.addView(TextView(activity).apply { text = title(activity, "افزودن، ویرایش و حذف کارت‌ها", "Add, edit and delete cards"); textSize = 12f; setTextColor(Color.GRAY); setPadding(0, dp(context = activity, value = 4), 0, 0) })
         section.addView(row, LinearLayout.LayoutParams(-1, -2))
         val divider = View(activity).apply { setBackgroundColor(Color.argb(30, 128, 128, 128)) }
         section.addView(divider, LinearLayout.LayoutParams(-1, 1))
