@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="hero_settings">HEROTUX</string>
+    <string name="bank_accounts">Bank accounts</string>
     <string name="settings_folders_section">Conversation folders</string>
     <string name="settings_show_folders">Show conversation folders</string>
     <string name="settings_show_folders_summary">Show folder tabs at the top of the conversations list</string>
