@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="hero_settings">قابلیت‌های HEROTUX</string>
+    <string name="bank_accounts">کارت‌های بانکی</string>
     <string name="settings_folders_section">پوشه‌های مکالمات</string>
     <string name="settings_show_folders">نمایش پوشه‌های مکالمات</string>
     <string name="settings_show_folders_summary">نمایش تب‌های پوشه در بالای فهرست مکالمات</string>
