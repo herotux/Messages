@@ -30,6 +30,9 @@ app-build-javaVersion = "VERSION_17"
 app-build-kotlinJVMTarget = "17"
 #Helpers
 ez-vcard = "0.12.2"
+#Bank features
+zxing = "3.5.3"
+mlkit-text-recognition = "16.0.1"
 [libraries]
 #AndroidX
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout" }
@@ -50,6 +53,8 @@ mmslib = { module = "org.fossify:mmslib", version.ref = "mmslib" }
 eventbus = { module = "org.greenrobot:eventbus", version.ref = "eventbus" }
 #Helpers
 ez-vcard = { module = "com.googlecode.ez-vcard:ez-vcard", version.ref = "ez-vcard" }
+zxing = { module = "com.google.zxing:core", version.ref = "zxing" }
+mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text-recognition" }
 #Kotlin
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 [bundles]
