@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.Copy
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.properties.Properties
@@ -26,6 +27,12 @@ fun hasSigningVars(): Boolean {
 base {
     val versionCode = project.property("VERSION_CODE").toString().toInt()
     archivesName = "messages-$versionCode"
+}
+
+val copyPersianFont by tasks.registering(Copy::class) {
+    from(rootProject.file("Vazirmatn-Regular.ttf"))
+    into("$buildDir/generated/res/persianFont/font")
+    rename { "vazirmatn_regular.ttf" }
 }
 
 android {
@@ -90,6 +97,7 @@ android {
 
     sourceSets {
         getByName("main").java.directories.add("src/main/kotlin")
+        getByName("main").res.srcDir("$buildDir/generated/res/persianFont")
     }
 
     compileOptions {
@@ -128,6 +136,10 @@ android {
             enableSplit = false
         }
     }
+}
+
+tasks.named("preBuild") {
+    dependsOn(copyPersianFont)
 }
 
 detekt {
