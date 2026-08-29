@@ -256,7 +256,7 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupSendLongMessageAsMMS() = binding.apply {
         settingsSendLongMessageMms.isChecked = config.sendLongMessageMMS
-        settingsSendLongMessageMmsHolder.setOnClickListener { settingsSendLongMessageMms.toggle(); config.sendLongMessageMMS = settingsSendLongMessageMMS.isChecked }
+        settingsSendLongMessageMmsHolder.setOnClickListener { settingsSendLongMessageMms.toggle(); config.sendLongMessageMMS = settingsSendLongMessageMms.isChecked }
     }
 
     private fun setupGroupMessageAsMMS() = binding.apply {
