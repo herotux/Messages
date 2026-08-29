@@ -93,8 +93,7 @@ class HerotuxAboutActivity : SimpleActivity() {
         }
 
         cardText.addView(infoText("About this edition", 17f, true, textColor))
-        cardText.addView(infoText("A customized version of Fossify Messages, maintained and developed by HEROTUX.", 15f, false, textColor))
-        cardText.addView(infoText("Original project: Fossify Messages", 15f, false, textColor))
+        cardText.addView(infoText("A lightweight and privacy-focused SMS and MMS messaging application developed and maintained by HEROTUX.", 15f, false, textColor))
         cardText.addView(infoText("Version ${BuildConfig.VERSION_NAME}", 14f, false, textColor))
 
         card.addView(cardText)
@@ -104,7 +103,7 @@ class HerotuxAboutActivity : SimpleActivity() {
         content.addView(card, cardParams)
 
         val source = TextView(this).apply {
-            text = "View original project on GitHub"
+            text = "View project on GitHub"
             textSize = 15f
             setTextColor(primaryColor)
             gravity = Gravity.CENTER
@@ -112,7 +111,7 @@ class HerotuxAboutActivity : SimpleActivity() {
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/FossifyOrg/Messages")))
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/herotux/Messages")))
             }
         }
         content.addView(source, LinearLayout.LayoutParams(-1, -2))
