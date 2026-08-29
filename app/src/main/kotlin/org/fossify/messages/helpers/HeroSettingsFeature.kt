@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.android.material.materialswitch.MaterialSwitch
+import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.messages.R
 import org.fossify.messages.activities.SettingsActivity
 import org.fossify.messages.extensions.config
@@ -31,6 +32,7 @@ object HeroSettingsFeature {
             text = context.getString(R.string.hero_settings)
             textSize = 13f
             setTypeface(typeface, Typeface.BOLD)
+            setTextColor(context.getProperPrimaryColor())
             setPadding(dp(context, 28), dp(context, 18), dp(context, 28), dp(context, 8))
         }
 
@@ -38,7 +40,7 @@ object HeroSettingsFeature {
             tag = JALALI_TAG
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(context, 28), dp(context, 8), dp(context, 28), dp(context, 8))
+            setPadding(dp(context, 28), dp(context, 6), dp(context, 28), dp(context, 6))
             background = context.getDrawable(org.fossify.messages.R.drawable.ripple_background)
             isClickable = true
             isFocusable = true
@@ -62,7 +64,7 @@ object HeroSettingsFeature {
             tag = BANKS_TAG
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(context, 28), dp(context, 12), dp(context, 28), dp(context, 12))
+            setPadding(dp(context, 28), dp(context, 10), dp(context, 28), dp(context, 10))
             background = context.getDrawable(org.fossify.messages.R.drawable.ripple_background)
             isClickable = true
             isFocusable = true
@@ -81,8 +83,6 @@ object HeroSettingsFeature {
 
         bankRow.setOnClickListener { BankAccountsFeature.showBankAccountManager(context) }
 
-        // Keep Hero Settings visually grouped without introducing a second
-        // section divider or changing the existing Settings hierarchy.
         val heroContainer = LinearLayout(context).apply {
             tag = "hero_settings_container"
             orientation = LinearLayout.VERTICAL
