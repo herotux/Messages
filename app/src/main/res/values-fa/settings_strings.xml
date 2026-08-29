@@ -13,8 +13,6 @@
     <string name="color_customization">شخصی‌سازی رنگ</string>
     <string name="general_settings">تنظیمات عمومی</string>
     <string name="notifications">اعلان‌ها</string>
-    <string name="outgoing_messages">پیام‌های ارسالی</string>
-    <string name="archived_conversations">بایگانی</string>
     <string name="recycle_bin">سطل بازیافت</string>
     <string name="security">امنیت</string>
     <string name="migrating">انتقال و پشتیبان‌گیری</string>
