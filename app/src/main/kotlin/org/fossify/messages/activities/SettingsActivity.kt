@@ -2,9 +2,7 @@ package org.fossify.messages.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
-import com.google.android.material.materialswitch.MaterialSwitch
 import org.fossify.commons.activities.ManageBlockedNumbersActivity
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
@@ -48,6 +46,7 @@ import org.fossify.messages.helpers.FILE_SIZE_2_MB
 import org.fossify.messages.helpers.FILE_SIZE_300_KB
 import org.fossify.messages.helpers.FILE_SIZE_600_KB
 import org.fossify.messages.helpers.FILE_SIZE_NONE
+import org.fossify.messages.helpers.HeroSettingsFeature
 import org.fossify.messages.helpers.LOCK_SCREEN_NOTHING
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
@@ -99,7 +98,7 @@ class SettingsActivity : SimpleActivity() {
         setupManageBlockedNumbers()
         setupManageBlockedKeywords()
         setupChangeDateTimeFormat()
-        setupPersianCalendar()
+        HeroSettingsFeature.setup(this, binding.settingsHolder)
         setupFontSize()
         setupShowCharacterCounter()
         setupUseSimpleCharacters()
@@ -206,21 +205,6 @@ class SettingsActivity : SimpleActivity() {
         settingsChangeDateTimeFormatHolder.setOnClickListener { ChangeDateTimeFormatDialog(this@SettingsActivity) { refreshConversations() } }
     }
 
-    private fun setupPersianCalendar() {
-        val parent = binding.settingsHolder
-        val existing = parent.findViewWithTag<MaterialSwitch>("persian_calendar_switch")
-        val switch = existing ?: MaterialSwitch(this).apply {
-            tag = "persian_calendar_switch"
-            text = getString(R.string.use_persian_calendar)
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            setPadding(24, 0, 24, 0)
-            setOnClickListener { config.usePersianCalendar = isChecked; refreshConversations() }
-            val index = parent.indexOfChild(binding.settingsChangeDateTimeFormatHolder)
-            parent.addView(this, (index + 1).coerceAtMost(parent.childCount))
-        }
-        switch.isChecked = config.usePersianCalendar
-    }
-
     private fun setupFontSize() = binding.apply {
         settingsFontSize.text = getFontSizeText()
         settingsFontSizeHolder.setOnClickListener {
@@ -256,7 +240,7 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupSendLongMessageAsMMS() = binding.apply {
         settingsSendLongMessageMms.isChecked = config.sendLongMessageMMS
-        settingsSendLongMessageMmsHolder.setOnClickListener { settingsSendLongMessageMms.toggle(); config.sendLongMessageMMS = settingsSendLongMessageMms.isChecked }
+        settingsSendLongMessageMmsHolder.setOnClickListener { settingsSendLongMessageMms.toggle(); config.sendLongMessageMMS = settingsSendLongMessageMMS.isChecked }
     }
 
     private fun setupGroupMessageAsMMS() = binding.apply {
@@ -313,17 +297,17 @@ class SettingsActivity : SimpleActivity() {
 
     private fun updateRecycleBinButtons() = binding.apply { settingsEmptyRecycleBinHolder.beVisibleIf(config.useRecycleBin) }
 
-    private fun setupEmptyRecycleBin() = binding.apply {
+    private fun setupEmptyRecycleBin() {
         ensureBackgroundThread {
             recycleBinMessages = messagesDB.getArchivedCount()
             runOnUiThread { settingsEmptyRecycleBinSize.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages) }
         }
-        settingsEmptyRecycleBinHolder.setOnClickListener {
+        binding.settingsEmptyRecycleBinHolder.setOnClickListener {
             if (recycleBinMessages == 0) toast(org.fossify.commons.R.string.recycle_bin_empty) else {
                 ConfirmationDialog(activity = this@SettingsActivity, message = "", messageId = R.string.empty_recycle_bin_messages_confirmation, positive = org.fossify.commons.R.string.yes, negative = org.fossify.commons.R.string.no) {
                     ensureBackgroundThread { emptyMessagesRecycleBin() }
                     recycleBinMessages = 0
-                    settingsEmptyRecycleBinSize.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages)
+                    binding.settingsEmptyRecycleBinSize.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages)
                 }
             }
         }
