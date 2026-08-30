@@ -7,9 +7,9 @@ import androidx.room.PrimaryKey
 data class BankAccount(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val bankId: String,
+    val bankId: String = "",
     val cardNumber: String,
-    val holderName: String,
+    val holderName: String = "",
     val iban: String,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
