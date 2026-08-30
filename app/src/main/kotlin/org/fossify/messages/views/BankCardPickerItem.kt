@@ -20,12 +20,8 @@ class BankCardPickerItem @JvmOverloads constructor(
     init {
         orientation = VERTICAL
         gravity = Gravity.CENTER
-        setPadding(
-            resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin),
-            resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin),
-            resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin),
-            resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin)
-        )
+        val margin = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin)
+        setPadding(margin, margin, margin, margin)
         minimumHeight = resources.getDimensionPixelSize(R.dimen.attachment_button_height)
         isClickable = true
         isFocusable = true
@@ -41,7 +37,7 @@ class BankCardPickerItem @JvmOverloads constructor(
                 resources.getDimensionPixelSize(R.dimen.medium_icon_size),
                 resources.getDimensionPixelSize(R.dimen.medium_icon_size)
             )
-            setPadding(resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin))
+            setPadding(margin, margin, margin, margin)
             setImageResource(R.drawable.ic_credit_card_vector)
             setBackgroundResource(R.drawable.circle_background)
             backgroundTintList = ContextCompat.getColorStateList(context, R.color.colorPrimary)
@@ -51,7 +47,7 @@ class BankCardPickerItem @JvmOverloads constructor(
 
         val text = AppCompatTextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin)
+                topMargin = margin
             }
             gravity = Gravity.CENTER
             text = label
