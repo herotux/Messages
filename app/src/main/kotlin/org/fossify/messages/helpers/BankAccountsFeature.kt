@@ -343,19 +343,19 @@ object BankAccountsFeature {
             setOnClickListener {
                 showCardPicker(activity) { account ->
                     val edit = activity.findViewById<EditText>(R.id.thread_type_message) ?: return@showCardPicker
-                    val lines = buildList {
-                        add(title(activity, "شماره کارت:", "Card number:"))
-                        add(displayLtr(formatCard(account.cardNumber)))
+                    val text = buildString {
+                        append(title(activity, "بانک", "Bank")); append(": "); append(bankFor(account)?.let { title(activity, it.persianName, it.englishName) } ?: account.bankId)
+                        append("\n")
+                        append(title(activity, "شماره کارت", "Card number")); append(":\n"); append(displayLtr(formatCard(account.cardNumber)))
                         if (account.holderName.isNotBlank()) {
-                            add(title(activity, "به نام:", "Name:"))
-                            add(account.holderName)
+                            append("\n")
+                            append(title(activity, "صاحب کارت", "Card holder")); append(": "); append(account.holderName)
                         }
                         if (account.iban.isNotBlank()) {
-                            add(title(activity, "شماره شبا:", "IBAN:"))
-                            add(displayLtr(formatIban(account.iban)))
+                            append("\n")
+                            append(title(activity, "شماره شبا", "IBAN")); append(":\n"); append(displayLtr(formatIban(account.iban)))
                         }
                     }
-                    val text = lines.joinToString("\n")
                     val start = edit.selectionStart.coerceAtLeast(0)
                     val end = edit.selectionEnd.coerceAtLeast(0)
                     edit.text.replace(minOf(start, end), max(start, end), text)
@@ -475,11 +475,7 @@ object BankAccountsFeature {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(context, 12))
         })
-        root.addView(ImageView(context).apply {
-            setImageBitmap(bitmap)
-            adjustViewBounds = true
-            scaleType = ImageView.ScaleType.FIT_CENTER
-        }, LinearLayout.LayoutParams(dp(context, 260), dp(context, 260)))
+        root.addView(ImageView(context).apply { setImageBitmap(bitmap); adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(dp(context, 260), dp(context, 260)))
         root.addView(TextView(context).apply {
             text = displayLtr(if (iban) formatIban(payload) else formatCard(payload))
             textSize = 16f
