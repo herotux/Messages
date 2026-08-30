@@ -35,7 +35,7 @@ class BankCardPickerItem @JvmOverloads constructor(
             "Bank card"
         }
 
-        val primaryColor = resolveThemeColor(context, com.google.android.material.R.attr.colorPrimary)
+        val primaryColor = resolveThemeColor(context, androidx.appcompat.R.attr.colorPrimary)
 
         val icon = AppCompatImageView(context).apply {
             layoutParams = LayoutParams(
