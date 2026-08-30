@@ -42,12 +42,22 @@ jobs:
           # All bank logos use generated VectorDrawables except Sepah.
           # Sepah must remain a PNG because its vector resource is not safe
           # for the Android versions targeted by this project.
+          # Do not delete scanner resources such as bank_card_scan_frame.xml.
           find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
-          rm -f app/src/main/res/drawable/bank_*.xml
+          for logo in \
+            bank_saderat bank_mellat bank_tejarat bank_melli bank_keshavarzi \
+            bank_parsian bank_maskan bank_refah bank_eghtesad_novin bank_pasargad \
+            bank_saman bank_sina bank_post bank_tosee_taavon bank_shahr bank_ayandeh \
+            bank_sarmayeh bank_dey bank_khavar_mianeh bank_iran_zamin bank_karafarin \
+            bank_gardeshgari bank_sanat_madan bank_tosee_saderat bank_iran_venezuela \
+            bank_resalat bank_melal; do
+            rm -f "app/src/main/res/drawable/${logo}.xml"
+          done
           test -f app/src/main/res/drawable/bank_sepah.png
           python3 tools/import_iranian_bank_logos.py
           test -f app/src/main/res/drawable/bank_sepah.png
           test ! -e app/src/main/res/drawable/bank_sepah.xml
+          test -f app/src/main/res/drawable/bank_card_scan_frame.xml
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
