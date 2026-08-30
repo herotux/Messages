@@ -39,15 +39,32 @@ jobs:
 
       - name: Import bank VectorDrawable resources
         run: |
-          # All bank logos use generated VectorDrawables except Sepah.
-          # Sepah must remain a PNG because its vector resource is not safe
-          # for the Android versions targeted by this project.
+          set -euo pipefail
+          # The repository may contain legacy PNG bank logos from older branches.
+          # Remove every bank PNG except Sepah, then regenerate the canonical
+          # VectorDrawables from the existing importer. This prevents Android
+          # resource-name collisions such as bank_sina.png + bank_sina.xml.
           find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
           rm -f app/src/main/res/drawable/bank_*.xml
           test -f app/src/main/res/drawable/bank_sepah.png
           python3 tools/import_iranian_bank_logos.py
           test -f app/src/main/res/drawable/bank_sepah.png
           test ! -e app/src/main/res/drawable/bank_sepah.xml
+
+          echo "Final bank drawable resources:"
+          find app/src/main/res/drawable -maxdepth 1 -type f \( -name 'bank_*.png' -o -name 'bank_*.xml' \) -printf '%f\n' | sort
+
+          # Fail early if any bank basename exists in both PNG and XML form.
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path("app/src/main/res/drawable")
+          png = {p.stem for p in root.glob("bank_*.png")}
+          xml = {p.stem for p in root.glob("bank_*.xml")}
+          duplicates = sorted(png & xml)
+          if duplicates:
+              raise SystemExit("Duplicate bank resources: " + ", ".join(duplicates))
+          print("No duplicate bank resource names detected.")
+          PY
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
