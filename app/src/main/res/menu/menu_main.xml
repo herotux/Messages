@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/show_recycle_bin" android:icon="@drawable/ic_delete_material" android:showAsAction="never" android:title="@string/show_the_recycle_bin" app:showAsAction="never" />
     <item android:id="@+id/show_archived" android:icon="@drawable/ic_archive_material" android:showAsAction="never" android:title="@string/show_archived_conversations" app:showAsAction="never" />
-    <item android:id="@+id/export_debug_log" android:icon="@drawable/ic_info_material" android:showAsAction="never" android:title="Export debug log" app:showAsAction="never" />
+    <item android:id="@+id/export_debug_log" android:icon="@drawable/ic_info_material" android:showAsAction="never" android:title="Export debug log" android:visible="false" app:showAsAction="never" />
     <item android:id="@+id/settings" android:icon="@drawable/ic_settings_material" android:showAsAction="never" android:title="@string/settings" app:showAsAction="never" />
     <item android:id="@+id/about" android:icon="@drawable/ic_info_material" android:showAsAction="never" android:title="@string/about" app:showAsAction="never" />
 </menu>
