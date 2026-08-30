@@ -156,91 +156,49 @@ class SettingsActivity : SimpleActivity() {
         blockedNumbersAtPause = getBlockedNumbers().hashCode()
     }
 
-    private fun setupCustomizeColors() = binding.apply {
-        settingsColorCustomizationHolder.setOnClickListener { startCustomizationActivity() }
-    }
-
-    private fun setupCustomizeNotifications() = binding.apply {
-        settingsCustomizeNotificationsHolder.setOnClickListener { launchCustomizeNotificationsIntent() }
-    }
+    private fun setupCustomizeColors() = binding.apply { settingsColorCustomizationHolder.setOnClickListener { startCustomizationActivity() } }
+    private fun setupCustomizeNotifications() = binding.apply { settingsCustomizeNotificationsHolder.setOnClickListener { launchCustomizeNotificationsIntent() } }
 
     private fun setupUseEnglish() = binding.apply {
         settingsUseEnglishHolder.beVisibleIf((config.wasUseEnglishToggled || Locale.getDefault().language != "en") && !isTiramisuPlus())
         settingsUseEnglish.isChecked = config.useEnglish
-        settingsUseEnglishHolder.setOnClickListener {
-            settingsUseEnglish.toggle()
-            config.useEnglish = settingsUseEnglish.isChecked
-            exitProcess(0)
-        }
+        settingsUseEnglishHolder.setOnClickListener { settingsUseEnglish.toggle(); config.useEnglish = settingsUseEnglish.isChecked; exitProcess(0) }
     }
 
     private fun setupLanguage() = binding.apply {
         settingsLanguage.text = Locale.getDefault().displayLanguage
-        if (isTiramisuPlus()) {
-            settingsLanguageHolder.beVisible()
-            settingsLanguageHolder.setOnClickListener { launchChangeAppLanguageIntent() }
-        } else settingsLanguageHolder.beGone()
+        if (isTiramisuPlus()) { settingsLanguageHolder.beVisible(); settingsLanguageHolder.setOnClickListener { launchChangeAppLanguageIntent() } } else settingsLanguageHolder.beGone()
     }
 
     private fun setupManageBlockedNumbers() = binding.apply {
         settingsManageBlockedNumbers.text = addLockedLabelIfNeeded(org.fossify.commons.R.string.manage_blocked_numbers)
         settingsManageBlockedNumbersHolder.beVisible()
-        settingsManageBlockedNumbersHolder.setOnClickListener {
-            if (isOrWasThankYouInstalled()) {
-                Intent(this@SettingsActivity, ManageBlockedNumbersActivity::class.java).apply { startActivity(this) }
-            } else FeatureLockedDialog(this@SettingsActivity) { }
-        }
+        settingsManageBlockedNumbersHolder.setOnClickListener { if (isOrWasThankYouInstalled()) Intent(this@SettingsActivity, ManageBlockedNumbersActivity::class.java).apply { startActivity(this) } else FeatureLockedDialog(this@SettingsActivity) { } }
     }
 
     private fun setupManageBlockedKeywords() = binding.apply {
         settingsManageBlockedKeywords.text = addLockedLabelIfNeeded(R.string.manage_blocked_keywords)
-        settingsManageBlockedKeywordsHolder.setOnClickListener {
-            if (isOrWasThankYouInstalled()) {
-                Intent(this@SettingsActivity, ManageBlockedKeywordsActivity::class.java).apply { startActivity(this) }
-            } else FeatureLockedDialog(this@SettingsActivity) { }
-        }
+        settingsManageBlockedKeywordsHolder.setOnClickListener { if (isOrWasThankYouInstalled()) Intent(this@SettingsActivity, ManageBlockedKeywordsActivity::class.java).apply { startActivity(this) } else FeatureLockedDialog(this@SettingsActivity) { } }
     }
 
-    private fun setupChangeDateTimeFormat() = binding.apply {
-        settingsChangeDateTimeFormatHolder.setOnClickListener { ChangeDateTimeFormatDialog(this@SettingsActivity) { refreshConversations() } }
-    }
+    private fun setupChangeDateTimeFormat() = binding.apply { settingsChangeDateTimeFormatHolder.setOnClickListener { ChangeDateTimeFormatDialog(this@SettingsActivity) { refreshConversations() } } }
 
     private fun setupFontSize() = binding.apply {
         settingsFontSize.text = getFontSizeText()
         settingsFontSizeHolder.setOnClickListener {
-            val items = arrayListOf(
-                RadioItem(FONT_SIZE_SMALL, getString(org.fossify.commons.R.string.small)),
-                RadioItem(FONT_SIZE_MEDIUM, getString(org.fossify.commons.R.string.medium)),
-                RadioItem(FONT_SIZE_LARGE, getString(org.fossify.commons.R.string.large)),
-                RadioItem(FONT_SIZE_EXTRA_LARGE, getString(org.fossify.commons.R.string.extra_large))
-            )
+            val items = arrayListOf(RadioItem(FONT_SIZE_SMALL, getString(org.fossify.commons.R.string.small)), RadioItem(FONT_SIZE_MEDIUM, getString(org.fossify.commons.R.string.medium)), RadioItem(FONT_SIZE_LARGE, getString(org.fossify.commons.R.string.large)), RadioItem(FONT_SIZE_EXTRA_LARGE, getString(org.fossify.commons.R.string.extra_large)))
             RadioGroupDialog(this@SettingsActivity, items, config.fontSize) { config.fontSize = it as Int; settingsFontSize.text = getFontSizeText() }
         }
     }
 
-    private fun setupShowCharacterCounter() = binding.apply {
-        settingsShowCharacterCounter.isChecked = config.showCharacterCounter
-        settingsShowCharacterCounterHolder.setOnClickListener { settingsShowCharacterCounter.toggle(); config.showCharacterCounter = settingsShowCharacterCounter.isChecked }
-    }
-
-    private fun setupUseSimpleCharacters() = binding.apply {
-        settingsUseSimpleCharacters.isChecked = config.useSimpleCharacters
-        settingsUseSimpleCharactersHolder.setOnClickListener { settingsUseSimpleCharacters.toggle(); config.useSimpleCharacters = settingsUseSimpleCharacters.isChecked }
-    }
-
-    private fun setupSendOnEnter() = binding.apply {
-        settingsSendOnEnter.isChecked = config.sendOnEnter
-        settingsSendOnEnterHolder.setOnClickListener { settingsSendOnEnter.toggle(); config.sendOnEnter = settingsSendOnEnter.isChecked }
-    }
-
-    private fun setupEnableDeliveryReports() = binding.apply {
-        settingsEnableDeliveryReports.isChecked = config.enableDeliveryReports
-        settingsEnableDeliveryReportsHolder.setOnClickListener { settingsEnableDeliveryReports.toggle(); config.enableDeliveryReports = settingsEnableDeliveryReports.isChecked }
-    }
+    private fun setupShowCharacterCounter() = binding.apply { settingsShowCharacterCounter.isChecked = config.showCharacterCounter; settingsShowCharacterCounterHolder.setOnClickListener { settingsShowCharacterCounter.toggle(); config.showCharacterCounter = settingsShowCharacterCounter.isChecked } }
+    private fun setupUseSimpleCharacters() = binding.apply { settingsUseSimpleCharacters.isChecked = config.useSimpleCharacters; settingsUseSimpleCharactersHolder.setOnClickListener { settingsUseSimpleCharacters.toggle(); config.useSimpleCharacters = settingsUseSimpleCharacters.isChecked } }
+    private fun setupSendOnEnter() = binding.apply { settingsSendOnEnter.isChecked = config.sendOnEnter; settingsSendOnEnterHolder.setOnClickListener { settingsSendOnEnter.toggle(); config.sendOnEnter = settingsSendOnEnter.isChecked } }
+    private fun setupEnableDeliveryReports() = binding.apply { settingsEnableDeliveryReports.isChecked = config.enableDeliveryReports; settingsEnableDeliveryReportsHolder.setOnClickListener { settingsEnableDeliveryReports.toggle(); config.enableDeliveryReports = settingsEnableDeliveryReports.isChecked } }
 
     private fun setupSendLongMessageAsMMS() = binding.apply {
         settingsSendLongMessageMms.isChecked = config.sendLongMessageMMS
-        settingsSendLongMessageMmsHolder.setOnClickListener { settingsSendLongMessageMms.toggle(); config.sendLongMessageMMS = settingsSendLongMessageMMS.isChecked }
+        settingsSendLongMessageMmsHolder.setOnClickListener { settingsSendLongMessageMms.toggle(); config.sendLongMessageMMS = settingsSendLongMessageMms.isChecked }
     }
 
     private fun setupGroupMessageAsMMS() = binding.apply {
@@ -248,66 +206,45 @@ class SettingsActivity : SimpleActivity() {
         settingsSendGroupMessageMmsHolder.setOnClickListener { settingsSendGroupMessageMms.toggle(); config.sendGroupMessageMMS = settingsSendGroupMessageMms.isChecked }
     }
 
-    private fun setupKeepConversationsArchived() = binding.apply {
-        settingsKeepConversationsArchived.isChecked = config.keepConversationsArchived
-        settingsKeepConversationsArchivedHolder.setOnClickListener { settingsKeepConversationsArchived.toggle(); config.keepConversationsArchived = settingsKeepConversationsArchived.isChecked }
-    }
+    private fun setupKeepConversationsArchived() = binding.apply { settingsKeepConversationsArchived.isChecked = config.keepConversationsArchived; settingsKeepConversationsArchivedHolder.setOnClickListener { settingsKeepConversationsArchived.toggle(); config.keepConversationsArchived = settingsKeepConversationsArchived.isChecked } }
 
     private fun setupLockScreenVisibility() = binding.apply {
         settingsLockScreenVisibility.text = getLockScreenVisibilityText()
         settingsLockScreenVisibilityHolder.setOnClickListener {
-            val items = arrayListOf(
-                RadioItem(LOCK_SCREEN_SENDER_MESSAGE, getString(R.string.sender_and_message)),
-                RadioItem(LOCK_SCREEN_SENDER, getString(R.string.sender_only)),
-                RadioItem(LOCK_SCREEN_NOTHING, getString(org.fossify.commons.R.string.nothing))
-            )
+            val items = arrayListOf(RadioItem(LOCK_SCREEN_SENDER_MESSAGE, getString(R.string.sender_and_message)), RadioItem(LOCK_SCREEN_SENDER, getString(R.string.sender_only)), RadioItem(LOCK_SCREEN_NOTHING, getString(org.fossify.commons.R.string.nothing)))
             RadioGroupDialog(this@SettingsActivity, items, config.lockScreenVisibilitySetting) { config.lockScreenVisibilitySetting = it as Int; settingsLockScreenVisibility.text = getLockScreenVisibilityText() }
         }
     }
 
-    private fun getLockScreenVisibilityText() = getString(when (config.lockScreenVisibilitySetting) {
-        LOCK_SCREEN_SENDER_MESSAGE -> R.string.sender_and_message
-        LOCK_SCREEN_SENDER -> R.string.sender_only
-        else -> org.fossify.commons.R.string.nothing
-    })
+    private fun getLockScreenVisibilityText() = getString(when (config.lockScreenVisibilitySetting) { LOCK_SCREEN_SENDER_MESSAGE -> R.string.sender_and_message; LOCK_SCREEN_SENDER -> R.string.sender_only; else -> org.fossify.commons.R.string.nothing })
 
     private fun setupMMSFileSizeLimit() = binding.apply {
         settingsMmsFileSizeLimit.text = getMMSFileLimitText()
         settingsMmsFileSizeLimitHolder.setOnClickListener {
-            val items = arrayListOf(
-                RadioItem(7, getString(R.string.mms_file_size_limit_none), FILE_SIZE_NONE),
-                RadioItem(6, getString(R.string.mms_file_size_limit_2mb), FILE_SIZE_2_MB),
-                RadioItem(5, getString(R.string.mms_file_size_limit_1mb), FILE_SIZE_1_MB),
-                RadioItem(4, getString(R.string.mms_file_size_limit_600kb), FILE_SIZE_600_KB),
-                RadioItem(3, getString(R.string.mms_file_size_limit_300kb), FILE_SIZE_300_KB),
-                RadioItem(2, getString(R.string.mms_file_size_limit_200kb), FILE_SIZE_200_KB),
-                RadioItem(1, getString(R.string.mms_file_size_limit_100kb), FILE_SIZE_100_KB)
-            )
+            val items = arrayListOf(RadioItem(7, getString(R.string.mms_file_size_limit_none), FILE_SIZE_NONE), RadioItem(6, getString(R.string.mms_file_size_limit_2mb), FILE_SIZE_2_MB), RadioItem(5, getString(R.string.mms_file_size_limit_1mb), FILE_SIZE_1_MB), RadioItem(4, getString(R.string.mms_file_size_limit_600kb), FILE_SIZE_600_KB), RadioItem(3, getString(R.string.mms_file_size_limit_300kb), FILE_SIZE_300_KB), RadioItem(2, getString(R.string.mms_file_size_limit_200kb), FILE_SIZE_200_KB), RadioItem(1, getString(R.string.mms_file_size_limit_100kb), FILE_SIZE_100_KB))
             val checkedItemId = items.find { it.value == config.mmsFileSizeLimit }?.id ?: 7
             RadioGroupDialog(this@SettingsActivity, items, checkedItemId) { config.mmsFileSizeLimit = it as Long; settingsMmsFileSizeLimit.text = getMMSFileLimitText() }
         }
     }
 
-    private fun setupUseRecycleBin() = binding.apply {
-        updateRecycleBinButtons()
-        settingsUseRecycleBin.isChecked = config.useRecycleBin
-        settingsUseRecycleBin.text = formatWithDeprecatedBadge(labelRes = org.fossify.commons.R.string.move_items_into_recycle_bin)
-        settingsUseRecycleBinHolder.setOnClickListener { settingsUseRecycleBin.toggle(); config.useRecycleBin = settingsUseRecycleBin.isChecked; updateRecycleBinButtons() }
-    }
-
+    private fun setupUseRecycleBin() = binding.apply { updateRecycleBinButtons(); settingsUseRecycleBin.isChecked = config.useRecycleBin; settingsUseRecycleBin.text = formatWithDeprecatedBadge(labelRes = org.fossify.commons.R.string.move_items_into_recycle_bin); settingsUseRecycleBinHolder.setOnClickListener { settingsUseRecycleBin.toggle(); config.useRecycleBin = settingsUseRecycleBin.isChecked; updateRecycleBinButtons() } }
     private fun updateRecycleBinButtons() = binding.apply { settingsEmptyRecycleBinHolder.beVisibleIf(config.useRecycleBin) }
 
     private fun setupEmptyRecycleBin() {
         ensureBackgroundThread {
             recycleBinMessages = messagesDB.getArchivedCount()
-            runOnUiThread { settingsEmptyRecycleBinSize.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages) }
+            runOnUiThread {
+                val recycleBinSizeView = binding.root.findViewById<android.widget.TextView>(R.id.settings_empty_recycle_bin_size)
+                recycleBinSizeView.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages)
+            }
         }
         binding.settingsEmptyRecycleBinHolder.setOnClickListener {
             if (recycleBinMessages == 0) toast(org.fossify.commons.R.string.recycle_bin_empty) else {
                 ConfirmationDialog(activity = this@SettingsActivity, message = "", messageId = R.string.empty_recycle_bin_messages_confirmation, positive = org.fossify.commons.R.string.yes, negative = org.fossify.commons.R.string.no) {
                     ensureBackgroundThread { emptyMessagesRecycleBin() }
                     recycleBinMessages = 0
-                    binding.settingsEmptyRecycleBinSize.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages)
+                    val recycleBinSizeView = binding.root.findViewById<android.widget.TextView>(R.id.settings_empty_recycle_bin_size)
+                    recycleBinSizeView.text = resources.getQuantityString(R.plurals.delete_messages, recycleBinMessages, recycleBinMessages)
                 }
             }
         }
@@ -333,13 +270,5 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun getMMSFileLimitText() = getString(when (config.mmsFileSizeLimit) {
-        FILE_SIZE_100_KB -> R.string.mms_file_size_limit_100kb
-        FILE_SIZE_200_KB -> R.string.mms_file_size_limit_200kb
-        FILE_SIZE_300_KB -> R.string.mms_file_size_limit_300kb
-        FILE_SIZE_600_KB -> R.string.mms_file_size_limit_600kb
-        FILE_SIZE_1_MB -> R.string.mms_file_size_limit_1mb
-        FILE_SIZE_2_MB -> R.string.mms_file_size_limit_2mb
-        else -> R.string.mms_file_size_limit_none
-    })
+    private fun getMMSFileLimitText() = getString(when (config.mmsFileSizeLimit) { FILE_SIZE_100_KB -> R.string.mms_file_size_limit_100kb; FILE_SIZE_200_KB -> R.string.mms_file_size_limit_200kb; FILE_SIZE_300_KB -> R.string.mms_file_size_limit_300kb; FILE_SIZE_600_KB -> R.string.mms_file_size_limit_600kb; FILE_SIZE_1_MB -> R.string.mms_file_size_limit_1mb; FILE_SIZE_2_MB -> R.string.mms_file_size_limit_2mb; else -> R.string.mms_file_size_limit_none })
 }
