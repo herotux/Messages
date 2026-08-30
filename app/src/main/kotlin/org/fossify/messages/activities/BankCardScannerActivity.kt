@@ -9,7 +9,6 @@ import android.widget.Toast
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import org.fossify.commons.activities.SimpleActivity
 import org.fossify.messages.extensions.getMessagesDB
 import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.IranianBankRegistry
