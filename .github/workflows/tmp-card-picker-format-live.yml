@@ -1,0 +1,56 @@
+name: Temporary selected card format update
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-card-picker-format-live.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/live-bank-card-scanner
+          fetch-depth: 0
+      - name: Update picker message
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/kotlin/org/fossify/messages/helpers/BankAccountsFeature.kt')
+          s = p.read_text()
+          start = s.index('val text = buildString {', s.index('fun addPickerButton'))
+          end = s.index(' };', start) + 3
+          old = s[start:end]
+          new = '''val text = buildString {
+              append(title(activity, "بانک", "Bank")); append(": "); append(accountBankName(activity, account))
+              append("\\n")
+              append(title(activity, "شماره کارت", "Card number")); append(":\\n"); append(formatCard(account.cardNumber))
+              if (account.holderName.isNotBlank()) {
+                  append("\\n")
+                  append(title(activity, "صاحب کارت", "Card holder")); append(": "); append(account.holderName)
+              }
+              if (account.iban.isNotBlank()) {
+                  append("\\n")
+                  append(title(activity, "شماره شبا", "IBAN")); append(":\\n"); append(formatIban(account.iban))
+              }
+          }'''
+          s = s[:start] + new + s[end:]
+          marker = '    fun addPickerButton(activity: Activity)'
+          helper = '''    private fun accountBankName(context: Context, account: BankAccount): String = bankFor(account)?.let { title(context, it.persianName, it.englishName) } ?: account.bankId
+
+'''
+          if 'private fun accountBankName(' not in s:
+              s = s.replace(marker, helper + marker, 1)
+          p.write_text(s)
+          PY
+      - name: Commit and remove temporary workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/kotlin/org/fossify/messages/helpers/BankAccountsFeature.kt
+          git commit -m 'fix: format selected bank card details on separate lines'
+          git push origin HEAD:fix/live-bank-card-scanner
+          git rm .github/workflows/tmp-card-picker-format-live.yml
+          git commit -m 'chore: remove temporary format workflow'
+          git push origin HEAD:fix/live-bank-card-scanner
