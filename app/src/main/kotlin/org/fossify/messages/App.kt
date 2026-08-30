@@ -40,10 +40,12 @@ class App : FossifyApp() {
             if (activity is MainActivity) {
                 activity.findViewById<android.view.View>(R.id.folder_tabs)?.visibility =
                     if (ConversationFolderManager.areFoldersVisible(activity)) android.view.View.VISIBLE else android.view.View.GONE
+                BankAccountsFeature.installPersianFonts(activity)
             }
             if (activity is ThreadActivity) {
                 BankAccountsFeature.addPickerButton(activity)
                 BankAccountsFeature.installMessageCardLinks(activity)
+                BankAccountsFeature.installPersianFonts(activity)
             }
         }
 
