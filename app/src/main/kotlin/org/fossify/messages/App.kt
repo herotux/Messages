@@ -18,6 +18,7 @@ import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.ConversationFolderManager
 import org.fossify.messages.helpers.MessagingCache
+import org.fossify.messages.helpers.PersianThreadFontInstaller
 
 class App : FossifyApp() {
     override val isAppLockFeatureAvailable = true
@@ -46,6 +47,7 @@ class App : FossifyApp() {
                 BankAccountsFeature.addPickerButton(activity)
                 BankAccountsFeature.installMessageCardLinks(activity)
                 BankAccountsFeature.installPersianFonts(activity)
+                PersianThreadFontInstaller.install(activity)
             }
         }
 
