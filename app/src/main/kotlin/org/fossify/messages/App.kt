@@ -69,9 +69,43 @@ class App : FossifyApp() {
     }
 
     private fun addBankSettingsSection(activity: SettingsActivity) {
-        val holder=activity.findViewById<LinearLayout>(R.id.settings_holder) ?: return
-        if(holder.findViewWithTag<View>("bank_accounts_settings_section")!=null) return
-        val section=BankAccountsFeature.settingsSection(activity); val archivedLabel=holder.findViewById<View>(R.id.settings_archived_messages_label); val index=if(archivedLabel!=null) holder.indexOfChild(archivedLabel) else holder.childCount; holder.addView(section,index.coerceAtLeast(0))
+        val holder = activity.findViewById<LinearLayout>(R.id.settings_holder) ?: return
+        if (holder.findViewWithTag<View>("bank_accounts_settings_section") != null) return
+        val density = activity.resources.displayMetrics.density
+        val section = LinearLayout(activity).apply {
+            tag = "bank_accounts_settings_section"
+            orientation = LinearLayout.VERTICAL
+            setPadding((16 * density).toInt(), (14 * density).toInt(), (16 * density).toInt(), 0)
+        }
+        section.addView(TextView(activity).apply {
+            text = BankAccountsFeature.title(activity, "کارت‌های بانکی", "Bank cards")
+            setTextColor(activity.getProperPrimaryColor())
+            textSize = 13f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            gravity = Gravity.START
+            setPadding(0, 0, 0, (8 * density).toInt())
+        }, LinearLayout.LayoutParams(-1, -2))
+        val row = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, (4 * density).toInt(), 0, (10 * density).toInt())
+            setOnClickListener { BankAccountsFeature.showBankAccountManager(activity) }
+        }
+        row.addView(TextView(activity).apply {
+            text = BankAccountsFeature.title(activity, "مدیریت کارت‌های بانکی", "Manage bank cards")
+            textSize = 16f
+            setTextColor(activity.getProperPrimaryColor())
+        }, LinearLayout.LayoutParams(-1, -2))
+        row.addView(TextView(activity).apply {
+            text = BankAccountsFeature.title(activity, "افزودن، ویرایش و اسکن کارت بانکی", "Add, edit or scan a bank card")
+            textSize = 13f
+            setTextColor(Color.GRAY)
+        }, LinearLayout.LayoutParams(-1, -2))
+        section.addView(row, LinearLayout.LayoutParams(-1, -2))
+        section.addView(View(activity).apply { setBackgroundColor(Color.argb(30,128,128,128)) }, LinearLayout.LayoutParams(-1,1))
+        val archivedLabel = holder.findViewById<View>(R.id.settings_archived_messages_label)
+        val index = if (archivedLabel != null) holder.indexOfChild(archivedLabel) else holder.childCount
+        holder.addView(section, index.coerceAtLeast(0))
     }
 
     private val contactsObserver=object:ContentObserver(Handler(Looper.getMainLooper())) { override fun onChange(selfChange:Boolean,uri:Uri?){ MessagingCache.namePhoto.evictAll(); MessagingCache.participantsCache.evictAll() } }
