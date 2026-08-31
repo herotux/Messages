@@ -1,6 +1,7 @@
 package org.fossify.messages.activities
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
@@ -23,6 +24,13 @@ import org.fossify.messages.models.BankAccount
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BankCardScannerActivity : SimpleActivity() {
+    companion object {
+        const val EXTRA_RETURN_TO_FORM = "return_to_bank_card_form"
+        const val EXTRA_CARD = "bank_card"
+        const val EXTRA_HOLDER = "bank_holder"
+        const val EXTRA_IBAN = "bank_iban"
+    }
+
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     private val saving = AtomicBoolean(false)
     private lateinit var preview: TextureView
@@ -36,9 +44,7 @@ class BankCardScannerActivity : SimpleActivity() {
     private var stable = 0
     private var lastRun = 0L
 
-    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) preview.surfaceTextureListener = listener else finish()
-    }
+    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) preview.surfaceTextureListener = listener else finish() }
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -47,11 +53,7 @@ class BankCardScannerActivity : SimpleActivity() {
         manager = getSystemService(CameraManager::class.java)
         thread = HandlerThread("BankCardScanner").also { it.start() }
         handler = Handler(thread.looper)
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            preview.surfaceTextureListener = listener
-        } else {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) preview.surfaceTextureListener = listener else cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
     private val listener = object : TextureView.SurfaceTextureListener {
@@ -63,27 +65,15 @@ class BankCardScannerActivity : SimpleActivity() {
 
     private fun openCamera() {
         try {
-            val id = manager.cameraIdList.firstOrNull {
-                manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK
-            } ?: return
+            val id = manager.cameraIdList.firstOrNull { manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK } ?: return
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
-            reader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 2).also {
-                it.setOnImageAvailableListener({ analyze(it) }, handler)
-            }
+            reader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 2).also { it.setOnImageAvailableListener({ analyze(it) }, handler) }
             manager.openCamera(id, object : CameraDevice.StateCallback() {
                 override fun onOpened(d: CameraDevice) { camera = d; bind(d) }
                 override fun onDisconnected(d: CameraDevice) { d.close(); camera = null }
-                override fun onError(d: CameraDevice, error: Int) {
-                    d.close(); camera = null
-                    runOnUiThread {
-                        Toast.makeText(this@BankCardScannerActivity, "Camera error", Toast.LENGTH_SHORT).show()
-                        finish()
-                    }
-                }
+                override fun onError(d: CameraDevice, error: Int) { d.close(); camera = null; runOnUiThread { Toast.makeText(this@BankCardScannerActivity, "Camera error", Toast.LENGTH_SHORT).show(); finish() } }
             }, handler)
-        } catch (_: Exception) {
-            finish()
-        }
+        } catch (_: Exception) { finish() }
     }
 
     private fun bind(d: CameraDevice) {
@@ -95,17 +85,10 @@ class BankCardScannerActivity : SimpleActivity() {
             override fun onConfigured(s: CameraCaptureSession) {
                 session = s
                 try {
-                    val request = d.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
-                        addTarget(previewSurface)
-                        addTarget(readerSurface)
-                        set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                    }.build()
+                    val request = d.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply { addTarget(previewSurface); addTarget(readerSurface); set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE) }.build()
                     s.setRepeatingRequest(request, null, handler)
-                } catch (_: Exception) {
-                    finish()
-                }
+                } catch (_: Exception) { finish() }
             }
-
             override fun onConfigureFailed(s: CameraCaptureSession) = finish()
         }, handler)
     }
@@ -113,33 +96,21 @@ class BankCardScannerActivity : SimpleActivity() {
     private fun analyze(r: ImageReader) {
         val image = r.acquireLatestImage() ?: return
         val now = SystemClock.elapsedRealtime()
-        if (saving.get() || now - lastRun < 300L) {
-            image.close()
-            return
-        }
+        if (saving.get() || now - lastRun < 300L) { image.close(); return }
         lastRun = now
         recognizer.process(InputImage.fromMediaImage(image, 0)).addOnSuccessListener { result ->
             val card = BankAccountsFeature.cardRegexForScanner(result.text)
-            if (card == null) {
-                lastCard = null
-                stable = 0
-                return@addOnSuccessListener
-            }
+            if (card == null) { lastCard = null; stable = 0; return@addOnSuccessListener }
             stable = if (card == lastCard) stable + 1 else 1
             lastCard = card
             if (stable >= 2 && saving.compareAndSet(false, true)) {
-                val bank = IranianBankRegistry.findByCard(card)
-                if (bank == null) {
-                    saving.set(false)
-                    stable = 0
-                    return@addOnSuccessListener
-                }
-                save(
-                    card,
-                    bank.id.name,
-                    BankAccountsFeature.extractHolderForScanner(result.text),
-                    BankAccountsFeature.extractIbanForScanner(result.text)
-                )
+                val bank = IranianBankRegistry.findByCard(card) ?: run { saving.set(false); stable = 0; return@addOnSuccessListener }
+                val holder = BankAccountsFeature.extractHolderForScanner(result.text)
+                val iban = BankAccountsFeature.extractIbanForScanner(result.text)
+                if (intent.getBooleanExtra(EXTRA_RETURN_TO_FORM, false)) {
+                    setResult(RESULT_OK, Intent().apply { putExtra(EXTRA_CARD, card); putExtra(EXTRA_HOLDER, holder); putExtra(EXTRA_IBAN, iban) })
+                    finish()
+                } else save(card, bank.id.name, holder, iban)
             }
         }.addOnCompleteListener { image.close() }
     }
@@ -147,34 +118,12 @@ class BankCardScannerActivity : SimpleActivity() {
     private fun save(card: String, bank: String, holder: String, iban: String) {
         Thread {
             try {
-                getMessagesDB().BankAccountsDao().insert(
-                    BankAccount(bankId = bank, cardNumber = card, holderName = holder, iban = iban)
-                )
-                runOnUiThread {
-                    Toast.makeText(this, "Bank card saved", Toast.LENGTH_SHORT).show()
-                    finish()
-                }
-            } catch (_: Exception) {
-                saving.set(false)
-            }
+                getMessagesDB().BankAccountsDao().insert(BankAccount(bankId = bank, cardNumber = card, holderName = holder, iban = iban))
+                runOnUiThread { Toast.makeText(this, "Bank card saved", Toast.LENGTH_SHORT).show(); finish() }
+            } catch (_: Exception) { saving.set(false) }
         }.start()
     }
 
-    private fun closeCamera() {
-        try {
-            session?.close()
-            camera?.close()
-            reader?.close()
-        } catch (_: Exception) { }
-        session = null
-        camera = null
-        reader = null
-    }
-
-    override fun onDestroy() {
-        closeCamera()
-        if (::thread.isInitialized) thread.quitSafely()
-        recognizer.close()
-        super.onDestroy()
-    }
+    private fun closeCamera() { try { session?.close(); camera?.close(); reader?.close() } catch (_: Exception) { }; session = null; camera = null; reader = null }
+    override fun onDestroy() { closeCamera(); if (::thread.isInitialized) thread.quitSafely(); recognizer.close(); super.onDestroy() }
 }
