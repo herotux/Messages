@@ -44,3 +44,11 @@
 -keepclassmembers,allowobfuscation class ezvcard.parameter.* extends ezvcard.parameter.MediaTypeParameter {
     <init>(java.lang.String, java.lang.String, java.lang.String);
 }
+
+# Iranian bank/operator logos are resolved dynamically by resource name via
+# Resources.getIdentifier(), so the resource shrinker cannot reliably see them.
+# Keep all logo drawables packaged in release APKs.
+-keepresources drawable/bank_*
+-keepresources drawable/hamrah_avval
+-keepresources drawable/irancell
+-keepresources drawable/rightel
