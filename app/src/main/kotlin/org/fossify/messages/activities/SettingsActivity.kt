@@ -35,7 +35,6 @@ import org.fossify.commons.helpers.FONT_SIZE_EXTRA_LARGE
 import org.fossify.commons.helpers.FONT_SIZE_LARGE
 import org.fossify.commons.helpers.FONT_SIZE_MEDIUM
 import org.fossify.commons.helpers.FONT_SIZE_SMALL
-import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.messages.R
 import org.fossify.messages.dialogs.ExportMessagesDialog
@@ -54,15 +53,15 @@ import org.fossify.messages.helpers.LOCK_SCREEN_NOTHING
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
 import org.fossify.messages.helpers.MessagesImporter
-import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.IranianBankRegistry
+import org.fossify.messages.helpers.refreshConversations
 import java.util.Locale
 
 /**
- * Messages-owned settings UI.
+ * Messages-owned Material 3 settings.
  *
- * The legacy Fossify settings layout is intentionally not used here.  This
- * screen is a Material 3 navigation hub and each group opens its own screen.
+ * The legacy Fossify settings layout is intentionally not used. Settings are
+ * grouped into separate screens so the main page stays short and readable.
  */
 class SettingsActivity : SimpleActivity() {
     companion object {
@@ -100,7 +99,7 @@ class SettingsActivity : SimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!isFinishing) render(intent.getStringExtra(EXTRA_PAGE), preserveScroll = true)
+        if (!isFinishing) render(intent.getStringExtra(EXTRA_PAGE))
     }
 
     override fun onPause() {
@@ -108,7 +107,7 @@ class SettingsActivity : SimpleActivity() {
         blockedNumbersAtPause = getBlockedNumbers().hashCode()
     }
 
-    private fun render(page: String?, preserveScroll: Boolean = false) {
+    private fun render(page: String?) {
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             clipToPadding = false
@@ -117,6 +116,8 @@ class SettingsActivity : SimpleActivity() {
         }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            textDirection = View.TEXT_DIRECTION_RTL
             setPadding(0, dp(16), 0, 0)
         }
         scroll.addView(content, ViewGroup.LayoutParams(-1, -2))
@@ -332,14 +333,20 @@ class SettingsActivity : SimpleActivity() {
     private fun mmsLimitText() = when (config.mmsFileSizeLimit) { FILE_SIZE_100_KB -> "100 KB"; FILE_SIZE_200_KB -> "200 KB"; FILE_SIZE_300_KB -> "300 KB"; FILE_SIZE_600_KB -> "600 KB"; FILE_SIZE_1_MB -> "1 MB"; FILE_SIZE_2_MB -> "2 MB"; else -> "بدون محدودیت" }
 
     private fun configureProtection() {
-        val tab = if (config.isAppPasswordProtectionOn) config.appProtectionType else SHOW_ALL_TABS
+        val wasEnabled = config.isAppPasswordProtectionOn
+        val tab = if (wasEnabled) config.appProtectionType else SHOW_ALL_TABS
         SecurityDialog(activity = this, requiredHash = config.appPasswordHash, showTabIndex = tab) { hash, type, success ->
-            if (success) { config.isAppPasswordProtectionOn = !config.isAppPasswordProtectionOn; config.appPasswordHash = if (config.isAppPasswordProtectionOn) hash else ""; config.appProtectionType = type; render(PAGE_PRIVACY) }
+            if (success) {
+                config.isAppPasswordProtectionOn = !wasEnabled
+                config.appPasswordHash = if (wasEnabled) "" else hash
+                config.appProtectionType = type
+                render(PAGE_PRIVACY)
+            }
         }
     }
 
     private fun showBankList() {
-        val labels = IranianBankRegistry.banks.map { it.persianName }.toTypedArray()
+        val labels = IranianBankRegistry.allBanks().map { it.persianName }.toTypedArray()
         MaterialAlertDialogBuilder(this).setTitle("بانک‌های پشتیبانی‌شده").setItems(labels, null).show()
     }
 
@@ -349,9 +356,7 @@ class SettingsActivity : SimpleActivity() {
 
     private fun ensureRecycleBinCount() { recycleBinMessages = messagesDB.getArchivedCount() }
 
-    private fun exportMessages() {
-        exportMessagesDialog = ExportMessagesDialog(this) { fileName -> saveDocument.launch("$fileName.json") }
-    }
+    private fun exportMessages() { exportMessagesDialog = ExportMessagesDialog(this) { fileName -> saveDocument.launch("$fileName.json") } }
 
     private fun circleBackground() = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(resolveColor(com.google.android.material.R.attr.colorSecondaryContainer)) }
     private fun marginParams(top: Int = 0, bottom: Int = 0) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top); bottomMargin = dp(bottom) }
