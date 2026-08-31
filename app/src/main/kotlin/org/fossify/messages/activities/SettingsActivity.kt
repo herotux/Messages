@@ -191,7 +191,7 @@ class SettingsActivity : SimpleActivity() {
 
     private fun banks(root: LinearLayout) {
         section(root, "بانک و تراکنش")
-        row(root, "حساب‌ها و کارت‌های بانکی", "افزودن، ویرایش و حذف کارت‌ها") { BankAccountsFeature.showBankAccountManager(this) }
+        row(root, "حساب‌ها و کارت‌های بانکی", "افزودن، ویرایش و حذف کارت‌ها") { startActivity(Intent(this, BankCardsActivity::class.java)) }
         row(root, "تشخیص بانک", "بانک‌های پشتیبانی‌شده و تشخیص شماره کارت") {
             val names = org.fossify.messages.helpers.IranianBankRegistry.allBanks().map { it.persianName }.toTypedArray()
             MaterialAlertDialogBuilder(this).setTitle("بانک‌های پشتیبانی‌شده").setItems(names, null).show()
