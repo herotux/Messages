@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.AppCompatImageView
 import com.google.android.material.appbar.MaterialToolbar
@@ -19,6 +20,12 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.slider.Slider
+import org.fossify.commons.dialogs.SecurityDialog
+import org.fossify.commons.helpers.FONT_TYPE_CUSTOM
+import org.fossify.commons.helpers.FONT_TYPE_SYSTEM_DEFAULT
+import org.fossify.commons.helpers.FontHelper
+import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
+import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.FILE_SIZE_100_KB
 import org.fossify.messages.helpers.FILE_SIZE_1_MB
@@ -32,13 +39,13 @@ import org.fossify.messages.helpers.LOCK_SCREEN_SENDER
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
 import org.fossify.messages.extensions.config
 import java.util.Locale
+import kotlin.system.exitProcess
 
 /**
  * Messages-owned settings UI.
  *
- * The UI is intentionally built here instead of using the legacy Commons
- * settings layout. Each category is a separate instance of this activity,
- * opened with [EXTRA_PAGE], so the root page stays a simple dashboard.
+ * The UI is intentionally independent from the legacy Commons settings
+ * screen. Each category is a separate instance of this activity.
  */
 class SettingsActivity : SimpleActivity() {
     companion object {
@@ -53,6 +60,21 @@ class SettingsActivity : SimpleActivity() {
         private const val BANKS = "banks"
         private const val PRIVACY = "privacy"
         private const val ABOUT = "about"
+    }
+
+    private val pickCustomFont = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        runCatching {
+            val fileName = resolveFontFileName(uri)
+            val data = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@runCatching
+            if (data.isEmpty()) return@runCatching
+            if (FontHelper.saveFontData(this, data, fileName)) {
+                config.fontType = FONT_TYPE_CUSTOM
+                config.fontName = fileName
+                FontHelper.clearCache()
+                recreate()
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,7 +94,6 @@ class SettingsActivity : SimpleActivity() {
             setBackgroundColor(surface)
             layoutDirection = View.LAYOUT_DIRECTION_RTL
         }
-
         val toolbar = MaterialToolbar(this).apply {
             title = pageTitle(page)
             setBackgroundColor(surface)
@@ -115,7 +136,7 @@ class SettingsActivity : SimpleActivity() {
     private fun home(root: LinearLayout) {
         titleBlock(root, "تنظیمات", "همه تنظیمات Messages در بخش‌های جداگانه")
         category(root, "عمومی", "زبان، تقویم و تنظیمات پایه", GENERAL, android.R.drawable.ic_menu_manage)
-        category(root, "ظاهر", "تم، اندازه متن و ظاهر گفتگو", APPEARANCE, android.R.drawable.ic_menu_view)
+        category(root, "ظاهر", "تم، فونت و اندازه متن", APPEARANCE, android.R.drawable.ic_menu_view)
         category(root, "پیام‌ها", "ارسال SMS و MMS و گزارش تحویل", MESSAGES, android.R.drawable.ic_dialog_email)
         category(root, "اعلان‌ها", "اعلان‌ها و نمایش روی صفحه قفل", NOTIFICATIONS, android.R.drawable.ic_dialog_info)
         category(root, "گفتگوها", "آرشیو و سطل بازیافت", CONVERSATIONS, android.R.drawable.ic_menu_sort_by_size)
@@ -126,16 +147,20 @@ class SettingsActivity : SimpleActivity() {
 
     private fun general(root: LinearLayout) {
         section(root, "عمومی")
+        row(root, "زبان برنامه", if (config.useEnglish) "English" else "فارسی") {
+            chooseLanguage()
+        }
         if (Build.VERSION.SDK_INT >= 33) {
-            row(root, "زبان برنامه", Locale.getDefault().displayLanguage) {
-                runCatching { startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS).setData(Uri.parse("package:$packageName"))) }
+            row(root, "زبان سیستم Android", Locale.getDefault().displayLanguage) {
+                runCatching {
+                    startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS).setData(Uri.parse("package:$packageName")))
+                }
             }
         }
         toggle(root, "تقویم فارسی", "نمایش تاریخ‌ها با تقویم جلالی", config.usePersianCalendar) {
             config.usePersianCalendar = it
-        }
-        toggle(root, "زبان انگلیسی", "استفاده از زبان انگلیسی داخل برنامه", config.useEnglish) {
-            config.useEnglish = it
+            // Date formatting is read when screens are created. Recreate so the
+            // change is visible immediately instead of only after a cold start.
             recreate()
         }
         row(root, "تاریخ و ساعت", "استفاده از تنظیمات سیستم") {
@@ -151,6 +176,7 @@ class SettingsActivity : SimpleActivity() {
             prefs.edit().putBoolean(KEY_DARK, it).apply()
             AppCompatDelegate.setDefaultNightMode(if (it) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
         }
+        row(root, "فونت برنامه", fontLabel()) { chooseFont() }
         choice(root, "اندازه متن", fontSizeLabel()) { chooseFontSize() }
         slider(root, "اندازه متن گفتگو", config.fontSize.toFloat().coerceIn(1f, 4f)) {
             config.fontSize = it.toInt()
@@ -209,7 +235,7 @@ class SettingsActivity : SimpleActivity() {
     private fun privacy(root: LinearLayout) {
         section(root, "حریم خصوصی و امنیت")
         row(root, "قفل برنامه", if (config.isAppPasswordProtectionOn) "فعال" else "غیرفعال") {
-            startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+            openAppLock()
         }
         choice(root, "محتوای پیام روی صفحه قفل", lockScreenLabel()) { chooseLockScreen() }
         row(root, "مجوزها", "مدیریت دسترسی‌های Messages") { openAppDetails() }
@@ -221,6 +247,85 @@ class SettingsActivity : SimpleActivity() {
             startActivity(Intent(this, HerotuxAboutActivity::class.java))
         }
         row(root, "تنظیمات سیستم Android", "اطلاعات برنامه، مجوزها و حافظه") { openAppDetails() }
+    }
+
+    private fun chooseLanguage() {
+        val labels = arrayOf("فارسی", "English")
+        val selected = if (config.useEnglish) 1 else 0
+        MaterialAlertDialogBuilder(this)
+            .setTitle("زبان برنامه")
+            .setSingleChoiceItems(labels, selected) { dialog, which ->
+                val english = which == 1
+                if (english != config.useEnglish) {
+                    config.useEnglish = english
+                    dialog.dismiss()
+                    // Fossify's legacy language setting intentionally restarts
+                    // the process so every activity/resource gets the new locale.
+                    exitProcess(0)
+                } else {
+                    dialog.dismiss()
+                }
+            }
+            .show()
+    }
+
+    private fun chooseFont() {
+        val labels = arrayOf("فونت پیش‌فرض سیستم", "فونت سفارشی")
+        val selected = if (config.fontType == FONT_TYPE_CUSTOM) 1 else 0
+        MaterialAlertDialogBuilder(this)
+            .setTitle("فونت برنامه")
+            .setSingleChoiceItems(labels, selected) { dialog, which ->
+                if (which == 0) {
+                    config.fontType = FONT_TYPE_SYSTEM_DEFAULT
+                    config.fontName = ""
+                    FontHelper.clearCache()
+                    dialog.dismiss()
+                    recreate()
+                } else {
+                    dialog.dismiss()
+                    pickCustomFont.launch(arrayOf("font/*", "application/octet-stream"))
+                }
+            }
+            .show()
+    }
+
+    private fun resolveFontFileName(uri: Uri): String {
+        val fallback = "custom_font_${System.currentTimeMillis()}.ttf"
+        val name = runCatching {
+            contentResolver.query(uri, arrayOf("_display_name"), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }
+        }.getOrNull()
+        val raw = name?.substringAfterLast('/').orEmpty()
+        if (raw.isBlank()) return fallback
+        return raw.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { fallback }
+    }
+
+    private fun openAppLock() {
+        val tabToShow = if (config.isAppPasswordProtectionOn) config.appProtectionType else SHOW_ALL_TABS
+        SecurityDialog(
+            activity = this,
+            requiredHash = config.appPasswordHash,
+            showTabIndex = tabToShow
+        ) { hash, type, success ->
+            if (!success) return@SecurityDialog
+            val wasEnabled = config.isAppPasswordProtectionOn
+            config.isAppPasswordProtectionOn = !wasEnabled
+            config.appPasswordHash = if (wasEnabled) "" else hash
+            config.appProtectionType = type
+            if (config.isAppPasswordProtectionOn) {
+                val message = if (config.appProtectionType == PROTECTION_FINGERPRINT) {
+                    org.fossify.commons.R.string.fingerprint_setup_successfully
+                } else {
+                    org.fossify.commons.R.string.protection_setup_successfully
+                }
+                MaterialAlertDialogBuilder(this)
+                    .setMessage(message)
+                    .setPositiveButton(org.fossify.commons.R.string.ok, null)
+                    .show()
+            }
+            render(PRIVACY)
+        }
     }
 
     private fun category(root: LinearLayout, title: String, summary: String, page: String, icon: Int) {
@@ -342,6 +447,7 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun fontSizeLabel() = when (config.fontSize) { 1 -> "کوچک"; 2 -> "متوسط"; 3 -> "بزرگ"; else -> "خیلی بزرگ" }
+    private fun fontLabel() = if (config.fontType == FONT_TYPE_CUSTOM) "سفارشی: ${config.fontName}" else "پیش‌فرض سیستم"
     private fun lockScreenLabel() = when (config.lockScreenVisibilitySetting) { LOCK_SCREEN_SENDER -> "فقط فرستنده"; LOCK_SCREEN_NOTHING -> "هیچ‌چیز"; else -> "فرستنده و متن پیام" }
     private fun mmsLimitLabel() = when (config.mmsFileSizeLimit) { FILE_SIZE_100_KB -> "100 KB"; FILE_SIZE_200_KB -> "200 KB"; FILE_SIZE_300_KB -> "300 KB"; FILE_SIZE_600_KB -> "600 KB"; FILE_SIZE_1_MB -> "1 MB"; FILE_SIZE_2_MB -> "2 MB"; else -> "بدون محدودیت" }
 
