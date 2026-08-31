@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/bank_*"
+    tools:keep="@drawable/hamrah_avval,@drawable/irancell,@drawable/rightel,@drawable/sender_mokhaberat,@drawable/sender_gas,@drawable/sender_electricity,@drawable/sender_sakhd" />
