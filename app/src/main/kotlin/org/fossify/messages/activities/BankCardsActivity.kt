@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
@@ -15,6 +16,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.appbar.MaterialToolbar
@@ -94,7 +96,7 @@ class BankCardsActivity : SimpleActivity() {
 
     private inner class CardPagerAdapter : RecyclerView.Adapter<CardPagerAdapter.Holder>() {
         inner class Holder(val root: LinearLayout) : RecyclerView.ViewHolder(root)
-        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int) = Holder(LinearLayout(parent.context).apply { orientation = LinearLayout.VERTICAL; layoutParams = ViewPager2.LayoutParams(-1, -1); setPadding(dp(4), dp(4), dp(4), dp(4)) })
+        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int) = Holder(LinearLayout(parent.context).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(-1, -1); setPadding(dp(4), dp(4), dp(4), dp(4)) })
         override fun getItemCount() = accounts.size
         override fun onBindViewHolder(holder: Holder, position: Int) { bindCard(holder.root, accounts[position]) }
     }
@@ -153,6 +155,7 @@ class BankCardsActivity : SimpleActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); if (requestCode == 7401 && resultCode == RESULT_OK) { data?.getStringExtra(BankCardScannerActivity.EXTRA_CARD)?.let { wizard?.setCard(it) } } }
     private fun surface() = color(com.google.android.material.R.attr.colorSurface)
     private fun onSurfaceVariant() = color(com.google.android.material.R.attr.colorOnSurfaceVariant)
+    private fun color(attr: Int): Int { val value = TypedValue(); theme.resolveAttribute(attr, value, true); return if (value.resourceId != 0) getColor(value.resourceId) else value.data }
     private fun darken(c: Int) = Color.rgb((Color.red(c)*.72).toInt(), (Color.green(c)*.72).toInt(), (Color.blue(c)*.72).toInt())
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 }
