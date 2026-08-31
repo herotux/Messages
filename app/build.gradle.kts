@@ -60,6 +60,7 @@ android {
                 keyPassword = providers.environmentVariable("SIGNING_KEY_PASSWORD").get()
                 storeFile = file(providers.environmentVariable("SIGNING_STORE_FILE").get())
                 storePassword = providers.environmentVariable("SIGNING_STORE_PASSWORD").get()
+                storeType = "PKCS12"
             }
         } else {
             logger.warn("Warning: No signing config found. Build will be unsigned.")

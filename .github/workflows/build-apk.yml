@@ -1,7 +1,5 @@
 name: Android CI
 
-# Keep CI on the current PR head so the merge ref is rebuilt after fixes.
-
 on:
   push:
     branches:
@@ -21,6 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
+    env:
+      SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      SIGNING_STORE_FILE: ${{ github.workspace }}/messages-release.p12
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,12 +41,17 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Restore release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$SIGNING_STORE_FILE"
+          chmod 600 "$SIGNING_STORE_FILE"
+          test -s "$SIGNING_STORE_FILE"
+          ls -lh "$SIGNING_STORE_FILE"
+
       - name: Import bank VectorDrawable resources
         run: |
-          # All bank logos use generated VectorDrawables except Sepah.
-          # Sepah must remain a PNG because its vector resource is not safe
-          # for the Android versions targeted by this project.
-          # Do not delete scanner resources such as bank_card_scan_frame.xml.
           find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
           for logo in \
             bank_saderat bank_mellat bank_tejarat bank_melli bank_keshavarzi \
@@ -80,60 +89,60 @@ jobs:
       - name: Run lint
         run: ./gradlew lint --stacktrace
 
-      - name: Build Core debug APK
-        run: ./gradlew assembleCoreDebug --stacktrace
+      - name: Build Core release APK
+        run: ./gradlew assembleCoreRelease --stacktrace
 
-      - name: Build FOSS debug APK
-        run: ./gradlew assembleFossDebug --stacktrace
+      - name: Build FOSS release APK
+        run: ./gradlew assembleFossRelease --stacktrace
 
-      - name: Build GPlay debug APK
-        run: ./gradlew assembleGplayDebug --stacktrace
+      - name: Build GPlay release APK
+        run: ./gradlew assembleGplayRelease --stacktrace
 
       - name: Collect Core APK
         run: |
           mkdir -p artifacts/core
-          APK=$(find app/build/outputs/apk -type f -name '*core*debug*.apk' | head -n 1)
+          APK=$(find app/build/outputs/apk -type f -name '*core*release*.apk' | head -n 1)
           test -n "$APK"
-          cp "$APK" artifacts/core/Messages-core-debug.apk
-          ls -lh artifacts/core/Messages-core-debug.apk
+          cp "$APK" artifacts/core/Messages-core-release.apk
+          ls -lh artifacts/core/Messages-core-release.apk
 
       - name: Collect FOSS APK
         run: |
           mkdir -p artifacts/foss
-          APK=$(find app/build/outputs/apk -type f -name '*foss*debug*.apk' | head -n 1)
+          APK=$(find app/build/outputs/apk -type f -name '*foss*release*.apk' | head -n 1)
           test -n "$APK"
-          cp "$APK" artifacts/foss/Messages-foss-debug.apk
-          ls -lh artifacts/foss/Messages-foss-debug.apk
+          cp "$APK" artifacts/foss/Messages-foss-release.apk
+          ls -lh artifacts/foss/Messages-foss-release.apk
 
       - name: Collect GPlay APK
         run: |
           mkdir -p artifacts/gplay
-          APK=$(find app/build/outputs/apk -type f -name '*gplay*debug*.apk' | head -n 1)
+          APK=$(find app/build/outputs/apk -type f -name '*gplay*release*.apk' | head -n 1)
           test -n "$APK"
-          cp "$APK" artifacts/gplay/Messages-gplay-debug.apk
-          ls -lh artifacts/gplay/Messages-gplay-debug.apk
+          cp "$APK" artifacts/gplay/Messages-gplay-release.apk
+          ls -lh artifacts/gplay/Messages-gplay-release.apk
 
       - name: Upload Core APK
         uses: actions/upload-artifact@v4
         with:
-          name: Messages-core-debug
-          path: artifacts/core/Messages-core-debug.apk
+          name: Messages-core-release
+          path: artifacts/core/Messages-core-release.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload FOSS APK
         uses: actions/upload-artifact@v4
         with:
-          name: Messages-foss-debug
-          path: artifacts/foss/Messages-foss-debug.apk
+          name: Messages-foss-release
+          path: artifacts/foss/Messages-foss-release.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload GPlay APK
         uses: actions/upload-artifact@v4
         with:
-          name: Messages-gplay-debug
-          path: artifacts/gplay/Messages-gplay-debug.apk
+          name: Messages-gplay-release
+          path: artifacts/gplay/Messages-gplay-release.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -147,3 +156,7 @@ jobs:
             app/build/reports/lint-results-*.html
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Remove release keystore
+        if: always()
+        run: rm -f "$SIGNING_STORE_FILE"
