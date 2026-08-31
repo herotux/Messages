@@ -10,7 +10,7 @@ object PersianDateHelper {
     )
 
     private val latinMonthAbbreviations = arrayOf(
-        "far", "ord", "kho", "tir", "mor", "sha",
+        "far", "ord", "kho", "tir", "mor", "shah",
         "meh", "aba", "azr", "dey", "bah", "esf"
     )
 
@@ -30,7 +30,7 @@ object PersianDateHelper {
         val nowJalali = toJalali(now)
         if (targetJalali == nowJalali) return toDigits(formatTime(target, use24Hour), locale)
         val includeYear = targetJalali.first != nowJalali.first
-        return toDigits(formatDateParts(targetJalali.first, targetJalali.second, targetJalali.third, dateFormat, includeYear), locale)
+        return toDigits(formatDateParts(targetJalali.first, targetJalali.second, targetJalali.third, includeYear, locale), locale)
     }
 
     fun formatThreadDateTime(timestampMillis: Long, dateFormat: String, use24Hour: Boolean, locale: Locale = Locale.getDefault()): String {
@@ -40,7 +40,7 @@ object PersianDateHelper {
         val nowJalali = toJalali(now)
         val time = formatTime(target, use24Hour)
         if (targetJalali == nowJalali) return toDigits(time, locale)
-        val date = formatDateParts(targetJalali.first, targetJalali.second, targetJalali.third, dateFormat, targetJalali.first != nowJalali.first)
+        val date = formatDateParts(targetJalali.first, targetJalali.second, targetJalali.third, targetJalali.first != nowJalali.first, locale)
         return toDigits("$date $time", locale)
     }
 
@@ -60,9 +60,6 @@ object PersianDateHelper {
     fun toJalaliDate(calendar: Calendar): Triple<Int, Int, Int> = toJalali(calendar)
 
     fun jalaliToGregorian(year: Int, month: Int, day: Int): Calendar? {
-        // Search a small window around the corresponding Gregorian year using the
-        // same conversion routine used for display. This avoids a second conversion
-        // algorithm and keeps picker/storage conversion consistent.
         val candidate = Calendar.getInstance().apply {
             clear()
             set(year + 621, Calendar.JANUARY, 1, 0, 0, 0)
@@ -96,17 +93,9 @@ object PersianDateHelper {
         return if (use24Hour) base else "$base ${if (calendar.get(Calendar.AM_PM) == Calendar.AM) "AM" else "PM"}"
     }
 
-    private fun formatDateParts(year: Int, month: Int, day: Int, dateFormat: String, includeYear: Boolean): String {
-        val separator = when { dateFormat.contains('.') -> "."; dateFormat.contains('/') -> "/"; else -> "-" }
-        val dayPart = day.toString().padStart(2, '0')
-        val monthPart = month.toString().padStart(2, '0')
-        val yearPart = year.toString()
-        if (!includeYear) return if (dateFormat.startsWith("MM")) "$monthPart$separator$dayPart" else "$dayPart$separator$monthPart"
-        return when {
-            dateFormat.startsWith("yyyy") -> "$yearPart$separator$monthPart$separator$dayPart"
-            dateFormat.startsWith("MM") -> "$monthPart$separator$dayPart$separator$yearPart"
-            else -> "$dayPart$separator$monthPart$separator$yearPart"
-        }
+    private fun formatDateParts(year: Int, month: Int, day: Int, includeYear: Boolean, locale: Locale): String {
+        val monthName = if (locale.language == "fa") persianMonths[month - 1] else latinMonthAbbreviations[month - 1]
+        return if (includeYear) "$day $monthName $year" else "$day $monthName"
     }
 
     private fun gregorianToJalali(gy: Int, gm: Int, gd: Int): Triple<Int, Int, Int> {
