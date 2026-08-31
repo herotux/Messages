@@ -46,9 +46,5 @@
 }
 
 # Iranian bank/operator logos are resolved dynamically by resource name via
-# Resources.getIdentifier(), so the resource shrinker cannot reliably see them.
-# Keep all logo drawables packaged in release APKs.
--keepresources drawable/bank_*
--keepresources drawable/hamrah_avval
--keepresources drawable/irancell
--keepresources drawable/rightel
+# Resources.getIdentifier().
+# Resource shrinker configuration belongs in resources.properties, not ProGuard/R8.
