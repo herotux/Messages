@@ -7,9 +7,8 @@ import android.graphics.Color
 /**
  * Local theme-color compatibility helpers for the bank-account feature.
  *
- * This feature is intentionally kept independent from optional Commons color
- * extensions so the Core build does not depend on extension imports that may
- * differ between Commons revisions.
+ * The dedicated bank-card screen uses these local helpers and remains
+ * independent from optional Commons color extensions.
  */
 fun Activity.getProperPrimaryColor(): Int = Color.rgb(33, 150, 243)
 
