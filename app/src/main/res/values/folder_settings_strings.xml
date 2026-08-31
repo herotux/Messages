@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="conversation_folders">Conversation folders</string>
+    <string name="show_conversation_folders">Show conversation folders</string>
+</resources>

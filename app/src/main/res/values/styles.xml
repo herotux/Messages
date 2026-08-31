@@ -1,0 +1,11 @@
+<resources>
+
+    <style name="AppTheme" parent="AppTheme.Base">
+        <item name="materialSwitchStyle">@style/SettingsTelegramDynamicSwitch</item>
+    </style>
+
+    <style name="roundedImageView" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/normal_margin</item>
+    </style>
+</resources>

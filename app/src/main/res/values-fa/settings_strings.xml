@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hero_settings">قابلیت‌های HEROTUX</string>
+    <string name="bank_accounts">کارت‌های بانکی</string>
+    <string name="settings_folders_section">پوشه‌های مکالمات</string>
+    <string name="settings_show_folders">نمایش پوشه‌های مکالمات</string>
+    <string name="settings_show_folders_summary">نمایش تب‌های پوشه در بالای فهرست مکالمات</string>
+
+    <!-- Settings strings supplied by Fossify Commons, overridden for Persian. -->
+    <string name="use_persian_calendar">استفاده از تقویم فارسی (جلالی)</string>
+    <string name="move_items_into_recycle_bin">انتقال موارد حذف‌شده به سطل بازیافت</string>
+    <string name="password_protect_whole_app">محافظت از کل برنامه با رمز عبور</string>
+
+    <!-- Telegram-style Settings section titles -->
+    <string name="color_customization">شخصی‌سازی رنگ</string>
+    <string name="general_settings">تنظیمات عمومی</string>
+    <string name="notifications">اعلان‌ها</string>
+    <string name="recycle_bin">سطل بازیافت</string>
+    <string name="security">امنیت</string>
+    <string name="migrating">انتقال و پشتیبان‌گیری</string>
+</resources>
