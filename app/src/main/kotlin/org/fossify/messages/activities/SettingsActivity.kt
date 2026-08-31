@@ -12,9 +12,8 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import android.widget.Toast
 import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.content.ContextCompat
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -39,6 +38,7 @@ import org.fossify.commons.helpers.FONT_SIZE_SMALL
 import org.fossify.commons.helpers.PROTECTION_FINGERPRINT
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.messages.R
+import org.fossify.messages.dialogs.ExportMessagesDialog
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.emptyMessagesRecycleBin
 import org.fossify.messages.extensions.messagesDB
@@ -61,9 +61,8 @@ import java.util.Locale
 /**
  * Messages-owned settings UI.
  *
- * This intentionally does not use the old Fossify settings layout, preference
- * rows, MyTextView/MyMaterialSwitch or MyAppBarLayout.  The screen is a small
- * Material 3 navigation hub and every settings group has its own screen.
+ * The legacy Fossify settings layout is intentionally not used here.  This
+ * screen is a Material 3 navigation hub and each group opens its own screen.
  */
 class SettingsActivity : SimpleActivity() {
     companion object {
@@ -81,6 +80,18 @@ class SettingsActivity : SimpleActivity() {
 
     private var blockedNumbersAtPause = -1
     private var recycleBinMessages = 0
+    private var exportMessagesDialog: ExportMessagesDialog? = null
+
+    private val getContent = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) MessagesImporter(this).importMessages(uri)
+    }
+
+    private val saveDocument = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) {
+            toast(org.fossify.commons.R.string.exporting)
+            exportMessagesDialog?.exportMessages(uri)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,14 +151,12 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun buildHome(root: LinearLayout) {
-        val title = TextView(this).apply {
+        root.addView(TextView(this).apply {
             text = "تنظیمات"
             textSize = 30f
             setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface))
-            gravity = Gravity.START
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-        }
-        root.addView(title, marginParams(bottom = 6))
+        }, marginParams(bottom = 6))
         root.addView(TextView(this).apply {
             text = "همه تنظیمات برنامه را در بخش‌های جداگانه مدیریت کنید"
             textSize = 14f
@@ -158,7 +167,7 @@ class SettingsActivity : SimpleActivity() {
         settingCard(root, "ظاهر", "تم، رنگ، اندازه متن و نمایش رابط کاربری", PAGE_APPEARANCE, android.R.drawable.ic_menu_view)
         settingCard(root, "پیام‌ها", "ارسال SMS، MMS و گزارش تحویل", PAGE_MESSAGES, android.R.drawable.ic_dialog_email)
         settingCard(root, "اعلان‌ها", "اعلان پیام‌ها و نمایش روی صفحه قفل", PAGE_NOTIFICATIONS, android.R.drawable.ic_dialog_info)
-        settingCard(root, "گفتگوها", "آرشیو، سطل بازیافت و نمایش پوشه‌ها", PAGE_CONVERSATIONS, android.R.drawable.ic_menu_sort_by_size)
+        settingCard(root, "گفتگوها", "آرشیو، سطل بازیافت و مدیریت گفتگو", PAGE_CONVERSATIONS, android.R.drawable.ic_menu_sort_by_size)
         settingCard(root, "بانک و تراکنش", "کارت‌های بانکی و تشخیص پیامک‌های بانکی", PAGE_BANKS, android.R.drawable.ic_menu_save)
         settingCard(root, "حریم خصوصی و امنیت", "قفل برنامه و محتوای پیام روی صفحه قفل", PAGE_PRIVACY, android.R.drawable.ic_lock_lock)
         settingCard(root, "پشتیبان‌گیری", "خروجی گرفتن و وارد کردن پیام‌ها", PAGE_BACKUP, android.R.drawable.ic_menu_upload)
@@ -167,7 +176,7 @@ class SettingsActivity : SimpleActivity() {
 
     private fun buildGeneral(root: LinearLayout) {
         section(root, "تنظیمات عمومی")
-        actionRow(root, "زبان برنامه", Locale.getDefault().displayLanguage) { if (android.os.Build.VERSION.SDK_INT >= 33) launchChangeAppLanguageIntent() }
+        if (android.os.Build.VERSION.SDK_INT >= 33) actionRow(root, "زبان برنامه", Locale.getDefault().displayLanguage) { launchChangeAppLanguageIntent() }
         switchRow(root, "استفاده از زبان انگلیسی", "تغییر زبان داخلی برنامه", config.useEnglish) { config.useEnglish = it; recreate() }
         actionRow(root, "فرمت تاریخ و ساعت", "تغییر نحوه نمایش تاریخ و زمان") { ChangeDateTimeFormatDialog(this) { refreshConversations() } }
         actionRow(root, "شماره‌های مسدودشده", "مدیریت شماره‌های مسدود") {
@@ -182,16 +191,10 @@ class SettingsActivity : SimpleActivity() {
         section(root, "ظاهر")
         actionRow(root, "رنگ و تم برنامه", "انتخاب رنگ اصلی و ظاهر روشن/تیره") { startCustomizationActivity() }
         actionRow(root, "اندازه متن", getFontSizeText()) {
-            val values = listOf(
-                FONT_SIZE_SMALL to "کوچک", FONT_SIZE_MEDIUM to "متوسط",
-                FONT_SIZE_LARGE to "بزرگ", FONT_SIZE_EXTRA_LARGE to "خیلی بزرگ"
-            )
-            MaterialAlertDialogBuilder(this).setTitle("اندازه متن")
-                .setSingleChoiceItems(values.map { it.second }.toTypedArray(), values.indexOfFirst { it.first == config.fontSize }) { d, which ->
-                    config.fontSize = values[which].first
-                    d.dismiss()
-                    render(PAGE_APPEARANCE)
-                }.show()
+            val values = listOf(FONT_SIZE_SMALL to "کوچک", FONT_SIZE_MEDIUM to "متوسط", FONT_SIZE_LARGE to "بزرگ", FONT_SIZE_EXTRA_LARGE to "خیلی بزرگ")
+            MaterialAlertDialogBuilder(this).setTitle("اندازه متن").setSingleChoiceItems(values.map { it.second }.toTypedArray(), values.indexOfFirst { it.first == config.fontSize }) { d, which ->
+                config.fontSize = values[which].first; d.dismiss(); render(PAGE_APPEARANCE)
+            }.show()
         }
         sliderRow(root, "اندازه متن گفتگو", config.fontSize.toFloat().coerceIn(1f, 4f)) { config.fontSize = it.toInt() }
         switchRow(root, "نمایش شمارنده کاراکتر", "نمایش تعداد کاراکتر هنگام نوشتن پیام", config.showCharacterCounter) { config.showCharacterCounter = it }
@@ -218,43 +221,33 @@ class SettingsActivity : SimpleActivity() {
 
     private fun buildConversations(root: LinearLayout) {
         section(root, "گفتگوها")
-        switchRow(root, "نمایش پوشه‌ها", "تب‌ها و پوشه‌های گفتگو در صفحه اصلی", config.showFolders) { config.showFolders = it }
         switchRow(root, "نگه داشتن گفتگوهای آرشیوشده", "گفتگوهای جدید دوباره از آرشیو خارج نشوند", config.keepConversationsArchived) { config.keepConversationsArchived = it }
         switchRow(root, "استفاده از سطل بازیافت", "حذف گفتگوها ابتدا به سطل بازیافت منتقل شود", config.useRecycleBin) { config.useRecycleBin = it; render(PAGE_CONVERSATIONS) }
-        if (config.useRecycleBin) {
-            ensureRecycleBinCount()
-            actionRow(root, "خالی کردن سطل بازیافت", "$recycleBinMessages پیام") {
-                if (recycleBinMessages == 0) toast("سطل بازیافت خالی است") else ConfirmationDialog(this, "", R.string.empty_recycle_bin_messages_confirmation, org.fossify.commons.R.string.yes, org.fossify.commons.R.string.no) {
-                    emptyMessagesRecycleBin(); recycleBinMessages = 0; render(PAGE_CONVERSATIONS)
-                }
+        ensureRecycleBinCount()
+        if (config.useRecycleBin) actionRow(root, "خالی کردن سطل بازیافت", "$recycleBinMessages پیام") {
+            if (recycleBinMessages == 0) toast("سطل بازیافت خالی است") else ConfirmationDialog(this, "", R.string.empty_recycle_bin_messages_confirmation, org.fossify.commons.R.string.yes, org.fossify.commons.R.string.no) {
+                emptyMessagesRecycleBin(); recycleBinMessages = 0; render(PAGE_CONVERSATIONS)
             }
         }
     }
 
     private fun buildBanks(root: LinearLayout) {
         section(root, "بانک و تراکنش")
-        actionRow(root, "حساب‌ها و کارت‌های بانکی", "افزودن، ویرایش و حذف کارت‌های بانکی") {
-            BankAccountsFeature.showBankAccounts(this)
-        }
+        actionRow(root, "حساب‌ها و کارت‌های بانکی", "افزودن، ویرایش و حذف کارت‌های بانکی") { BankAccountsFeature.showBankAccountManager(this) }
         actionRow(root, "تشخیص بانک", "تشخیص خودکار بانک از شماره کارت و پیامک") { showBankList() }
         actionRow(root, "اپراتورها", "همراه اول، ایرانسل، رایتل و مخابرات") { showOperatorInfo() }
     }
 
     private fun buildPrivacy(root: LinearLayout) {
         section(root, "امنیت")
-        switchRow(root, "قفل برنامه", "محافظت از کل برنامه با رمز یا اثر انگشت", config.isAppPasswordProtectionOn) {
-            if (it) configureProtection() else config.isAppPasswordProtectionOn = false
-            render(PAGE_PRIVACY)
-        }
+        actionRow(root, "قفل برنامه", if (config.isAppPasswordProtectionOn) "فعال" else "غیرفعال") { configureProtection() }
         actionRow(root, "محتوای پیام روی صفحه قفل", lockScreenText()) { chooseLockScreen() }
     }
 
     private fun buildBackup(root: LinearLayout) {
         section(root, "پشتیبان‌گیری و انتقال")
         actionRow(root, "خروجی پیام‌ها", "ذخیره پیام‌ها در فایل JSON") { exportMessages() }
-        actionRow(root, "وارد کردن پیام‌ها", "بازیابی پیام‌ها از JSON/XML") {
-            registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) MessagesImporter(this).importMessages(uri) }.launch(arrayOf("application/json", "application/xml", "text/xml", "application/octet-stream"))
-        }
+        actionRow(root, "وارد کردن پیام‌ها", "بازیابی پیام‌ها از JSON/XML") { getContent.launch(arrayOf("application/json", "application/xml", "text/xml", "application/octet-stream")) }
     }
 
     private fun buildAbout(root: LinearLayout) {
@@ -267,25 +260,26 @@ class SettingsActivity : SimpleActivity() {
         val card = MaterialCardView(this).apply {
             radius = dp(20).toFloat(); cardElevation = 0f; strokeWidth = dp(1)
             strokeColor = resolveColor(com.google.android.material.R.attr.colorOutlineVariant)
-            setCardBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurfaceContainer))
+            setCardBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurfaceVariant))
             setOnClickListener { startActivity(Intent(this@SettingsActivity, SettingsActivity::class.java).putExtra(EXTRA_PAGE, page)) }
         }
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(14), dp(16), dp(14)) }
-        val image = AppCompatImageView(this).apply { setImageResource(icon); imageTintList = android.content.res.ColorStateList.valueOf(resolveColor(com.google.android.material.R.attr.colorPrimary)); setPadding(dp(8), dp(8), dp(8), dp(8)); background = circleBackground() }
+        val image = AppCompatImageView(this).apply {
+            setImageResource(icon)
+            imageTintList = android.content.res.ColorStateList.valueOf(resolveColor(com.google.android.material.R.attr.colorPrimary))
+            setPadding(dp(8), dp(8), dp(8), dp(8)); background = circleBackground()
+        }
         row.addView(image, LinearLayout.LayoutParams(dp(48), dp(48)))
         val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL; textDirection = View.TEXT_DIRECTION_RTL; setPadding(dp(14), 0, dp(8), 0) }
-        texts.addView(TextView(this).apply { text = title; textSize = 17f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface)); typeface = android.graphics.Typeface.DEFAULT_BOLD }, LinearLayout.LayoutParams(-1, -2))
-        texts.addView(TextView(this).apply { text = subtitle; textSize = 13f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant)); setPadding(0, dp(3), 0, 0) }, LinearLayout.LayoutParams(-1, -2))
+        texts.addView(TextView(this).apply { text = title; textSize = 17f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface)); typeface = android.graphics.Typeface.DEFAULT_BOLD })
+        texts.addView(TextView(this).apply { text = subtitle; textSize = 13f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant)); setPadding(0, dp(3), 0, 0) })
         row.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(TextView(this).apply { text = "‹"; textSize = 28f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant)) }, LinearLayout.LayoutParams(dp(28), dp(40)))
-        card.addView(row); root.addView(card, marginParams(top = 0, bottom = 12))
+        row.addView(TextView(this).apply { text = "‹"; textSize = 28f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant)); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(dp(28), dp(40)))
+        card.addView(row); root.addView(card, marginParams(bottom = 12))
     }
 
     private fun actionRow(root: LinearLayout, title: String, summary: String, action: () -> Unit) {
-        val card = MaterialCardView(this).apply {
-            radius = dp(16).toFloat(); cardElevation = 0f; strokeWidth = 0
-            setCardBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurfaceContainerLow)); setOnClickListener { action() }
-        }
+        val card = MaterialCardView(this).apply { radius = dp(16).toFloat(); cardElevation = 0f; strokeWidth = 0; setCardBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurfaceVariant)); setOnClickListener { action() } }
         val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL; textDirection = View.TEXT_DIRECTION_RTL; setPadding(dp(18), dp(15), dp(18), dp(15)) }
         row.addView(TextView(this).apply { text = title; textSize = 16f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface)); typeface = android.graphics.Typeface.DEFAULT_BOLD })
         row.addView(TextView(this).apply { text = summary; textSize = 13f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant)); setPadding(0, dp(4), 0, 0) })
@@ -293,7 +287,7 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun switchRow(root: LinearLayout, title: String, summary: String, checked: Boolean, changed: (Boolean) -> Unit) {
-        val card = MaterialCardView(this).apply { radius = dp(16).toFloat(); cardElevation = 0f; strokeWidth = 0; setCardBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurfaceContainerLow)) }
+        val card = MaterialCardView(this).apply { radius = dp(16).toFloat(); cardElevation = 0f; strokeWidth = 0; setCardBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurfaceVariant)) }
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL; setPadding(dp(16), dp(10), dp(10), dp(10)) }
         val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL; textDirection = View.TEXT_DIRECTION_RTL }
         texts.addView(TextView(this).apply { text = title; textSize = 16f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface)); typeface = android.graphics.Typeface.DEFAULT_BOLD })
@@ -305,11 +299,11 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun sliderRow(root: LinearLayout, title: String, value: Float, changed: (Float) -> Unit) {
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(8)) }
-        box.addView(TextView(this).apply { text = title; textSize = 16f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface)); typeface = android.graphics.Typeface.DEFAULT_BOLD })
-        val slider = Slider(this).apply { valueFrom = 1f; valueTo = 4f; stepSize = 1f; this.value = value; addOnChangeListener { _, v, _ -> changed(v) } }
-        box.addView(slider)
-        root.addView(box, marginParams(bottom = 8))
+        val box = MaterialCardView(this).apply { radius = dp(16).toFloat(); cardElevation = 0f; setCardBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurfaceVariant)) }
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(8)) }
+        content.addView(TextView(this).apply { text = title; textSize = 16f; setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface)); typeface = android.graphics.Typeface.DEFAULT_BOLD })
+        content.addView(Slider(this).apply { valueFrom = 1f; valueTo = 4f; stepSize = 1f; this.value = value; addOnChangeListener { _, v, _ -> changed(v) } })
+        box.addView(content); root.addView(box, marginParams(bottom = 8))
     }
 
     private fun section(root: LinearLayout, title: String) { root.addView(TextView(this).apply { text = title; textSize = 13f; setTextColor(resolveColor(com.google.android.material.R.attr.colorPrimary)); typeface = android.graphics.Typeface.DEFAULT_BOLD; setPadding(dp(4), dp(8), dp(4), dp(10)) }, marginParams(bottom = 2)) }
@@ -340,13 +334,12 @@ class SettingsActivity : SimpleActivity() {
     private fun configureProtection() {
         val tab = if (config.isAppPasswordProtectionOn) config.appProtectionType else SHOW_ALL_TABS
         SecurityDialog(activity = this, requiredHash = config.appPasswordHash, showTabIndex = tab) { hash, type, success ->
-            if (success) { config.isAppPasswordProtectionOn = true; config.appPasswordHash = hash; config.appProtectionType = type; render(PAGE_PRIVACY) }
+            if (success) { config.isAppPasswordProtectionOn = !config.isAppPasswordProtectionOn; config.appPasswordHash = if (config.isAppPasswordProtectionOn) hash else ""; config.appProtectionType = type; render(PAGE_PRIVACY) }
         }
     }
 
     private fun showBankList() {
-        val banks = IranianBankRegistry.banks
-        val labels = banks.map { it.persianName }.toTypedArray()
+        val labels = IranianBankRegistry.banks.map { it.persianName }.toTypedArray()
         MaterialAlertDialogBuilder(this).setTitle("بانک‌های پشتیبانی‌شده").setItems(labels, null).show()
     }
 
@@ -356,7 +349,9 @@ class SettingsActivity : SimpleActivity() {
 
     private fun ensureRecycleBinCount() { recycleBinMessages = messagesDB.getArchivedCount() }
 
-    private fun exportMessages() { toast("برای خروجی گرفتن از پیام‌ها از ابزار Export استفاده کنید") }
+    private fun exportMessages() {
+        exportMessagesDialog = ExportMessagesDialog(this) { fileName -> saveDocument.launch("$fileName.json") }
+    }
 
     private fun circleBackground() = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(resolveColor(com.google.android.material.R.attr.colorSecondaryContainer)) }
     private fun marginParams(top: Int = 0, bottom: Int = 0) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top); bottomMargin = dp(bottom) }
