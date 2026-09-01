@@ -14,11 +14,14 @@ import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import android.content.Context
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.setPadding
 import androidx.recyclerview.widget.RecyclerView
@@ -32,20 +35,27 @@ import com.google.android.material.textfield.TextInputLayout
 import org.fossify.messages.features.bankcards.BankCard
 import org.fossify.messages.features.bankcards.BankCardsRepository
 
-/**
- * Standalone bank-card UI.
- *
- * This screen intentionally uses only Android/AndroidX/Material APIs for presentation.
- * Messages-specific persistence and bank detection are isolated behind BankCardsRepository.
- */
+/** Standalone bank-card UI. Only the repository crosses the Messages data boundary. */
 class BankCardsActivity : AppCompatActivity() {
-    companion object { private const val REQUEST_SCAN = 7401 }
+    private companion object { const val REQUEST_SCAN = 7401 }
 
     private lateinit var repository: BankCardsRepository
     private lateinit var pager: ViewPager2
     private lateinit var adapter: CardPagerAdapter
     private var cards = mutableListOf<BankCard>()
     private var wizard: CardWizard? = null
+
+    private val scanner = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+        val data = result.data ?: return@registerForActivityResult
+        val card = data.getStringExtra(BankCardScannerActivity.EXTRA_CARD).orEmpty()
+        if (card.isBlank()) return@registerForActivityResult
+        wizard?.applyScanResult(
+            card,
+            data.getStringExtra(BankCardScannerActivity.EXTRA_HOLDER).orEmpty(),
+            data.getStringExtra(BankCardScannerActivity.EXTRA_IBAN).orEmpty()
+        )
+    }
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -61,7 +71,6 @@ class BankCardsActivity : AppCompatActivity() {
             setBackgroundColor(surfaceColor())
             setPadding(dp(16), dp(8), dp(16), dp(16))
         }
-
         val toolbar = MaterialToolbar(this).apply {
             title = "کارت‌های بانکی"
             setTitleTextColor(onSurfaceColor())
@@ -73,7 +82,6 @@ class BankCardsActivity : AppCompatActivity() {
             setOnMenuItemClickListener { showTopMenu(); true }
         }
         root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(64)))
-
         pager = ViewPager2(this).apply {
             orientation = ViewPager2.ORIENTATION_HORIZONTAL
             clipToPadding = false
@@ -83,22 +91,18 @@ class BankCardsActivity : AppCompatActivity() {
         adapter = CardPagerAdapter()
         pager.adapter = adapter
         root.addView(pager, LinearLayout.LayoutParams(-1, dp(300)))
-
         root.addView(TextView(this).apply {
             text = "برای دیدن کارت‌های دیگر، صفحه را بکشید"
             gravity = Gravity.CENTER
             textSize = 12f
             setTextColor(onSurfaceVariant())
             setPadding(0, 0, 0, dp(8))
-        }, LinearLayout.LayoutParams(-1, -2))
-
+        })
         root.addView(MaterialButton(this).apply {
             text = "افزودن کارت جدید"
             icon = getDrawable(android.R.drawable.ic_input_add)
             setOnClickListener { showWizard(null) }
-        }, LinearLayout.LayoutParams(-1, dp(54)).apply {
-            topMargin = dp(8)
-        })
+        }, LinearLayout.LayoutParams(-1, dp(54)).apply { topMargin = dp(8) })
         setContentView(root)
     }
 
@@ -107,7 +111,7 @@ class BankCardsActivity : AppCompatActivity() {
             val result = repository.getCards()
             runOnUiThread {
                 cards = result.toMutableList()
-                adapter.notifyDataSetChanged()
+                pager.post { adapter.notifyDataSetChanged() }
             }
         }.start()
     }
@@ -115,15 +119,13 @@ class BankCardsActivity : AppCompatActivity() {
     private inner class CardPagerAdapter : RecyclerView.Adapter<CardPagerAdapter.Holder>() {
         inner class Holder(val container: LinearLayout) : RecyclerView.ViewHolder(container)
         override fun getItemCount() = cards.size
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = Holder(
-            LinearLayout(parent.context).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(4))
-            }
-        )
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = Holder(LinearLayout(parent.context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(4))
+        })
         override fun onBindViewHolder(holder: Holder, position: Int) {
             holder.container.removeAllViews()
-            holder.container.addView(createCard(cards[position]), LinearLayout.LayoutParams(-1, -1))
+            if (position < cards.size) holder.container.addView(createCard(cards[position]), LinearLayout.LayoutParams(-1, -1))
         }
     }
 
@@ -133,19 +135,12 @@ class BankCardsActivity : AppCompatActivity() {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(22), dp(18), dp(22), dp(14))
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                intArrayOf(start, darken(start))
-            ).apply { cornerRadius = dp(26).toFloat() }
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(start, darken(start))).apply { cornerRadius = dp(26).toFloat() }
             elevation = dp(7).toFloat()
             setOnClickListener { showCardActions(card) }
-
             val top = LinearLayout(this@BankCardsActivity).apply { gravity = Gravity.CENTER_VERTICAL }
             val logo = ImageView(this@BankCardsActivity).apply {
-                visual?.logoResourceName?.let { name ->
-                    val id = resources.getIdentifier(name, "drawable", packageName)
-                    if (id != 0) setImageResource(id)
-                }
+                visual?.logoResourceName?.let { name -> resources.getIdentifier(name, "drawable", packageName).takeIf { it != 0 }?.let(::setImageResource) }
                 contentDescription = visual?.persianName.orEmpty()
             }
             top.addView(logo, LinearLayout.LayoutParams(dp(42), dp(42)))
@@ -164,7 +159,6 @@ class BankCardsActivity : AppCompatActivity() {
                 setOnClickListener { showCardActions(card) }
             }, LinearLayout.LayoutParams(dp(42), dp(44)))
             addView(top)
-
             addView(TextView(this@BankCardsActivity).apply {
                 text = repository.formatCard(card.cardNumber)
                 textSize = 21f
@@ -197,8 +191,7 @@ class BankCardsActivity : AppCompatActivity() {
         val root = sheetRoot("مدیریت کارت‌ها")
         sheetItem(root, sheet, "افزودن کارت جدید") { showWizard(null) }
         sheetItem(root, sheet, "مرتب‌سازی دلخواه") { showSort(sheet) }
-        sheet.setContentView(root)
-        sheet.show()
+        sheet.setContentView(root); sheet.show()
     }
 
     private fun showSort(previous: BottomSheetDialog? = null) {
@@ -207,30 +200,17 @@ class BankCardsActivity : AppCompatActivity() {
         val root = sheetRoot("مرتب‌سازی کارت‌ها")
         cards.forEachIndexed { index, card ->
             val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-            row.addView(TextView(this).apply {
-                text = card.visual?.persianName ?: card.bankId
-                textSize = 15f
-            }, LinearLayout.LayoutParams(0, dp(52), 1f))
-            row.addView(MaterialButton(this).apply {
-                text = "↑"
-                isEnabled = index > 0
-                setOnClickListener { moveCard(index, index - 1); sheet.dismiss(); showSort() }
-            }, LinearLayout.LayoutParams(dp(54), dp(52)))
-            row.addView(MaterialButton(this).apply {
-                text = "↓"
-                isEnabled = index < cards.lastIndex
-                setOnClickListener { moveCard(index, index + 1); sheet.dismiss(); showSort() }
-            }, LinearLayout.LayoutParams(dp(54), dp(52)).apply { marginStart = dp(6) })
+            row.addView(TextView(this).apply { text = card.visual?.persianName ?: card.bankId; textSize = 15f }, LinearLayout.LayoutParams(0, dp(52), 1f))
+            row.addView(MaterialButton(this).apply { text = "↑"; isEnabled = index > 0; setOnClickListener { moveCard(index, index - 1); sheet.dismiss(); showSort() } }, LinearLayout.LayoutParams(dp(54), dp(52)))
+            row.addView(MaterialButton(this).apply { text = "↓"; isEnabled = index < cards.lastIndex; setOnClickListener { moveCard(index, index + 1); sheet.dismiss(); showSort() } }, LinearLayout.LayoutParams(dp(54), dp(52)).apply { marginStart = dp(6) })
             root.addView(row)
         }
-        sheet.setContentView(root)
-        sheet.show()
+        sheet.setContentView(root); sheet.show()
     }
 
     private fun moveCard(from: Int, to: Int) {
-        val card = cards.removeAt(from)
-        cards.add(to, card)
-        adapter.notifyDataSetChanged()
+        if (from !in cards.indices || to !in cards.indices) return
+        val card = cards.removeAt(from); cards.add(to, card); adapter.notifyDataSetChanged()
         Thread { repository.reorder(cards) }.start()
     }
 
@@ -242,160 +222,87 @@ class BankCardsActivity : AppCompatActivity() {
         if (card.iban.isNotBlank()) sheetItem(root, sheet, "کپی شماره شبا") { copy(card.iban) }
         sheetItem(root, sheet, "اشتراک‌گذاری") { share(card) }
         sheetItem(root, sheet, "حذف کارت") {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("حذف کارت")
-                .setMessage("این کارت حذف شود؟")
-                .setNegativeButton("انصراف", null)
-                .setPositiveButton("حذف") { _, _ ->
-                    Thread {
-                        repository.delete(card)
-                        runOnUiThread { loadCards() }
-                    }.start()
-                }.show()
+            MaterialAlertDialogBuilder(this).setTitle("حذف کارت").setMessage("این کارت حذف شود?").setNegativeButton("انصراف", null).setPositiveButton("حذف") { _, _ ->
+                Thread { repository.delete(card); runOnUiThread { loadCards() } }.start()
+            }.show()
         }
-        sheet.setContentView(root)
-        sheet.show()
+        sheet.setContentView(root); sheet.show()
     }
 
     private fun sheetRoot(title: String) = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutDirection = View.LAYOUT_DIRECTION_RTL
+        orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL
         setPadding(dp(20), dp(16), dp(20), dp(28))
-        addView(TextView(this@BankCardsActivity).apply {
-            text = title
-            textSize = 20f
-            typeface = Typeface.DEFAULT_BOLD
-        })
+        addView(TextView(this@BankCardsActivity).apply { text = title; textSize = 20f; typeface = Typeface.DEFAULT_BOLD })
     }
 
     private fun sheetItem(root: LinearLayout, sheet: BottomSheetDialog, label: String, action: () -> Unit) {
-        root.addView(MaterialButton(this).apply {
-            text = label
-            gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            setOnClickListener { sheet.dismiss(); action() }
-        }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(8) })
+        root.addView(MaterialButton(this).apply { text = label; gravity = Gravity.START or Gravity.CENTER_VERTICAL; setOnClickListener { sheet.dismiss(); action() } }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(8) })
     }
 
     private fun copy(value: String) {
-        (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
-            .setPrimaryClip(ClipData.newPlainText("Messages", value))
+        (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Messages", value))
         Toast.makeText(this, "کپی شد", Toast.LENGTH_SHORT).show()
     }
 
     private fun share(card: BankCard) {
-        val text = buildString {
-            append(card.visual?.persianName ?: "کارت بانکی").append('\n')
-            append(repository.formatCard(card.cardNumber)).append('\n')
-            if (card.holderName.isNotBlank()) append(card.holderName).append('\n')
-            if (card.iban.isNotBlank()) append(repository.formatIban(card.iban))
-        }
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, text)
-        }
-        startActivity(Intent.createChooser(send, "اشتراک‌گذاری"))
+        val text = buildString { append(card.visual?.persianName ?: "کارت بانکی").append('\n'); append(repository.formatCard(card.cardNumber)).append('\n'); if (card.holderName.isNotBlank()) append(card.holderName).append('\n'); if (card.iban.isNotBlank()) append(repository.formatIban(card.iban)) }
+        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, text) }, "اشتراک‌گذاری"))
     }
 
     private fun showWizard(existing: BankCard?) {
-        wizard?.dismiss()
-        wizard = CardWizard(existing).also { it.show() }
+        wizard?.dismiss(); wizard = CardWizard(existing).also { it.show() }
     }
 
     private inner class CardWizard(private val existing: BankCard?) {
         private val dialog = BottomSheetDialog(this@BankCardsActivity)
-        private val root = LinearLayout(this@BankCardsActivity).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(20), dp(12), dp(20), dp(28))
-        }
-        private val groups = Array(4) {
-            EditText(this@BankCardsActivity).apply {
-                inputType = InputType.TYPE_CLASS_NUMBER
-                gravity = Gravity.CENTER
-                textSize = 17f
-                hint = "••••"
-                maxLines = 1
-            }
-        }
+        private val root = LinearLayout(this@BankCardsActivity).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL; setPadding(dp(20), dp(12), dp(20), dp(28)) }
+        private val groups = Array(4) { EditText(this@BankCardsActivity).apply { inputType = InputType.TYPE_CLASS_NUMBER; gravity = Gravity.CENTER; textSize = 17f; hint = "••••"; maxLines = 1 } }
         private val holder = TextInputEditText(this@BankCardsActivity)
         private val iban = TextInputEditText(this@BankCardsActivity)
-        private val preview = LinearLayout(this@BankCardsActivity).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(20), dp(16), dp(20), dp(14))
-        }
+        private var preview: View? = null
 
         fun show() {
-            dialog.setContentView(root)
             buildCardStep()
+            dialog.setContentView(root)
             dialog.show()
             if (existing == null) pasteClipboard() else setCard(existing.cardNumber)
         }
-
         fun dismiss() = dialog.dismiss()
 
         private fun header(title: String) {
             root.removeAllViews()
-            val row = LinearLayout(this@BankCardsActivity).apply { gravity = Gravity.CENTER_VERTICAL }
-            row.addView(TextView(this@BankCardsActivity).apply {
-                text = title
-                textSize = 20f
-                typeface = Typeface.DEFAULT_BOLD
-            }, LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(MaterialButton(this@BankCardsActivity).apply {
-                text = "اسکن کارت"
-                icon = getDrawable(android.R.drawable.ic_menu_camera)
-                setOnClickListener {
-                    val intent = Intent(this@BankCardsActivity, BankCardScannerActivity::class.java)
-                        .putExtra(BankCardScannerActivity.EXTRA_RETURN_TO_FORM, true)
-                    startActivityForResult(intent, REQUEST_SCAN)
-                }
-            })
+            val row = LinearLayout(this@BankCardsActivity).apply { gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+            row.addView(TextView(this@BankCardsActivity).apply { text = title; textSize = 20f; typeface = Typeface.DEFAULT_BOLD }, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(MaterialButton(this@BankCardsActivity).apply { text = "اسکن کارت"; icon = getDrawable(android.R.drawable.ic_menu_camera); setOnClickListener { scanner.launch(Intent(this@BankCardsActivity, BankCardScannerActivity::class.java).putExtra(BankCardScannerActivity.EXTRA_RETURN_TO_FORM, true)) } })
             root.addView(row)
         }
 
-        private fun buildCardStep() {
-            header("افزودن کارت · ۱ از ۳")
+        private fun addPreview() {
+            preview = LinearLayout(this@BankCardsActivity).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(dp(20), dp(16), dp(20), dp(14)) }
             root.addView(preview, LinearLayout.LayoutParams(-1, dp(190)).apply { topMargin = dp(12) })
-            val row = LinearLayout(this@BankCardsActivity).apply {
-                gravity = Gravity.CENTER
-                layoutDirection = View.LAYOUT_DIRECTION_LTR
-            }
+        }
+
+        private fun buildCardStep() {
+            header("افزودن کارت · ۱ از ۳"); addPreview()
+            val row = LinearLayout(this@BankCardsActivity).apply { gravity = Gravity.CENTER; layoutDirection = View.LAYOUT_DIRECTION_LTR }
             groups.forEach { row.addView(it, LinearLayout.LayoutParams(0, dp(56), 1f).apply { marginEnd = dp(6) }) }
             root.addView(row)
-            root.addView(MaterialButton(this@BankCardsActivity).apply {
-                text = "ادامه"
-                setOnClickListener { if (isValidCard()) buildHolderStep() }
-            }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(14) })
+            root.addView(MaterialButton(this@BankCardsActivity).apply { text = "ادامه"; setOnClickListener { if (isValidCard()) buildHolderStep() } }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(14) })
             groups.forEach { it.addTextChangedListener(SimpleWatcher { updatePreview() }) }
             updatePreview()
         }
 
         private fun buildHolderStep() {
-            header("افزودن کارت · ۲ از ۳")
-            root.addView(preview, LinearLayout.LayoutParams(-1, dp(190)).apply { topMargin = dp(12) })
-            root.addView(TextInputLayout(this@BankCardsActivity).apply {
-                hint = "نام صاحب کارت (اختیاری)"
-                addView(holder)
-            }, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(14) })
-            root.addView(MaterialButton(this@BankCardsActivity).apply {
-                text = "ادامه"
-                setOnClickListener { buildIbanStep() }
-            }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(14) })
+            header("افزودن کارت · ۲ از ۳"); addPreview()
+            root.addView(TextInputLayout(this@BankCardsActivity).apply { hint = "نام صاحب کارت (اختیاری)"; addView(holder) }, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(14) })
+            root.addView(MaterialButton(this@BankCardsActivity).apply { text = "ادامه"; setOnClickListener { buildIbanStep() } }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(14) })
             updatePreview()
         }
 
         private fun buildIbanStep() {
-            header("افزودن کارت · ۳ از ۳")
-            root.addView(preview, LinearLayout.LayoutParams(-1, dp(190)).apply { topMargin = dp(12) })
-            root.addView(TextInputLayout(this@BankCardsActivity).apply {
-                hint = "شماره شبا (اختیاری)"
-                addView(iban)
-            }, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(14) })
-            root.addView(MaterialButton(this@BankCardsActivity).apply {
-                text = "ذخیره کارت"
-                setOnClickListener { save() }
-            }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(14) })
+            header("افزودن کارت · ۳ از ۳"); addPreview()
+            root.addView(TextInputLayout(this@BankCardsActivity).apply { hint = "شماره شبا (اختیاری)"; addView(iban) }, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(14) })
+            root.addView(MaterialButton(this@BankCardsActivity).apply { text = "ذخیره کارت"; setOnClickListener { save() } }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(14) })
             updatePreview()
         }
 
@@ -410,19 +317,12 @@ class BankCardsActivity : AppCompatActivity() {
             val card = groups.joinToString("") { repository.normalizeCard(it.text.toString()) }
             val holderText = holder.text?.toString().orEmpty()
             val ibanText = repository.normalizeIban(iban.text?.toString().orEmpty())
-            if (!repository.validCard(card) || repository.detect(card) == null || !repository.validIban(ibanText)) {
-                Toast.makeText(this@BankCardsActivity, "اطلاعات کارت معتبر نیست", Toast.LENGTH_SHORT).show()
-                return
-            }
+            if (!repository.validCard(card) || repository.detect(card) == null || !repository.validIban(ibanText)) { Toast.makeText(this@BankCardsActivity, "اطلاعات کارت معتبر نیست", Toast.LENGTH_SHORT).show(); return }
             Thread {
                 val result = repository.save(existing, card, holderText, ibanText)
                 runOnUiThread {
-                    if (result.isSuccess) {
-                        dialog.dismiss()
-                        loadCards()
-                    } else {
-                        Toast.makeText(this@BankCardsActivity, "ذخیره کارت انجام نشد", Toast.LENGTH_SHORT).show()
-                    }
+                    if (result.isSuccess) { dialog.dismiss(); wizard = null; hideKeyboard(); loadCards() }
+                    else Toast.makeText(this@BankCardsActivity, "ذخیره کارت انجام نشد", Toast.LENGTH_SHORT).show()
                 }
             }.start()
         }
@@ -446,29 +346,14 @@ class BankCardsActivity : AppCompatActivity() {
         }
 
         private fun updatePreview() {
-            preview.removeAllViews()
+            val target = preview as? LinearLayout ?: return
+            target.removeAllViews()
             val card = groups.joinToString("") { repository.normalizeCard(it.text.toString()) }
             val visual = repository.detect(card)
             val start = visual?.color ?: Color.rgb(58, 72, 90)
-            preview.background = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                intArrayOf(start, darken(start))
-            ).apply { cornerRadius = dp(22).toFloat() }
-            preview.addView(TextView(this@BankCardsActivity).apply {
-                text = visual?.persianName ?: "بانک را وارد کنید"
-                textSize = 14f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.WHITE)
-            })
-            preview.addView(TextView(this@BankCardsActivity).apply {
-                text = repository.formatCard(card).ifBlank { "••••   ••••   ••••   ••••" }
-                textSize = 20f
-                typeface = Typeface.MONOSPACE
-                gravity = Gravity.CENTER
-                textDirection = View.TEXT_DIRECTION_LTR
-                setTextColor(Color.WHITE)
-                setPadding(0, dp(34), 0, 0)
-            })
+            target.background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(start, darken(start))).apply { cornerRadius = dp(22).toFloat() }
+            target.addView(TextView(this@BankCardsActivity).apply { text = visual?.persianName ?: "بانک را وارد کنید"; textSize = 14f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE) })
+            target.addView(TextView(this@BankCardsActivity).apply { text = repository.formatCard(card).ifBlank { "••••   ••••   ••••   ••••" }; textSize = 20f; typeface = Typeface.MONOSPACE; gravity = Gravity.CENTER; textDirection = View.TEXT_DIRECTION_LTR; setTextColor(Color.WHITE); setPadding(0, dp(34), 0, 0) })
         }
     }
 
@@ -478,32 +363,11 @@ class BankCardsActivity : AppCompatActivity() {
         override fun afterTextChanged(s: Editable?) = Unit
     }
 
-    @Deprecated("Deprecated by Android in favor of Activity Result APIs; retained for the existing scanner contract.")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != REQUEST_SCAN || resultCode != Activity.RESULT_OK || data == null) return
-        val card = data.getStringExtra(BankCardScannerActivity.EXTRA_CARD).orEmpty()
-        if (card.isBlank()) return
-        val holderName = data.getStringExtra(BankCardScannerActivity.EXTRA_HOLDER).orEmpty()
-        val ibanValue = data.getStringExtra(BankCardScannerActivity.EXTRA_IBAN).orEmpty()
-        wizard?.applyScanResult(card, holderName, ibanValue)
-    }
-
+    private fun hideKeyboard() { (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)?.hideSoftInputFromWindow(currentFocus?.windowToken, 0) }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     private fun surfaceColor() = resolveColor(com.google.android.material.R.attr.colorSurface, Color.WHITE)
     private fun onSurfaceColor() = resolveColor(com.google.android.material.R.attr.colorOnSurface, Color.BLACK)
     private fun onSurfaceVariant() = resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant, Color.DKGRAY)
-
-    private fun resolveColor(attr: Int, fallback: Int): Int {
-        val value = android.util.TypedValue()
-        return if (theme.resolveAttribute(attr, value, true)) {
-            if (value.resourceId != 0) runCatching { getColor(value.resourceId) }.getOrDefault(fallback) else value.data
-        } else fallback
-    }
-
-    private fun darken(color: Int): Int = Color.rgb(
-        (Color.red(color) * .72f).toInt(),
-        (Color.green(color) * .72f).toInt(),
-        (Color.blue(color) * .72f).toInt()
-    )
+    private fun resolveColor(attr: Int, fallback: Int): Int { val value = android.util.TypedValue(); return if (theme.resolveAttribute(attr, value, true)) { if (value.resourceId != 0) runCatching { getColor(value.resourceId) }.getOrDefault(fallback) else value.data } else fallback }
+    private fun darken(color: Int) = Color.rgb((Color.red(color) * .72f).toInt(), (Color.green(color) * .72f).toInt(), (Color.blue(color) * .72f).toInt())
 }
