@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
@@ -19,11 +18,11 @@ import android.os.HandlerThread
 import android.os.SystemClock
 import android.view.Surface
 import android.view.TextureView
-import android.view.Window
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
@@ -63,15 +62,15 @@ class BankCardScannerActivity : AppCompatActivity() {
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        runCatching {
-            WindowCompatBridge.prepare(window)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        try {
             setContentView(R.layout.activity_bank_card_scanner)
             preview = findViewById(R.id.bank_card_camera_preview)
             manager = getSystemService(CameraManager::class.java)
             thread = HandlerThread("BankCardScanner").also { it.start() }
             handler = Handler(thread!!.looper)
             recognizer = runCatching { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }.getOrNull()
-        }.onFailure {
+        } catch (_: Exception) {
             Toast.makeText(this, "اسکنر کارت در این نسخه در دسترس نیست", Toast.LENGTH_SHORT).show()
             finish()
             return
@@ -116,9 +115,9 @@ class BankCardScannerActivity : AppCompatActivity() {
         if (closing.get() || isFinishing || isDestroyed) { d.close(); return }
         val texture = preview.surfaceTexture ?: return fail("پیش‌نمایش دوربین آماده نیست")
         val h = handler ?: return fail("اسکنر آماده نیست")
+        texture.setDefaultBufferSize(1280, 720)
         val previewSurface = Surface(texture)
         val readerSurface = reader?.surface ?: return fail("پردازش تصویر آماده نیست")
-        texture.setDefaultBufferSize(1280, 720)
         try {
             d.createCaptureSession(listOf(previewSurface, readerSurface), object : CameraCaptureSession.StateCallback() {
                 override fun onConfigured(s: CameraCaptureSession) {
@@ -126,7 +125,8 @@ class BankCardScannerActivity : AppCompatActivity() {
                     session = s
                     try {
                         val request = d.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
-                            addTarget(previewSurface); addTarget(readerSurface)
+                            addTarget(previewSurface)
+                            addTarget(readerSurface)
                             set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                         }.build()
                         s.setRepeatingRequest(request, null, h)
@@ -148,26 +148,46 @@ class BankCardScannerActivity : AppCompatActivity() {
         detector.process(InputImage.fromMediaImage(image, 0)).addOnSuccessListener { result ->
             if (closing.get()) return@addOnSuccessListener
             val normalized = normalizeDigits(result.text)
-            val card = CARD_REGEX.find(normalized)?.value?.let(::normalizeCard)?.takeIf { IranianBankRegistry.isValidCardNumber(it) } ?: run { stable = 0; lastCard = null; return@addOnSuccessListener }
+            val card = CARD_REGEX.find(normalized)?.value?.let(::normalizeCard)?.takeIf { IranianBankRegistry.isValidCardNumber(it) }
+                ?: run { stable = 0; lastCard = null; return@addOnSuccessListener }
             stable = if (card == lastCard) stable + 1 else 1
             lastCard = card
             if (stable >= 2 && IranianBankRegistry.findByCard(card) != null && closing.compareAndSet(false, true)) {
                 val holder = extractHolder(result.text)
                 val iban = IBAN_REGEX.find(normalized)?.value?.let(::normalizeIban).orEmpty()
-                setResult(Activity.RESULT_OK, Intent().apply { putExtra(EXTRA_CARD, card); putExtra(EXTRA_HOLDER, holder); putExtra(EXTRA_IBAN, iban) })
+                setResult(Activity.RESULT_OK, Intent().apply {
+                    putExtra(EXTRA_CARD, card)
+                    putExtra(EXTRA_HOLDER, holder)
+                    putExtra(EXTRA_IBAN, iban)
+                })
                 finish()
             }
         }.addOnCompleteListener { image.close() }
     }
 
-    private fun normalizeDigits(value: String) = buildString(value.length) { value.forEach { c -> append(when (c) { in '۰'..'۹' -> ('0'.code + c.code - '۰'.code).toChar(); in '٠'..'٩' -> ('0'.code + c.code - '٠'.code).toChar(); else -> c }) } }
+    private fun normalizeDigits(value: String) = buildString(value.length) {
+        value.forEach { c ->
+            append(when (c) {
+                in '۰'..'۹' -> ('0'.code + c.code - '۰'.code).toChar()
+                in '٠'..'٩' -> ('0'.code + c.code - '٠'.code).toChar()
+                else -> c
+            })
+        }
+    }
+
     private fun normalizeCard(value: String) = normalizeDigits(value).filter(Char::isDigit)
     private fun normalizeIban(value: String) = normalizeDigits(value).replace(" ", "").replace("-", "").uppercase()
-    private fun extractHolder(text: String): String = Regex("(?i)(?:به\\s*نام|بنام|نام\\s*صاحب\\s*کارت|صاحب\\s*کارت|name)\\s*[:：-]?\\s*([\\p{L}][\\p{L} ._-]{2,39})").find(text)?.groupValues?.getOrNull(1)?.trim().orEmpty()
+    private fun extractHolder(text: String): String = Regex("(?i)(?:به\\s*نام|بنام|نام\\s*صاحب\\s*کارت|صاحب\\s*کارت|name)\\s*[:：-]?\\s*([\\p{L}][\\p{L} ._-]{2,39})")
+        .find(text)?.groupValues?.getOrNull(1)?.trim().orEmpty()
 
     private fun fail(message: String) {
         if (isFinishing || isDestroyed) return
-        runOnUiThread { if (!isFinishing && !isDestroyed) { Toast.makeText(this, message, Toast.LENGTH_SHORT).show(); finish() } }
+        runOnUiThread {
+            if (!isFinishing && !isDestroyed) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
     }
 
     private fun closeCamera() {
@@ -176,20 +196,18 @@ class BankCardScannerActivity : AppCompatActivity() {
         try { session?.close() } catch (_: Exception) { }
         try { camera?.close() } catch (_: Exception) { }
         try { reader?.close() } catch (_: Exception) { }
-        session = null; camera = null; reader = null
+        session = null
+        camera = null
+        reader = null
     }
 
     override fun onDestroy() {
         closeCamera()
         thread?.quitSafely()
-        thread = null; handler = null
-        recognizer?.close(); recognizer = null
+        thread = null
+        handler = null
+        recognizer?.close()
+        recognizer = null
         super.onDestroy()
-    }
-}
-
-private object WindowCompatBridge {
-    fun prepare(window: Window) {
-        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
     }
 }
