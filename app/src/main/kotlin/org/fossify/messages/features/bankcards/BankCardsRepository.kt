@@ -10,7 +10,9 @@ import java.util.Locale
 /** The only Messages-specific bridge used by the standalone bank-card UI. */
 class BankCardsRepository(private val context: Context) {
     fun getCards(): List<BankCard> = runCatching {
-        context.getMessagesDB().BankAccountsDao().getAll().map(::toUi)
+        context.getMessagesDB().BankAccountsDao().getAll().mapNotNull { account ->
+            runCatching { toUi(account) }.getOrNull()
+        }
     }.getOrDefault(emptyList())
 
     fun save(existing: BankCard?, cardNumber: String, holderName: String, iban: String): Result<Unit> = runCatching {
@@ -65,8 +67,8 @@ class BankCardsRepository(private val context: Context) {
         }
     }
 
-    fun detect(cardNumber: String): BankVisual? {
-        val bank = IranianBankRegistry.findByCard(normalizeCard(cardNumber)) ?: return null
+    fun detect(cardNumber: String): BankVisual? = runCatching {
+        val bank = IranianBankRegistry.findByCard(normalizeCard(cardNumber)) ?: return@runCatching null
         val bankId = bank.id.name
         val color = when (bankId) {
             "MELLAT" -> Color.rgb(165, 30, 45)
@@ -80,14 +82,14 @@ class BankCardsRepository(private val context: Context) {
             "SHAHR" -> Color.rgb(80, 55, 125)
             else -> Color.rgb(70, 80, 95)
         }
-        return BankVisual(
+        BankVisual(
             id = bankId,
             persianName = bank.persianName,
             englishName = bank.englishName,
             logoResourceName = bank.logoResourceName,
             color = color
         )
-    }
+    }.getOrNull()
 
     fun normalizeCard(value: String): String = normalizeDigits(value).filter(Char::isDigit)
     fun formatCard(value: String): String = normalizeCard(value).chunked(4).joinToString("   ")
@@ -112,13 +114,14 @@ class BankCardsRepository(private val context: Context) {
     }
 
     private fun toUi(account: BankAccount): BankCard {
-        val visual = detect(account.cardNumber)
+        val normalizedCard = normalizeCard(account.cardNumber)
+        val visual = detect(normalizedCard)
         return BankCard(
             id = account.id,
             bankId = account.bankId,
-            cardNumber = normalizeCard(account.cardNumber),
-            holderName = account.holderName,
-            iban = normalizeIban(account.iban),
+            cardNumber = normalizedCard,
+            holderName = account.holderName.orEmpty(),
+            iban = normalizeIban(account.iban.orEmpty()),
             createdAt = account.createdAt,
             updatedAt = account.updatedAt,
             visual = visual
