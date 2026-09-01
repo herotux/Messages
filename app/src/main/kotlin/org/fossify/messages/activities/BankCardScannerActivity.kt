@@ -1,6 +1,7 @@
 package org.fossify.messages.activities
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
@@ -12,6 +13,7 @@ import android.view.Surface
 import android.view.TextureView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
@@ -22,7 +24,12 @@ import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.IranianBankRegistry
 import java.util.concurrent.atomic.AtomicBoolean
 
-class BankCardScannerActivity : SimpleActivity() {
+/**
+ * Standalone bank-card scanner. It deliberately does not inherit from the
+ * legacy Messages/Common activity hierarchy so scanner startup cannot depend
+ * on unrelated shared activity state.
+ */
+class BankCardScannerActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_RETURN_TO_FORM = "return_to_bank_card_form"
         const val EXTRA_CARD = "bank_card"
@@ -50,14 +57,23 @@ class BankCardScannerActivity : SimpleActivity() {
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         setContentView(R.layout.activity_bank_card_scanner)
         preview = findViewById(R.id.bank_card_camera_preview)
+        if (!::preview.isInitialized) {
+            finish()
+            return
+        }
+
+        recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         manager = getSystemService(CameraManager::class.java)
         thread = HandlerThread("BankCardScanner").also { it.start() }
         handler = Handler(thread.looper)
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) preview.surfaceTextureListener = listener
-        else cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            preview.surfaceTextureListener = listener
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
     }
 
     private val listener = object : TextureView.SurfaceTextureListener {
@@ -70,13 +86,25 @@ class BankCardScannerActivity : SimpleActivity() {
     private fun openCamera() {
         if (closing.get() || isFinishing || isDestroyed) return
         try {
-            val id = manager.cameraIdList.firstOrNull { manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK } ?: return fail("دوربین پشت پیدا نشد")
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return fail("مجوز دوربین داده نشده است")
-            reader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 2).also { it.setOnImageAvailableListener({ analyze(it) }, handler) }
+            val id = manager.cameraIdList.firstOrNull {
+                manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK
+            } ?: return fail("دوربین پشت پیدا نشد")
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                return fail("مجوز دوربین داده نشده است")
+            }
+            reader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 2).also {
+                it.setOnImageAvailableListener({ analyze(it) }, handler)
+            }
             manager.openCamera(id, object : CameraDevice.StateCallback() {
-                override fun onOpened(d: CameraDevice) { if (closing.get()) { d.close(); return }; camera = d; bind(d) }
+                override fun onOpened(d: CameraDevice) {
+                    if (closing.get()) { d.close(); return }
+                    camera = d
+                    bind(d)
+                }
                 override fun onDisconnected(d: CameraDevice) { d.close(); camera = null }
-                override fun onError(d: CameraDevice, error: Int) { d.close(); camera = null; fail("خطا در دسترسی به دوربین") }
+                override fun onError(d: CameraDevice, error: Int) {
+                    d.close(); camera = null; fail("خطا در دسترسی به دوربین")
+                }
             }, handler)
         } catch (_: SecurityException) { fail("مجوز دوربین داده نشده است") }
         catch (_: Exception) { fail("باز کردن دوربین ممکن نیست") }
@@ -115,7 +143,11 @@ class BankCardScannerActivity : SimpleActivity() {
         lastRun = now
         recognizer.process(InputImage.fromMediaImage(image, 0)).addOnSuccessListener { result ->
             if (closing.get()) return@addOnSuccessListener
-            val card = BankAccountsFeature.cardRegexForScanner(result.text) ?: run { lastCard = null; stable = 0; return@addOnSuccessListener }
+            val card = BankAccountsFeature.cardRegexForScanner(result.text) ?: run {
+                lastCard = null
+                stable = 0
+                return@addOnSuccessListener
+            }
             stable = if (card == lastCard) stable + 1 else 1
             lastCard = card
             if (stable >= 2) {
@@ -123,7 +155,11 @@ class BankCardScannerActivity : SimpleActivity() {
                 if (!closing.compareAndSet(false, true)) return@addOnSuccessListener
                 val holder = BankAccountsFeature.extractHolderForScanner(result.text)
                 val iban = BankAccountsFeature.extractIbanForScanner(result.text)
-                setResult(RESULT_OK, Intent().apply { putExtra(EXTRA_CARD, card); putExtra(EXTRA_HOLDER, holder); putExtra(EXTRA_IBAN, iban) })
+                setResult(RESULT_OK, Intent().apply {
+                    putExtra(EXTRA_CARD, card)
+                    putExtra(EXTRA_HOLDER, holder)
+                    putExtra(EXTRA_IBAN, iban)
+                })
                 finish()
             }
         }.addOnCompleteListener { image.close() }
@@ -131,7 +167,12 @@ class BankCardScannerActivity : SimpleActivity() {
 
     private fun fail(message: String) {
         if (isFinishing || isDestroyed) return
-        runOnUiThread { if (!isFinishing && !isDestroyed) { Toast.makeText(this, message, Toast.LENGTH_SHORT).show(); finish() } }
+        runOnUiThread {
+            if (!isFinishing && !isDestroyed) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
     }
 
     private fun closeCamera() {
@@ -140,7 +181,9 @@ class BankCardScannerActivity : SimpleActivity() {
         try { session?.close() } catch (_: Exception) { }
         try { camera?.close() } catch (_: Exception) { }
         try { reader?.close() } catch (_: Exception) { }
-        session = null; camera = null; reader = null
+        session = null
+        camera = null
+        reader = null
     }
 
     override fun onDestroy() {
