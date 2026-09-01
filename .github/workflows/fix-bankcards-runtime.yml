@@ -1,0 +1,56 @@
+name: Apply bank cards runtime fixes
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ github.event.head_commit.message != 'fix: bank cards ViewPager and settings insets' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch standalone bank cards and settings
+        shell: python
+        run: |
+          from pathlib import Path
+
+          bank = Path('app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt')
+          s = bank.read_text()
+          old = '''        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = Holder(LinearLayout(parent.context).apply {\n            orientation = LinearLayout.VERTICAL\n            setPadding(dp(4))\n        })'''
+          new = '''        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {\n            val container = LinearLayout(parent.context).apply {\n                orientation = LinearLayout.VERTICAL\n                setPadding(dp(4))\n                layoutParams = RecyclerView.LayoutParams(\n                    ViewGroup.LayoutParams.MATCH_PARENT,\n                    ViewGroup.LayoutParams.MATCH_PARENT\n                )\n            }\n            return Holder(container)\n        }'''
+          if old not in s:
+              raise SystemExit('BankCardsActivity target not found')
+          bank.write_text(s.replace(old, new, 1))
+
+          settings = Path('app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt')
+          s = settings.read_text()
+          old = '''            view.setPadding(view.paddingLeft, top, view.paddingRight, bottom)'''
+          new = '''            view.setPadding(view.paddingLeft, 0, view.paddingRight, bottom)'''
+          if old not in s:
+              raise SystemExit('Settings root inset target not found')
+          s = s.replace(old, new, 1)
+          old = '''        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(64)))'''
+          new = '''        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { view, insets ->\n            val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top\n            view.setPadding(view.paddingLeft, top, view.paddingRight, view.paddingBottom)\n            insets\n        }\n        ViewCompat.requestApplyInsets(toolbar)\n        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(64)))'''
+          if old not in s:
+              raise SystemExit('Settings toolbar target not found')
+          settings.write_text(s.replace(old, new, 1))
+
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
+          git diff --cached --quiet || git commit -m "fix: bank cards ViewPager and settings insets"
+          git push
+
+      - name: Remove temporary workflow
+        if: success()
+        run: |
+          git rm .github/workflows/fix-bankcards-runtime.yml
+          git commit -m "chore: remove temporary runtime fix workflow"
+          git push
