@@ -44,7 +44,6 @@ class App : FossifyApp() {
                 BankAccountsFeature.installPersianFonts(activity)
             }
             if (activity is ThreadActivity) {
-                BankAccountsFeature.addPickerButton(activity)
                 BankAccountsFeature.installMessageCardLinks(activity)
                 BankAccountsFeature.installPersianFonts(activity)
                 PersianThreadFontInstaller.install(activity)
