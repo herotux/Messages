@@ -15,30 +15,64 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Patch standalone bank cards and settings
-        shell: python
         run: |
+          python3 - <<'PY'
           from pathlib import Path
 
           bank = Path('app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt')
           s = bank.read_text()
-          old = '''        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = Holder(LinearLayout(parent.context).apply {\n            orientation = LinearLayout.VERTICAL\n            setPadding(dp(4))\n        })'''
-          new = '''        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {\n            val container = LinearLayout(parent.context).apply {\n                orientation = LinearLayout.VERTICAL\n                setPadding(dp(4))\n                layoutParams = RecyclerView.LayoutParams(\n                    ViewGroup.LayoutParams.MATCH_PARENT,\n                    ViewGroup.LayoutParams.MATCH_PARENT\n                )\n            }\n            return Holder(container)\n        }'''
+          old = '''        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = Holder(LinearLayout(parent.context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(4))
+        })'''
+          new = '''        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
+            val container = LinearLayout(parent.context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(4))
+                layoutParams = RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+            return Holder(container)
+        }'''
           if old not in s:
               raise SystemExit('BankCardsActivity target not found')
           bank.write_text(s.replace(old, new, 1))
 
           settings = Path('app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt')
           s = settings.read_text()
-          old = '''            view.setPadding(view.paddingLeft, top, view.paddingRight, bottom)'''
-          new = '''            view.setPadding(view.paddingLeft, 0, view.paddingRight, bottom)'''
+          old = '''        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+            val bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.setPadding(view.paddingLeft, top, view.paddingRight, bottom)
+            insets
+        }'''
+          new = '''        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.setPadding(view.paddingLeft, 0, view.paddingRight, bottom)
+            insets
+        }'''
           if old not in s:
               raise SystemExit('Settings root inset target not found')
           s = s.replace(old, new, 1)
-          old = '''        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(64)))'''
-          new = '''        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { view, insets ->\n            val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top\n            view.setPadding(view.paddingLeft, top, view.paddingRight, view.paddingBottom)\n            insets\n        }\n        ViewCompat.requestApplyInsets(toolbar)\n        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(64)))'''
+          old = 'import androidx.core.view.WindowInsetsCompat\n'
+          if 'import androidx.core.view.WindowCompat\n' not in s:
+              s = s.replace(old, old + 'import androidx.core.view.WindowCompat\n', 1)
+          old = '''    private fun render(page: String?) {
+        val surface = color(com.google.android.material.R.attr.colorSurface)'''
+          new = '''    private fun render(page: String?) {
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        val surface = color(com.google.android.material.R.attr.colorSurface)'''
           if old not in s:
-              raise SystemExit('Settings toolbar target not found')
+              raise SystemExit('Settings render target not found')
           settings.write_text(s.replace(old, new, 1))
+          PY
+
+      - name: Verify changes
+        run: |
+          grep -A9 'onCreateViewHolder' app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt
+          grep -n 'WindowCompat\|setOnApplyWindowInsetsListener' app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
 
       - name: Commit fixes
         run: |
@@ -46,11 +80,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
           git diff --cached --quiet || git commit -m "fix: bank cards ViewPager and settings insets"
-          git push
-
-      - name: Remove temporary workflow
-        if: success()
-        run: |
-          git rm .github/workflows/fix-bankcards-runtime.yml
-          git commit -m "chore: remove temporary runtime fix workflow"
           git push
