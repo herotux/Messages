@@ -69,16 +69,9 @@ class BankCardsActivity : AppCompatActivity() {
             v.setPadding(dp(16), bars.top + dp(8), dp(16), bars.bottom + dp(16))
             insets
         }
-
         val toolbar = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
         toolbar.addView(iconButton(android.R.drawable.ic_menu_revert, "بازگشت") { finish() }, lp(48, 48))
-        toolbar.addView(TextView(this).apply {
-            text = "کارت‌های بانکی"
-            textSize = 21f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER_VERTICAL
-            setTextColor(onSurface())
-        }, LinearLayout.LayoutParams(0, dp(56), 1f))
+        toolbar.addView(TextView(this).apply { text = "کارت‌های بانکی"; textSize = 21f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER_VERTICAL; setTextColor(onSurface()) }, LinearLayout.LayoutParams(0, dp(56), 1f))
         toolbar.addView(iconButton(android.R.drawable.ic_menu_more, "گزینه‌ها") { showTopMenu() }, lp(48, 48))
         root.addView(toolbar, lp(-1, 56))
 
@@ -97,13 +90,8 @@ class BankCardsActivity : AppCompatActivity() {
         }
         adapter = CardPagerAdapter()
         pager.adapter = adapter
-        root.addView(pager, LinearLayout.LayoutParams(-1, dp(285)))
-        root.addView(TextView(this).apply {
-            text = "برای مشاهده کارت‌های دیگر، به چپ یا راست بکشید"
-            textSize = 12f
-            gravity = Gravity.CENTER
-            setTextColor(onSurfaceVariant())
-        }, lp(-1, 28))
+        root.addView(pager, LinearLayout.LayoutParams(-1, dp(235)))
+        root.addView(TextView(this).apply { text = "برای مشاهده کارت‌های دیگر، به چپ یا راست بکشید"; textSize = 12f; gravity = Gravity.CENTER; setTextColor(onSurfaceVariant()) }, lp(-1, 28))
         root.addView(actionTile(android.R.drawable.ic_input_add, "افزودن کارت جدید", "ثبت یک کارت بانکی جدید") { showWizard(null) }, LinearLayout.LayoutParams(-1, dp(68)).apply { topMargin = dp(10) })
         setContentView(root)
     }
@@ -114,8 +102,7 @@ class BankCardsActivity : AppCompatActivity() {
             runOnUiThread {
                 cards = loaded.toMutableList()
                 adapter.notifyDataSetChanged()
-                if (cards.isEmpty()) pager.setCurrentItem(0, false)
-                else pager.setCurrentItem(pager.currentItem.coerceAtMost(cards.lastIndex), false)
+                if (cards.isEmpty()) pager.setCurrentItem(0, false) else pager.setCurrentItem(pager.currentItem.coerceAtMost(cards.lastIndex), false)
             }
         }.start()
     }
@@ -123,14 +110,10 @@ class BankCardsActivity : AppCompatActivity() {
     private inner class CardPagerAdapter : RecyclerView.Adapter<CardPagerAdapter.Holder>() {
         inner class Holder(val page: FrameLayout) : RecyclerView.ViewHolder(page)
         override fun getItemCount() = cards.size
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = Holder(FrameLayout(parent.context).apply {
-            layoutParams = RecyclerView.LayoutParams(-1, -1)
-        })
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = Holder(FrameLayout(parent.context).apply { layoutParams = RecyclerView.LayoutParams(-1, -1) })
         override fun onBindViewHolder(holder: Holder, position: Int) {
             holder.page.removeAllViews()
-            holder.page.addView(createBankCard(cards[position]), FrameLayout.LayoutParams(-1, -1).apply {
-                leftMargin = dp(12); rightMargin = dp(12); topMargin = dp(2); bottomMargin = dp(6)
-            })
+            holder.page.addView(createBankCard(cards[position]), FrameLayout.LayoutParams(-1, -1).apply { leftMargin = dp(12); rightMargin = dp(12); topMargin = dp(2); bottomMargin = dp(6) })
         }
     }
 
@@ -138,8 +121,8 @@ class BankCardsActivity : AppCompatActivity() {
         val visual = card.visual
         val base = visual?.color ?: 0xFF37465A.toInt()
         val outer = MaterialCardView(this).apply {
-            radius = dp(22).toFloat()
-            cardElevation = dp(7).toFloat()
+            radius = dp(18).toFloat()
+            cardElevation = dp(5).toFloat()
             strokeWidth = dp(1)
             strokeColor = 0x2DFFFFFF.toInt()
             isClickable = true
@@ -149,8 +132,8 @@ class BankCardsActivity : AppCompatActivity() {
         val body = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(22), dp(18), dp(22), dp(16))
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(lighten(base), darken(base))).apply { cornerRadius = dp(22).toFloat() }
+            setPadding(dp(18), dp(14), dp(18), dp(12))
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(lighten(base), darken(base))).apply { cornerRadius = dp(18).toFloat() }
         }
         val top = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
         val logo = ImageView(this).apply {
@@ -158,29 +141,36 @@ class BankCardsActivity : AppCompatActivity() {
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             contentDescription = visual?.persianName ?: "بانک"
         }
-        top.addView(logo, lp(44, 44))
-        top.addView(TextView(this).apply { text = visual?.persianName ?: card.bankId; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE); setPadding(dp(10), 0, 0, 0) }, LinearLayout.LayoutParams(0, dp(44), 1f))
+        top.addView(logo, lp(38, 38))
+        top.addView(TextView(this).apply { text = visual?.persianName ?: card.bankId; textSize = 15f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE); setPadding(dp(8), 0, 0, 0) }, LinearLayout.LayoutParams(0, dp(38), 1f))
         val more = iconButton(android.R.drawable.ic_menu_more, "عملیات کارت") { showCardActions(card) }
         tint(more, Color.WHITE)
-        top.addView(more, lp(44, 44))
+        top.addView(more, lp(38, 38))
         body.addView(top)
         body.addView(TextView(this).apply {
-            text = repository.normalizeCard(card.cardNumber).chunked(4).joinToString("   ")
-            textSize = 21f
+            text = formatCardNumber(card.cardNumber)
+            textSize = 18f
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
-            letterSpacing = .035f
+            letterSpacing = 0f
             gravity = Gravity.CENTER
             textDirection = View.TEXT_DIRECTION_LTR
-            setSingleLine(true)
             includeFontPadding = false
+            setSingleLine(true)
+            ellipsize = null
             setTextColor(Color.WHITE)
-        }, LinearLayout.LayoutParams(-1, dp(76)).apply { topMargin = dp(20) })
+            setPadding(0, dp(2), 0, dp(2))
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
         val bottom = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
-        bottom.addView(TextView(this).apply { text = card.holderName.ifBlank { "نام صاحب کارت" }; textSize = 14f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE); maxLines = 1 }, LinearLayout.LayoutParams(0, dp(28), 1f))
-        if (card.iban.isNotBlank()) bottom.addView(TextView(this).apply { text = "شبا"; textSize = 10f; gravity = Gravity.CENTER; setTextColor(0xBFFFFFFF.toInt()) }, lp(38, 28))
+        bottom.addView(TextView(this).apply { text = card.holderName.ifBlank { "نام صاحب کارت" }; textSize = 12f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE); maxLines = 1 }, LinearLayout.LayoutParams(0, dp(24), 1f))
+        if (card.iban.isNotBlank()) bottom.addView(TextView(this).apply { text = "شبا"; textSize = 9f; gravity = Gravity.CENTER; setTextColor(0xBFFFFFFF.toInt()) }, lp(32, 24))
         body.addView(bottom)
         outer.addView(body, ViewGroup.LayoutParams(-1, -1))
         return outer
+    }
+
+    private fun formatCardNumber(value: String): String {
+        val digits = repository.normalizeCard(value).filter(Char::isDigit).take(16)
+        return digits.chunked(4).joinToString("   ").padEnd(25, ' ')
     }
 
     private fun showTopMenu() {
