@@ -28,7 +28,7 @@ class BankCardScannerActivity : SimpleActivity() {
         const val EXTRA_IBAN = "bank_iban"
     }
 
-    private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private lateinit var recognizer: com.google.mlkit.vision.text.TextRecognizer
     private val closing = AtomicBoolean(false)
     private lateinit var preview: TextureView
     private lateinit var manager: CameraManager
@@ -48,6 +48,7 @@ class BankCardScannerActivity : SimpleActivity() {
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         setContentView(R.layout.activity_bank_card_scanner)
         preview = findViewById(R.id.bank_card_camera_preview)
         manager = getSystemService(CameraManager::class.java)
@@ -68,7 +69,7 @@ class BankCardScannerActivity : SimpleActivity() {
         if (closing.get() || isFinishing || isDestroyed) return
         try {
             val id = manager.cameraIdList.firstOrNull { manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK } ?: return fail("دوربین پشت پیدا نشد")
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return fail("مجوز دوربین داده نشده است")
             reader = ImageReader.newInstance(1280, 720, ImageFormat.YUV_420_888, 2).also { it.setOnImageAvailableListener({ analyze(it) }, handler) }
             manager.openCamera(id, object : CameraDevice.StateCallback() {
                 override fun onOpened(d: CameraDevice) { if (closing.get()) { d.close(); return }; camera = d; bind(d) }
@@ -120,10 +121,8 @@ class BankCardScannerActivity : SimpleActivity() {
                 if (!closing.compareAndSet(false, true)) return@addOnSuccessListener
                 val holder = BankAccountsFeature.extractHolderForScanner(result.text)
                 val iban = BankAccountsFeature.extractIbanForScanner(result.text)
-                if (intent.getBooleanExtra(EXTRA_RETURN_TO_FORM, false)) {
-                    setResult(RESULT_OK, Intent().apply { putExtra(EXTRA_CARD, card); putExtra(EXTRA_HOLDER, holder); putExtra(EXTRA_IBAN, iban) })
-                    finish()
-                } else finish()
+                setResult(RESULT_OK, Intent().apply { putExtra(EXTRA_CARD, card); putExtra(EXTRA_HOLDER, holder); putExtra(EXTRA_IBAN, iban) })
+                finish()
             }
         }.addOnCompleteListener { image.close() }
     }
@@ -136,14 +135,16 @@ class BankCardScannerActivity : SimpleActivity() {
     private fun closeCamera() {
         closing.set(true)
         try { session?.stopRepeating() } catch (_: Exception) { }
-        try { session?.close(); camera?.close(); reader?.close() } catch (_: Exception) { }
+        try { session?.close() } catch (_: Exception) { }
+        try { camera?.close() } catch (_: Exception) { }
+        try { reader?.close() } catch (_: Exception) { }
         session = null; camera = null; reader = null
     }
 
     override fun onDestroy() {
         closeCamera()
         if (::thread.isInitialized) thread.quitSafely()
-        recognizer.close()
+        if (::recognizer.isInitialized) recognizer.close()
         super.onDestroy()
     }
 }
