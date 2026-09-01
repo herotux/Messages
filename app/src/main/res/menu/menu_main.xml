@@ -14,11 +14,6 @@
         android:title="@string/show_archived_conversations"
         app:showAsAction="never" />
     <item
-        android:id="@+id/export_debug_log"
-        android:showAsAction="never"
-        android:title="Export debug log"
-        app:showAsAction="never" />
-    <item
         android:id="@+id/settings"
         android:icon="@drawable/ic_settings_cog_vector"
         android:showAsAction="never"
