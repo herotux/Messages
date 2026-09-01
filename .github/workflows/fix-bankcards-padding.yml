@@ -1,0 +1,33 @@
+name: Fix Bank Cards padding
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.head_commit.message != 'Fix Bank Cards icon padding API'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix single-argument setPadding
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt')
+          s = p.read_text()
+          old = 'setPadding(dp(10)); scaleType = ImageView.ScaleType.CENTER'
+          new = 'setPadding(dp(10), dp(10), dp(10), dp(10)); scaleType = ImageView.ScaleType.CENTER'
+          if old not in s:
+              raise SystemExit('target padding call not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt
+          git rm .github/workflows/fix-bankcards-padding.yml
+          git commit -m 'Fix Bank Cards icon padding API'
+          git push origin HEAD:main
