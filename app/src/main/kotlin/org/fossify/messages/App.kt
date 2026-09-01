@@ -16,6 +16,7 @@ import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.activities.ThreadActivity
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.helpers.BankAccountsFeature
+import org.fossify.messages.helpers.BankCardsCrashLogger
 import org.fossify.messages.helpers.ConversationFolderManager
 import org.fossify.messages.helpers.MessagingCache
 import org.fossify.messages.helpers.PersianThreadFontInstaller
@@ -25,6 +26,7 @@ class App : FossifyApp() {
 
     override fun onCreate() {
         super.onCreate()
+        BankCardsCrashLogger.install(this)
         registerActivityLifecycleCallbacks(folderUiLifecycleCallbacks)
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(ContactsContract.Contacts.CONTENT_URI, ContactsContract.Data.CONTENT_URI, ContactsContract.DisplayPhoto.CONTENT_URI).forEach {
