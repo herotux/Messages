@@ -15,7 +15,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import org.fossify.messages.R
 import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.IranianBankRegistry
 import java.util.concurrent.atomic.AtomicBoolean
@@ -28,7 +30,7 @@ class BankCardScannerActivity : SimpleActivity() {
         const val EXTRA_IBAN = "bank_iban"
     }
 
-    private lateinit var recognizer: com.google.mlkit.vision.text.TextRecognizer
+    private lateinit var recognizer: TextRecognizer
     private val closing = AtomicBoolean(false)
     private lateinit var preview: TextureView
     private lateinit var manager: CameraManager
@@ -117,7 +119,7 @@ class BankCardScannerActivity : SimpleActivity() {
             stable = if (card == lastCard) stable + 1 else 1
             lastCard = card
             if (stable >= 2) {
-                val bank = IranianBankRegistry.findByCard(card) ?: run { stable = 0; return@addOnSuccessListener }
+                IranianBankRegistry.findByCard(card) ?: run { stable = 0; return@addOnSuccessListener }
                 if (!closing.compareAndSet(false, true)) return@addOnSuccessListener
                 val holder = BankAccountsFeature.extractHolderForScanner(result.text)
                 val iban = BankAccountsFeature.extractIbanForScanner(result.text)
