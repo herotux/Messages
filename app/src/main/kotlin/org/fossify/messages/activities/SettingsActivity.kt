@@ -18,6 +18,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.os.LocaleListCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -87,6 +89,13 @@ class SettingsActivity : SimpleActivity() {
             layoutDirection = if (english()) View.LAYOUT_DIRECTION_LTR else View.LAYOUT_DIRECTION_RTL
             setBackgroundColor(surface)
         }
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+            val bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.setPadding(view.paddingLeft, top, view.paddingRight, bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(root)
         val toolbar = MaterialToolbar(this).apply {
             title = pageTitle(page)
             setBackgroundColor(surface)
@@ -246,6 +255,7 @@ class SettingsActivity : SimpleActivity() {
             config.useEnglish = english
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(if (english) "en" else "fa"))
             dialog.dismiss()
+            recreate()
         }.show()
     }
 
