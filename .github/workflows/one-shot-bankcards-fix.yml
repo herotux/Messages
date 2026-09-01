@@ -1,0 +1,47 @@
+name: One-shot bank cards runtime fix
+on: push
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch bank cards activity
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt')
+          s = p.read_text()
+          pattern = r'    private fun loadCards\(\) \{.*?\n    \}\n\n    private inner class CardPagerAdapter'
+          replacement = '''    private fun loadCards() {
+            Thread {
+                val result = repository.getCards()
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    cards = result.toMutableList()
+                    adapter.notifyDataSetChanged()
+                    if (cards.isEmpty()) {
+                        if (pager.currentItem != 0) pager.setCurrentItem(0, false)
+                    } else if (pager.currentItem >= cards.size) {
+                        pager.setCurrentItem(cards.lastIndex, false)
+                    }
+                }
+            }.start()
+        }
+
+    private inner class CardPagerAdapter'''
+          new, count = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit(f'loadCards block not found: {count}')
+          p.write_text(new)
+          PY
+      - name: Commit patch and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt
+          git rm .github/workflows/one-shot-bankcards-fix.yml
+          git commit -m 'Harden bank cards reload after saving'
+          git push
