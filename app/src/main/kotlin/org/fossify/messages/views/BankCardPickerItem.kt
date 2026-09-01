@@ -87,14 +87,18 @@ class BankCardPickerItem @JvmOverloads constructor(
         val selectedText = if (isPersian) {
             buildString {
                 append("بانک: ").append(bankName)
-                append("\nشماره کارت: ").append(card)
+                append("\nشماره کارت:")
+                append("\n")
+                append(card)
                 if (holder.isNotEmpty()) append("\nصاحب کارت: ").append(holder)
                 if (iban.isNotEmpty()) append("\nشماره شبا: ").append(BankAccountsFeature.formatIban(iban))
             }
         } else {
             buildString {
                 append("Bank: ").append(bankName)
-                append("\nCard number: ").append(card)
+                append("\nCard number:")
+                append("\n")
+                append(card)
                 if (holder.isNotEmpty()) append("\nCard holder: ").append(holder)
                 if (iban.isNotEmpty()) append("\nIBAN: ").append(BankAccountsFeature.formatIban(iban))
             }
