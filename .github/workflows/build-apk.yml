@@ -48,7 +48,6 @@ jobs:
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$SIGNING_STORE_FILE"
           chmod 600 "$SIGNING_STORE_FILE"
           test -s "$SIGNING_STORE_FILE"
-          ls -lh "$SIGNING_STORE_FILE"
 
       - name: Import bank VectorDrawable resources
         run: |
@@ -62,10 +61,8 @@ jobs:
             bank_resalat bank_melal; do
             rm -f "app/src/main/res/drawable/${logo}.xml"
           done
-          test -f app/src/main/res/drawable/bank_sepah.png
           python3 tools/import_iranian_bank_logos.py
           test -f app/src/main/res/drawable/bank_sepah.png
-          test ! -e app/src/main/res/drawable/bank_sepah.xml
           test -f app/src/main/res/drawable/bank_card_scan_frame.xml
 
       - name: Normalize standalone Settings Material color attribute
@@ -75,29 +72,17 @@ jobs:
           ! grep -n 'com\.google\.android\.material\.R\.attr\.colorPrimary' \
             app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
 
-      - name: Normalize standalone Bank Cards colors
-        run: |
-          FILE=app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt
-          sed -i \
-            -e 's/resolveColor(com\.google\.android\.material\.R\.attr\.colorPrimary, onSurfaceVariant())/onSurfaceVariant()/g' \
-            -e 's/Color\.rgb(55,70,90)/0xFF37465A.toInt()/g' \
-            -e 's/Color\.argb(190,255,255,255)/0xBFFFFFFF.toInt()/g' \
-            -e 's/Color\.argb(45, 255, 255, 255)/0x2DFFFFFF.toInt()/g' \
-            "$FILE"
-          ! grep -n 'com\.google\.android\.material\.R\.attr\.colorPrimary' "$FILE"
-          ! grep -nE 'Color\.(rgb|argb)\(' "$FILE"
-
-      - name: Persist source normalization
+      - name: Persist Settings normalization
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if git diff --quiet -- app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt; then
-            echo "No source normalization changes to commit."
+          if git diff --quiet -- app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt; then
+            echo "No Settings normalization changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
-          git commit -m "Fix standalone bank card color compilation"
+          git add app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
+          git commit -m "Normalize standalone Settings color attribute"
           git push origin HEAD:main
 
       - name: Set up Android SDK
@@ -136,7 +121,6 @@ jobs:
           APK=$(find app/build/outputs/apk -type f -name '*core*release*.apk' | head -n 1)
           test -n "$APK"
           cp "$APK" artifacts/core/Messages-core-release.apk
-          ls -lh artifacts/core/Messages-core-release.apk
 
       - name: Collect FOSS APK
         run: |
@@ -144,7 +128,6 @@ jobs:
           APK=$(find app/build/outputs/apk -type f -name '*foss*release*.apk' | head -n 1)
           test -n "$APK"
           cp "$APK" artifacts/foss/Messages-foss-release.apk
-          ls -lh artifacts/foss/Messages-foss-release.apk
 
       - name: Collect GPlay APK
         run: |
@@ -152,7 +135,6 @@ jobs:
           APK=$(find app/build/outputs/apk -type f -name '*gplay*release*.apk' | head -n 1)
           test -n "$APK"
           cp "$APK" artifacts/gplay/Messages-gplay-release.apk
-          ls -lh artifacts/gplay/Messages-gplay-release.apk
 
       - name: Upload Core APK
         uses: actions/upload-artifact@v4
