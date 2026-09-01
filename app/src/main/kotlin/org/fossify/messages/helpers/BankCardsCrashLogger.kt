@@ -9,38 +9,36 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Captures uncaught crashes whose stack trace belongs to the standalone bank-card feature. */
+/** Temporary crash/diagnostic logger used while stabilizing the standalone bank-card feature. */
 object BankCardsCrashLogger {
     private const val LOG_DIR = "Messages/BankCardsLogs"
     private const val MAX_LOGS = 10
 
     fun install(context: Context) {
+        val appContext = context.applicationContext
+        runCatching { writeDiagnostic(appContext) }
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            if (isBankCardsCrash(throwable)) {
-                runCatching { write(context.applicationContext, thread, throwable) }
-            }
+            runCatching { writeCrash(appContext, thread, throwable) }
             previous?.uncaughtException(thread, throwable)
         }
     }
 
-    private fun isBankCardsCrash(throwable: Throwable): Boolean {
-        var current: Throwable? = throwable
-        repeat(8) {
-            val stack = current?.stackTrace?.joinToString("\n") ?: return false
-            if (stack.contains("BankCardsActivity") ||
-                stack.contains("BankCardsRepository") ||
-                stack.contains("BankCardScannerActivity")) return true
-            current = current?.cause
-        }
-        return false
+    private fun writeDiagnostic(context: Context) {
+        val stamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss_SSS", Locale.US).format(Date())
+        writePublicFile(context, "bank_cards_logger_test_$stamp.txt", buildString {
+            appendLine("=== Messages Bank Cards Logger Test ===")
+            appendLine("Date: $stamp")
+            appendLine("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
+            appendLine("Logger installed successfully.")
+        })
     }
 
-    private fun write(context: Context, thread: Thread, throwable: Throwable) {
+    private fun writeCrash(context: Context, thread: Thread, throwable: Throwable) {
         val stamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss_SSS", Locale.US).format(Date())
-        val name = "bank_cards_crash_$stamp.txt"
         val text = buildString {
-            appendLine("=== Messages Bank Cards Crash ===")
+            appendLine("=== Messages Crash Diagnostic ===")
             appendLine("Date: $stamp")
             appendLine("Thread: ${thread.name}")
             appendLine("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
@@ -52,7 +50,10 @@ object BankCardsCrashLogger {
             appendLine("Stack trace:")
             appendLine(redact(throwable.stackTraceToString()))
         }
+        writePublicFile(context, "bank_cards_crash_$stamp.txt", text)
+    }
 
+    private fun writePublicFile(context: Context, name: String, text: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = context.contentResolver
             val values = ContentValues().apply {
@@ -76,7 +77,7 @@ object BankCardsCrashLogger {
 
         val dir = File(context.getExternalStorageDirectoryCompat(), LOG_DIR).apply { mkdirs() }
         File(dir, name).writeText(text)
-        dir.listFiles { f -> f.isFile && f.name.startsWith("bank_cards_crash_") && f.extension == "txt" }
+        dir.listFiles { f -> f.isFile && f.name.endsWith(".txt") }
             ?.sortedByDescending { it.lastModified() }
             ?.drop(MAX_LOGS)
             ?.forEach { it.delete() }
