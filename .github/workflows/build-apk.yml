@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test-and-build:
@@ -74,6 +74,31 @@ jobs:
             app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
           ! grep -n 'com\.google\.android\.material\.R\.attr\.colorPrimary' \
             app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
+
+      - name: Normalize standalone Bank Cards colors
+        run: |
+          FILE=app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt
+          sed -i \
+            -e 's/resolveColor(com\.google\.android\.material\.R\.attr\.colorPrimary, onSurfaceVariant())/onSurfaceVariant()/g' \
+            -e 's/Color\.rgb(55,70,90)/0xFF37465A.toInt()/g' \
+            -e 's/Color\.argb(190,255,255,255)/0xBFFFFFFF.toInt()/g' \
+            -e 's/Color\.argb(45, 255, 255, 255)/0x2DFFFFFF.toInt()/g' \
+            "$FILE"
+          ! grep -n 'com\.google\.android\.material\.R\.attr\.colorPrimary' "$FILE"
+          ! grep -nE 'Color\.(rgb|argb)\(' "$FILE"
+
+      - name: Persist source normalization
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if git diff --quiet -- app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt; then
+            echo "No source normalization changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/org/fossify/messages/activities/BankCardsActivity.kt app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
+          git commit -m "Fix standalone bank card color compilation"
+          git push origin HEAD:main
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
