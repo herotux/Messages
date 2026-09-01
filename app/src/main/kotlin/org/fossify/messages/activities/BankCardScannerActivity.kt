@@ -19,6 +19,7 @@ import android.os.HandlerThread
 import android.os.SystemClock
 import android.view.Surface
 import android.view.TextureView
+import android.view.Window
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
