@@ -162,7 +162,7 @@ class SettingsActivity : SimpleActivity() {
         }
         line.addView(AppCompatImageView(this).apply {
             setImageResource(icon)
-            imageTintList = ColorStateList.valueOf(color(com.google.android.material.R.attr.colorPrimary))
+            imageTintList = ColorStateList.valueOf(color(androidx.appcompat.R.attr.colorPrimary))
             setPadding(dp(8), dp(8), dp(8), dp(8))
         }, LinearLayout.LayoutParams(dp(48), dp(48)))
         val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(8), 0) }
@@ -347,7 +347,7 @@ class SettingsActivity : SimpleActivity() {
         card.addView(content); root.addView(card, margins(0, 8))
     }
 
-    private fun section(root: LinearLayout, title: String) = root.addView(label(title, 13f, true, color(com.google.android.material.R.attr.colorPrimary)), margins(4, 10))
+    private fun section(root: LinearLayout, title: String) = root.addView(label(title, 13f, true, color(androidx.appcompat.R.attr.colorPrimary)), margins(4, 10))
     private fun label(textValue: String, size: Float, bold: Boolean, textColor: Int = color(com.google.android.material.R.attr.colorOnSurface)) = TextView(this).apply { text = textValue; textSize = size; setTextColor(textColor); if (bold) typeface = Typeface.DEFAULT_BOLD }
     private fun pageTitle(page: String?) = when (page) { GENERAL -> t("عمومی", "General"); APPEARANCE -> t("ظاهر", "Appearance"); MESSAGES -> t("پیام‌ها", "Messages"); NOTIFICATIONS -> t("اعلان‌ها", "Notifications"); CONVERSATIONS -> t("گفتگوها", "Conversations"); BANKS -> t("بانک و تراکنش", "Banking"); PRIVACY -> t("حریم خصوصی و امنیت", "Privacy & security"); ABOUT -> t("درباره برنامه", "About"); else -> t("تنظیمات", "Settings") }
     private fun openAppNotificationSettings() { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }
