@@ -1,3 +1,4 @@
+# Minimal Commons extraction helper
 from pathlib import Path
 import re, shutil
 
@@ -20,7 +21,6 @@ def resolve(imp,t):
  a=imp.split('.'); pkg='.'.join(a[:-1]); name=a[-1]
  for p in by_pkg.get(pkg,[]):
   if name in decl[p] or p.stem==name: add(p)
-# Seeds from app and manifest.
 for t in texts+[manifest]:
  for imp in imports(t): resolve(imp,t)
  for pkg in re.findall(r'^\s*import\s+(org\.fossify\.commons\.[\w.]+)\.\*',t,re.M):
@@ -32,14 +32,11 @@ while q:
  for pkg in re.findall(r'^\s*import\s+(org\.fossify\.commons\.[\w.]+)\.\*',t,re.M):
   for r in by_pkg.get(pkg,[]):
    if any(re.search(r'\b'+re.escape(n)+r'\b',t) for n in decl[r]): add(r)
-# Copy source closure.
 for p in sel:
  base=C/'kotlin' if (C/'kotlin') in p.parents else C/'java'; out=DEST/('kotlin' if base.name=='kotlin' else 'java')/p.relative_to(base)
  out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out)
-# Resource references from app + selected source.
 need=set()
-for t in texts+[manifest]+[p.read_text(errors='ignore') for p in sel]:
- need |= set(re.findall(r'org\.fossify\.commons\.R\.(\w+)\.(\w+)',t))
+for t in texts+[manifest]+[p.read_text(errors='ignore') for p in sel]: need |= set(re.findall(r'org\.fossify\.commons\.R\.(\w+)\.(\w+)',t))
 res=list((C/'res').rglob('*')); copied=set()
 def copyres(p):
  out=DEST/'res'/p.relative_to(C/'res'); out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p)
