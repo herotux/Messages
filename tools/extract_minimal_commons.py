@@ -37,14 +37,20 @@ for p in sel:
  out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out)
 need=set()
 for t in texts+[manifest]+[p.read_text(errors='ignore') for p in sel]: need |= set(re.findall(r'org\.fossify\.commons\.R\.(\w+)\.(\w+)',t))
-res=list((C/'res').rglob('*')); copied=set()
+res=list((C/'res').rglob('*')); copied=set(); skipped=set()
 def copyres(p):
- out=DEST/'res'/p.relative_to(C/'res'); out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p)
+ out=DEST/'res'/p.relative_to(C/'res')
+ # Never overwrite an existing app resource. Messages may intentionally provide
+ # its own implementation (bank drawables, customized strings, etc.).
+ if out.exists():
+  skipped.add(p); return
+ out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p)
 for typ,name in need:
  for p in res:
   if not p.is_file(): continue
   if typ in ('layout','drawable','mipmap','xml') and p.stem==name: copyres(p)
   elif p.parent.name.startswith('values') and re.search(r'<'+re.escape(typ)+r'\b[^>]*\bname=["\']'+re.escape(name)+r'["\']',p.read_text(errors='ignore')): copyres(p)
-print('SELECTED',len(sel),'RESOURCES',len(copied))
+print('SELECTED',len(sel),'RESOURCES',len(copied),'SKIPPED_EXISTING_RESOURCES',len(skipped))
 for p in sorted(sel): print('SRC',p.relative_to(C))
 for p in sorted(copied): print('RES',p.relative_to(C/'res'))
+for p in sorted(skipped): print('SKIP',p.relative_to(C/'res'))
