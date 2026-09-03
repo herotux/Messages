@@ -20,6 +20,7 @@ import org.fossify.messages.helpers.BankCardsCrashLogger
 import org.fossify.messages.helpers.ConversationFolderManager
 import org.fossify.messages.helpers.MessagingCache
 import org.fossify.messages.helpers.PersianThreadFontInstaller
+import org.fossify.messages.helpers.TapsellAds
 
 class App : FossifyApp() {
     override val isAppLockFeatureAvailable = true
@@ -27,6 +28,7 @@ class App : FossifyApp() {
     override fun onCreate() {
         super.onCreate()
         BankCardsCrashLogger.install(this)
+        TapsellAds.initialize()
         registerActivityLifecycleCallbacks(folderUiLifecycleCallbacks)
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(ContactsContract.Contacts.CONTENT_URI, ContactsContract.Data.CONTENT_URI, ContactsContract.DisplayPhoto.CONTENT_URI).forEach {
@@ -44,8 +46,10 @@ class App : FossifyApp() {
                 activity.findViewById<android.view.View>(R.id.folder_tabs)?.visibility =
                     if (ConversationFolderManager.areFoldersVisible(activity)) android.view.View.VISIBLE else android.view.View.GONE
                 BankAccountsFeature.installPersianFonts(activity)
+                TapsellAds.showBanner(activity)
             }
             if (activity is ThreadActivity) {
+                TapsellAds.hideBanner()
                 BankAccountsFeature.installMessageCardLinks(activity)
                 BankAccountsFeature.installPersianFonts(activity)
                 PersianThreadFontInstaller.install(activity)
