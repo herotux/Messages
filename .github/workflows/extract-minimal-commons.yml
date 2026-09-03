@@ -16,6 +16,7 @@ jobs:
           rm -rf /tmp/commons
           git clone --quiet https://github.com/herotux/commons.git /tmp/commons
           git -C /tmp/commons checkout --quiet 5fe79e3f1ccd62c1905f73281370e1641baaf6db
+
           # Remove the external Commons dependency first. The generated vendor tree must build standalone.
           python3 - <<'PY'
           from pathlib import Path
@@ -30,13 +31,34 @@ jobs:
           s = re.sub(r'^fossify-commons\s*=.*\n', '', s, flags=re.M)
           p.write_text(s)
           PY
+
           python3 tools/extract_minimal_commons.py
-          rm -f tools/extract_minimal_commons.py .github/workflows/inspect-commons.yml
+
+          # Messages owns the Iranian bank logos. Android treats bank_sina.xml and
+          # bank_sina.png as the same drawable resource, so every bank PNG except
+          # the intentionally retained Sepah PNG must be removed before the build.
+          # Operator PNGs are not named bank_* and are therefore untouched.
+          find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
+
+          # The bank logo invariant is:
+          #   bank_sepah.png = the only bank PNG
+          #   all other bank logos = VectorDrawable XML
+          test -f app/src/main/res/drawable/bank_sepah.png
+          test -f app/src/main/res/drawable/bank_sina.xml
+          test ! -e app/src/main/res/drawable/bank_sina.png
+          test -f app/src/main/res/drawable/bank_tosee_taavon.xml
+          test ! -e app/src/main/res/drawable/bank_tosee_taavon.png
+
           ./gradlew :app:compileCoreDebugKotlin --no-daemon --stacktrace
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add app/src/main app/build.gradle.kts gradle/libs.versions.toml tools/extract_minimal_commons.py .github/workflows/inspect-commons.yml
+          git add app/src/main app/build.gradle.kts gradle/libs.versions.toml
           git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
           git commit -m 'refactor: vendor only used Fossify Commons code'
           git pull --rebase origin chore/minimal-commons
           git push origin HEAD:chore/minimal-commons
