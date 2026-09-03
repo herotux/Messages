@@ -1,0 +1,15 @@
+name: Inspect Commons Usage
+on:
+  push:
+    branches: [chore/minimal-commons]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: List Commons imports
+        run: |
+          echo '--- IMPORTS ---'
+          git grep -n 'org\.fossify\.commons' -- 'app/**/*.kt' 'app/**/*.java' || true
+          echo '--- LOCAL COMMONS FILES ---'
+          find app/src -path '*org/fossify/commons*' -type f -print | sort
