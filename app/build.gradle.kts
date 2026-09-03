@@ -130,7 +130,9 @@ android {
         )
     }
 
-    namespace = project.property("APP_ID").toString()
+    // Keep the app module's source/BuildConfig namespace stable.
+    // The installed Android application ID is controlled independently by APP_ID.
+    namespace = "org.fossify.messages"
 
     lint {
         checkReleaseBuilds = false
