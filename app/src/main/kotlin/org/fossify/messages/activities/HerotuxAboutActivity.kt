@@ -102,19 +102,34 @@ class HerotuxAboutActivity : SimpleActivity() {
         }
         content.addView(card, cardParams)
 
-        val source = TextView(this).apply {
-            text = "View project on GitHub"
-            textSize = 15f
+        val contact = TextView(this).apply {
+            text = "اطلاعات تماس\nContact information"
+            textSize = 16f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             setTextColor(primaryColor)
             gravity = Gravity.CENTER
             setPadding(dp(12), dp(22), dp(12), dp(12))
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/herotux/Messages")))
+                startActivity(Intent(this@HerotuxAboutActivity, ContactInfoActivity::class.java))
             }
         }
-        content.addView(source, LinearLayout.LayoutParams(-1, -2))
+        content.addView(contact, LinearLayout.LayoutParams(-1, -2))
+
+        val website = TextView(this).apply {
+            text = "herotux.github.io"
+            textSize = 14f
+            setTextColor(primaryColor)
+            gravity = Gravity.CENTER
+            setPadding(dp(12), dp(8), dp(12), dp(12))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://herotux.github.io")))
+            }
+        }
+        content.addView(website, LinearLayout.LayoutParams(-1, -2))
 
         val footer = TextView(this).apply {
             text = "HEROTUX · Software Development"
