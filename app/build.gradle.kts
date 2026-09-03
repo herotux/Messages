@@ -24,6 +24,11 @@ fun hasSigningVars(): Boolean {
             && providers.environmentVariable("SIGNING_STORE_PASSWORD").orNull != null
 }
 
+fun buildConfigStringFromEnv(name: String): String {
+    val value = providers.environmentVariable(name).orNull ?: ""
+    return "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+}
+
 base {
     val versionCode = project.property("VERSION_CODE").toString().toInt()
     archivesName = "messages-$versionCode"
@@ -44,6 +49,9 @@ android {
         targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
         versionName = project.property("VERSION_NAME").toString()
         versionCode = project.property("VERSION_CODE").toString().toInt()
+
+        buildConfigField("String", "TAPSELL_APP_KEY", buildConfigStringFromEnv("TAPSELL_APP_KEY"))
+        buildConfigField("String", "TAPSELL_BANNER_ZONE", buildConfigStringFromEnv("TAPSELL_BANNER_ZONE"))
     }
 
     signingConfigs {
@@ -164,6 +172,7 @@ dependencies {
     implementation(libs.bundles.room)
     implementation(libs.zxing)
     implementation(libs.mlkit.text.recognition)
+    implementation(libs.tapsell.plus)
     ksp(libs.androidx.room.compiler)
     detektPlugins(libs.compose.detekt)
     testImplementation("junit:junit:4.13.2")
