@@ -13,3 +13,4 @@ jobs:
           git grep -n 'org\.fossify\.commons' -- 'app/**/*.kt' 'app/**/*.java' || true
           echo '--- LOCAL COMMONS FILES ---'
           find app/src -path '*org/fossify/commons*' -type f -print | sort
+          echo '--- DONE ---'
