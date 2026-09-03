@@ -1,4 +1,4 @@
-name: Extract Minimal Commons
+name: Build Minimal Commons
 on:
   push:
     branches: [chore/minimal-commons]
@@ -21,7 +21,7 @@ jobs:
           from pathlib import Path
           import re
           p=Path('app/build.gradle.kts'); s=p.read_text(); s=s.replace('        implementation(libs.fossify.commons)\n\n',''); p.write_text(s)
-          p=Path('gradle/libs.versions.toml'); s=p.read_text(); s=re.sub(r'^commons\\s*=.*\\n','',s,flags=re.M); s=re.sub(r'^fossify-commons\\s*=.*\\n','',s,flags=re.M); p.write_text(s)
+          p=Path('gradle/libs.versions.toml'); s=p.read_text(); s=re.sub(r'^commons\s*=.*\n','',s,flags=re.M); s=re.sub(r'^fossify-commons\s*=.*\n','',s,flags=re.M); p.write_text(s)
           PY
           rm -f tools/extract_minimal_commons.py .github/workflows/inspect-commons.yml .github/workflows/extract-minimal-commons.yml
           ./gradlew :app:compileCoreDebugKotlin --no-daemon --stacktrace
