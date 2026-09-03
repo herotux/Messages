@@ -2,14 +2,13 @@ package org.fossify.messages.helpers
 
 import android.app.Activity
 import android.util.Log
+import org.fossify.messages.BuildConfig
 import java.lang.reflect.Proxy
 
 /**
  * Small, fail-safe Tapsell Plus integration.
- *
  * Credentials are injected at build time through TAPSELL_APP_KEY and
  * TAPSELL_BANNER_ZONE environment variables. Empty values disable ads.
- * Reflection keeps the app resilient to minor SDK API changes.
  */
 object TapsellAds {
     private const val TAG = "TapsellAds"
@@ -33,24 +32,22 @@ object TapsellAds {
 
         try {
             val tapsell = Class.forName("ir.tapsell.plus.TapsellPlus")
-            val bannerType = Class.forName("ir.tapsell.plus.model.AdNetworkInfo")
-            val bannerTypeEnum = findBannerType(tapsell.classLoader)
-                ?: findEnumConstant("ir.tapsell.plus.enums.BannerType", "BANNER_320x50")
+            val bannerType = findEnumConstant("ir.tapsell.plus.enums.BannerType", "BANNER_320x50")
+                ?: findEnumConstant("ir.tapsell.plus.BannerType", "BANNER_320x50")
                 ?: return
-
-            val gravity = android.view.Gravity::class.java
-            val methods = tapsell.methods.filter { it.name == "showBannerAd" && it.parameterTypes.size == 6 }
-            val method = methods.firstOrNull() ?: return
+            val method = tapsell.methods.firstOrNull {
+                it.name == "showBannerAd" && it.parameterTypes.size == 6
+            } ?: return
 
             val args = arrayOfNulls<Any>(6)
             args[0] = BuildConfig.TAPSELL_BANNER_ZONE
-            args[1] = bannerTypeEnum
+            args[1] = bannerType
             args[2] = android.view.Gravity.BOTTOM
             args[3] = android.view.Gravity.CENTER
             args[4] = createCallback(method.parameterTypes[4])
             args[5] = createCallback(method.parameterTypes[5])
 
-            if (method.parameterTypes[4] == Int::class.javaPrimitiveType || method.parameterTypes[5] == Int::class.javaPrimitiveType) return
+            if (args[4] == null || args[5] == null) return
             method.invoke(null, *args)
         } catch (e: Exception) {
             Log.w(TAG, "Tapsell banner failed", e)
@@ -64,11 +61,6 @@ object TapsellAds {
                 .invoke(null)
         } catch (_: Exception) {
         }
-    }
-
-    private fun findBannerType(classLoader: ClassLoader?): Any? {
-        return findEnumConstant("ir.tapsell.plus.enums.BannerType", "BANNER_320x50")
-            ?: findEnumConstant("ir.tapsell.plus.BannerType", "BANNER_320x50")
     }
 
     private fun findEnumConstant(className: String, constant: String): Any? {
