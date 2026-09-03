@@ -19,7 +19,14 @@ import org.fossify.messages.BuildConfig
 class HerotuxAboutActivity : SimpleActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent.getBooleanExtra(EXTRA_CONTACT_PAGE, false)) {
+            renderContactPage()
+        } else {
+            renderAboutPage()
+        }
+    }
 
+    private fun renderAboutPage() {
         val backgroundColor = getProperBackgroundColor()
         val textColor = getProperTextColor()
         val primaryColor = getProperPrimaryColor()
@@ -88,19 +95,12 @@ class HerotuxAboutActivity : SimpleActivity() {
             setCardBackgroundColor(backgroundColor)
         }
 
-        val cardText = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
+        val cardText = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         cardText.addView(infoText("About this edition", 17f, true, textColor))
         cardText.addView(infoText("A lightweight and privacy-focused SMS and MMS messaging application developed and maintained by HEROTUX.", 15f, false, textColor))
         cardText.addView(infoText("Version ${BuildConfig.VERSION_NAME}", 14f, false, textColor))
-
         card.addView(cardText)
-        val cardParams = LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(28)
-        }
-        content.addView(card, cardParams)
+        content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(28) })
 
         val contact = TextView(this).apply {
             text = "اطلاعات تماس\nContact information"
@@ -112,7 +112,7 @@ class HerotuxAboutActivity : SimpleActivity() {
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                startActivity(Intent(this@HerotuxAboutActivity, ContactInfoActivity::class.java))
+                startActivity(Intent(this@HerotuxAboutActivity, HerotuxAboutActivity::class.java).putExtra(EXTRA_CONTACT_PAGE, true))
             }
         }
         content.addView(contact, LinearLayout.LayoutParams(-1, -2))
@@ -143,9 +143,96 @@ class HerotuxAboutActivity : SimpleActivity() {
 
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
         setContentView(root)
         updateTextColors(root)
+    }
+
+    private fun renderContactPage() {
+        val backgroundColor = getProperBackgroundColor()
+        val textColor = getProperTextColor()
+        val primaryColor = getProperPrimaryColor()
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(backgroundColor)
+        }
+        val toolbar = Toolbar(this).apply {
+            title = "اطلاعات تماس"
+            setTitleTextColor(textColor)
+            navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
+            setNavigationOnClickListener { finish() }
+        }
+        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(56)))
+
+        val scroll = ScrollView(this).apply { setPadding(dp(20), dp(20), dp(20), dp(28)) }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = android.view.View.LAYOUT_DIRECTION_RTL
+            textDirection = android.view.View.TEXT_DIRECTION_RTL
+        }
+
+        content.addView(TextView(this).apply {
+            text = "ارتباط با HEROTUX"
+            textSize = 24f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            setTextColor(textColor)
+            gravity = Gravity.CENTER
+        }, LinearLayout.LayoutParams(-1, -2))
+        content.addView(TextView(this).apply {
+            text = "برای پشتیبانی، پیشنهادها و گزارش مشکلات با ما در تماس باشید."
+            textSize = 14f
+            setTextColor(textColor)
+            alpha = 0.75f
+            gravity = Gravity.CENTER
+            setPadding(0, dp(8), 0, dp(24))
+        }, LinearLayout.LayoutParams(-1, -2))
+
+        contactCard(content, "ایمیل", "thefreetux@gmail.com", primaryColor, textColor) {
+            startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:thefreetux@gmail.com")))
+        }
+        contactCard(content, "تلفن پشتیبانی", "09375647544", primaryColor, textColor) {
+            startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:09375647544")))
+        }
+        contactCard(content, "وب‌سایت", "herotux.github.io", primaryColor, textColor) {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://herotux.github.io")))
+        }
+
+        scroll.addView(content)
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        setContentView(root)
+        updateTextColors(root)
+    }
+
+    private fun contactCard(root: LinearLayout, label: String, value: String, primaryColor: Int, textColor: Int, onClick: () -> Unit) {
+        val card = MaterialCardView(this).apply {
+            radius = dp(18).toFloat()
+            cardElevation = 0f
+            strokeWidth = dp(1)
+            strokeColor = primaryColor
+            setCardBackgroundColor(getProperBackgroundColor())
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onClick() }
+        }
+        val text = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(14), dp(18), dp(14))
+        }
+        text.addView(TextView(this).apply {
+            this.text = label
+            textSize = 13f
+            setTextColor(textColor)
+            alpha = 0.7f
+        })
+        text.addView(TextView(this).apply {
+            this.text = value
+            textSize = 17f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            setTextColor(primaryColor)
+            setPadding(0, dp(4), 0, 0)
+        })
+        card.addView(text)
+        root.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
     }
 
     private fun infoText(text: String, size: Float, bold: Boolean, color: Int): TextView =
@@ -158,4 +245,8 @@ class HerotuxAboutActivity : SimpleActivity() {
         }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    companion object {
+        private const val EXTRA_CONTACT_PAGE = "contact_page"
+    }
 }
