@@ -38,13 +38,19 @@ for p in sel:
 need=set()
 for t in texts+[manifest]+[p.read_text(errors='ignore') for p in sel]: need |= set(re.findall(r'org\.fossify\.commons\.R\.(\w+)\.(\w+)',t))
 res=list((C/'res').rglob('*')); copied=set(); skipped=set()
+# Android resource identity is type + filename stem, not the full filename.
+# Therefore bank_sina.png and bank_sina.xml are the same drawable resource.
+existing_keys=set()
+for p in (DEST/'res').rglob('*'):
+ if p.is_file() and p.parent.name.startswith(('drawable','mipmap','layout','xml')):
+  existing_keys.add((p.parent.name.split('-')[0], p.stem))
+
 def copyres(p):
  out=DEST/'res'/p.relative_to(C/'res')
- # Never overwrite an existing app resource. Messages may intentionally provide
- # its own implementation (bank drawables, customized strings, etc.).
- if out.exists():
+ key=(p.parent.name.split('-')[0], p.stem)
+ if out.exists() or key in existing_keys:
   skipped.add(p); return
- out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p)
+ out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p); existing_keys.add(key)
 for typ,name in need:
  for p in res:
   if not p.is_file(): continue
