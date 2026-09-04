@@ -38,11 +38,6 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
       - name: Restore release keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -50,22 +45,6 @@ jobs:
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$SIGNING_STORE_FILE"
           chmod 600 "$SIGNING_STORE_FILE"
           test -s "$SIGNING_STORE_FILE"
-
-      - name: Import bank VectorDrawable resources
-        run: |
-          find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
-          for logo in \
-            bank_saderat bank_mellat bank_tejarat bank_melli bank_keshavarzi \
-            bank_parsian bank_maskan bank_refah bank_eghtesad_novin bank_pasargad \
-            bank_saman bank_sina bank_post bank_tosee_taavon bank_shahr bank_ayandeh \
-            bank_sarmayeh bank_dey bank_khavar_mianeh bank_iran_zamin bank_karafarin \
-            bank_gardeshgari bank_sanat_madan bank_tosee_saderat bank_iran_venezuela \
-            bank_resalat bank_melal; do
-            rm -f "app/src/main/res/drawable/${logo}.xml"
-          done
-          python3 tools/import_iranian_bank_logos.py
-          test -f app/src/main/res/drawable/bank_sepah.png
-          test -f app/src/main/res/drawable/bank_card_scan_frame.xml
 
       - name: Normalize standalone Settings Material color attribute
         run: |
