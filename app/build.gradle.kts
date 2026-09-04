@@ -130,8 +130,6 @@ android {
         )
     }
 
-    // Keep the app module's source/BuildConfig namespace stable.
-    // The installed Android application ID is controlled independently by APP_ID.
     namespace = "org.fossify.messages"
 
     lint {
@@ -174,6 +172,9 @@ dependencies {
     implementation(libs.zxing)
     implementation(libs.mlkit.text.recognition)
     implementation(libs.tapsell.plus)
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation("com.google.android.material:material:1.13.0")
+    implementation("joda-time:joda-time:2.14.0")
     ksp(libs.androidx.room.compiler)
     detektPlugins(libs.compose.detekt)
     testImplementation("junit:junit:4.13.2")
