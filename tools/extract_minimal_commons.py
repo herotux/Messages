@@ -13,7 +13,14 @@ for p in src:
  t=p.read_text(errors='ignore'); m=re.search(r'^\s*package\s+([\w.]+)',t,re.M)
  if not m: continue
  pkg=m.group(1); by_pkg.setdefault(pkg,[]).append(p)
- decl[p]=set(re.findall(r'^\s*(?:public\s+|private\s+|internal\s+|protected\s+|data\s+|sealed\s+|open\s+|abstract\s+|enum\s+|value\s+|annotation\s+)*(?:class|interface|object|typealias|fun|val|var)\s+([A-Za-z_]\w*)',t,re.M))
+ # Match normal and extension declarations. The old expression only matched
+ # `fun name(...)`; Commons contains many extension declarations such as
+ # `fun Cursor.getLongValue(...)`, so those were silently omitted from the
+ # extracted subset and surfaced as unresolved references in the app.
+ decl[p]=set(re.findall(
+     r'^\s*(?:(?:public|private|internal|protected|data|sealed|open|abstract|enum|value|annotation|suspend|inline|infix|operator|tailrec)\s+)*(?:class|interface|object|typealias|fun|val|var)\s+(?:[\w.<>?,\[\]]+\.)?([A-Za-z_]\w*)',
+     t, re.M
+ ))
 sel=set(); q=[]
 def add(p):
  if p not in sel: sel.add(p); q.append(p)
