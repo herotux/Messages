@@ -34,15 +34,10 @@ jobs:
 
           python3 tools/extract_minimal_commons.py
 
-          # Messages owns the Iranian bank logos. Android treats bank_sina.xml and
-          # bank_sina.png as the same drawable resource, so every bank PNG except
-          # the intentionally retained Sepah PNG must be removed before the build.
-          # Operator PNGs are not named bank_* and are therefore untouched.
+          # Bank logos are permanent Messages source resources. They are NOT downloaded,
+          # converted, or regenerated in CI. Keep Sepah as PNG; all other bank logos
+          # must be VectorDrawable XML. Operator PNGs are unrelated and untouched.
           find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
-
-          # The bank logo invariant is:
-          #   bank_sepah.png = the only bank PNG
-          #   all other bank logos = VectorDrawable XML
           test -f app/src/main/res/drawable/bank_sepah.png
           test -f app/src/main/res/drawable/bank_sina.xml
           test ! -e app/src/main/res/drawable/bank_sina.png
