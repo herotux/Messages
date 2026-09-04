@@ -27,6 +27,17 @@ for t in texts+[manifest]:
  for pkg in re.findall(r'^\s*import\s+(org\.fossify\.commons\.[\w.]+)\.\*',t,re.M):
   for p in by_pkg.get(pkg,[]):
    if any(re.search(r'\b'+re.escape(n)+r'\b',t) for n in decl[p]): add(p)
+
+# SimpleActivity in Messages inherits BaseSimpleActivity, whose superclass
+# EdgeToEdgeActivity is in the same Commons package and therefore has no import.
+# Seed these roots explicitly; recursive imports below then pull their actual
+# transitive dependencies without vendoring unrelated Commons activities.
+for root in ('BaseSimpleActivity.kt', 'EdgeToEdgeActivity.kt'):
+ for p in src:
+  if p.stem == Path(root).stem and p.parent.name == 'activities':
+   add(p)
+   break
+
 while q:
  p=q.pop(); t=p.read_text(errors='ignore')
  for imp in imports(t): resolve(imp,t)
