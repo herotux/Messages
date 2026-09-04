@@ -165,7 +165,7 @@ tasks.named("preBuild") {
 }
 
 detekt {
-    baseline = file("detekt-baseline.yml")
+    baseline = file("detekt-baseline.xml")
     config.setFrom("$rootDir/detekt.yml")
     buildUponDefaultConfig = true
     allRules = false
