@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 """Run the previous Commons finisher with the binding-name bug corrected."""
 from pathlib import Path
+import os
 import subprocess
+
+# Actions checkout uses a shallow clone by default, so HEAD^ is not available.
+# Deepen the current branch by one commit before reading the previous finisher.
+subprocess.run(
+    ["git", "fetch", "--deepen=1", "origin", os.environ["GITHUB_REF_NAME"]],
+    check=True,
+)
 
 # The previous revision is kept in the parent commit.  Its binding regex
 # already captures the class name without the trailing 'Binding', so slicing
