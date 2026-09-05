@@ -1,9 +1,6 @@
 package org.fossify.messages.helpers
 
 import android.app.Activity
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
-import android.view.View
 import android.view.ViewGroup
 import org.fossify.messages.R
 
@@ -41,17 +38,15 @@ object BackgroundThemeManager {
     }
 
     fun apply(activity: Activity) {
+        val selected = selectedId(activity)
+        if (selected == NONE) return
         val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
         val root = if (content.childCount == 1 && content.getChildAt(0) is ViewGroup) content.getChildAt(0) as ViewGroup else content
-        applyToRoot(root, selectedId(activity))
+        applyToRoot(root, selected)
     }
 
     fun applyToRoot(root: ViewGroup, themeId: String) {
-        val theme = themes.firstOrNull { it.id == themeId } ?: themes.first()
-        if (theme.drawable == 0) {
-            root.background = ColorDrawable(Color.TRANSPARENT)
-        } else {
-            root.setBackgroundResource(theme.drawable)
-        }
+        val theme = themes.firstOrNull { it.id == themeId } ?: return
+        if (theme.drawable != 0) root.setBackgroundResource(theme.drawable)
     }
 }
