@@ -12,7 +12,6 @@ jobs:
   extract:
     if: ${{ !contains(github.event.head_commit.message, 'vendor only used Fossify Commons code') }}
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -28,13 +27,15 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
-          p = Path("app/build.gradle.kts")
+          p = Path('app/build.gradle.kts')
           s = p.read_text()
           s = re.sub(r'^\s*implementation\(libs\.fossify\.commons\)\s*\n', '', s, flags=re.M)
+          # Kotlin 2.4 replaced legacy context receivers with context parameters.
+          # The only Commons helper is migrated below, so this obsolete compiler
+          # flag must not remain enabled.
+          s = re.sub(r'^\s*"-Xcontext-receivers"\s*,?\s*\n', '', s, flags=re.M)
           p.write_text(s)
-
-          p = Path("gradle/libs.versions.toml")
+          p = Path('gradle/libs.versions.toml')
           s = p.read_text()
           s = re.sub(r'^commons\s*=.*\n', '', s, flags=re.M)
           s = re.sub(r'^fossify-commons\s*=.*\n', '', s, flags=re.M)
@@ -44,142 +45,100 @@ jobs:
           python3 tools/extract_minimal_commons.py
           python3 tools/finish_minimal_commons.py
 
-          # Kotlin 2.4 no longer enables legacy context receivers by default.
-          # The pinned Commons revision only needs this helper as a normal
-          # SharedPreferences extension, so rewrite it without the experimental
-          # context-receiver syntax.
           python3 - <<'PY'
           from pathlib import Path
+          import xml.etree.ElementTree as ET
 
-          p = Path("app/src/main/kotlin/org/fossify/commons/extensions/SharedPreferencesProducerExtensions.kt")
+          # Migrate the legacy Commons context receiver to a normal extension.
+          p = Path('app/src/main/kotlin/org/fossify/commons/extensions/SharedPreferencesProducerExtensions.kt')
           if p.exists():
               s = p.read_text()
-              s = s.replace(
-                  "context(sharedPreferences: SharedPreferences)\nfun <T> sharedPreferencesCallback(",
-                  "fun <T> SharedPreferences.sharedPreferencesCallback("
-              )
-              s = s.replace(
-                  "sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferencesListener)",
-                  "registerOnSharedPreferenceChangeListener(sharedPreferencesListener)"
-              )
-              s = s.replace(
-                  "sharedPreferences.unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)",
-                  "unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)"
-              )
+              s = s.replace('context(sharedPreferences: SharedPreferences)\nfun <T> sharedPreferencesCallback(', 'fun <T> SharedPreferences.sharedPreferencesCallback(')
+              s = s.replace('sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferencesListener)', 'registerOnSharedPreferenceChangeListener(sharedPreferencesListener)')
+              s = s.replace('sharedPreferences.unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)', 'unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)')
               p.write_text(s)
-          PY
 
-          # Android style names may contain dots in XML, while generated R
-          # identifiers contain underscores. The resource resolver intentionally
-          # handles simple names, so vendor the complete Commons styles file when
-          # any Commons style is needed. This also preserves transitive style
-          # parents and theme references such as AppTheme.Base.System.Light.
-          python3 - <<'PY'
-          from pathlib import Path
-          import shutil
+          # The extractor cannot represent Android style names containing dots
+          # as R identifiers during dependency discovery. Merge the complete
+          # Commons styles into the app-owned styles.xml so Android generates all
+          # required org.fossify.messages.R.style.* fields.
+          src = Path('/tmp/commons/commons/src/main/res/values/styles.xml')
+          dst = Path('app/src/main/res/values/styles.xml')
+          if not src.exists():
+              raise SystemExit('Commons styles.xml is missing')
 
-          src = Path("/tmp/commons/commons/src/main/res/values/styles.xml")
-          dst = Path("app/src/main/res/values/styles.xml")
-          if src.exists() and not dst.exists():
-              dst.parent.mkdir(parents=True, exist_ok=True)
-              shutil.copy2(src, dst)
-              print("COMMONS_STYLES_VENDORED")
-          elif dst.exists():
-              print("COMMONS_STYLES_ALREADY_PRESENT")
+          src_root = ET.parse(src).getroot()
+          if dst.exists():
+              dst_root = ET.parse(dst).getroot()
+              existing = {c.attrib.get('name') for c in dst_root if c.attrib.get('name')}
+              for child in list(src_root):
+                  name = child.attrib.get('name')
+                  if name and name not in existing:
+                      dst_root.append(child)
+                      existing.add(name)
+              ET.ElementTree(dst_root).write(dst, encoding='utf-8', xml_declaration=True)
           else:
-              raise SystemExit("Commons styles.xml is missing")
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              ET.ElementTree(src_root).write(dst, encoding='utf-8', xml_declaration=True)
+          print('COMMONS_STYLES_MERGED')
           PY
 
-          # The extractor can merge a Commons value into a locale file that is
-          # already owned by Messages. Keep the existing app resource and remove
-          # duplicate definitions deterministically before Gradle sees them.
+          # Remove duplicate value resources across files in the same values
+          # directory, preferring an already tracked app resource.
           python3 - <<'PY'
           from pathlib import Path
           import subprocess
           import xml.etree.ElementTree as ET
 
-          RES = Path("app/src/main/res")
-          tracked = {
-              Path(x) for x in subprocess.check_output(
-                  ["git", "ls-files", "app/src/main/res"], text=True
-              ).splitlines()
-          }
+          RES = Path('app/src/main/res')
+          tracked = {Path(x) for x in subprocess.check_output(['git','ls-files','app/src/main/res'], text=True).splitlines()}
 
           def key(node):
-              tag = node.tag.split("}")[-1]
-              if tag == "item" and node.attrib.get("type"):
-                  tag = node.attrib["type"]
-              if tag == "declare-styleable":
-                  tag = "styleable"
-              return tag, node.attrib.get("name")
+              tag = node.tag.split('}')[-1]
+              if tag == 'item' and node.attrib.get('type'):
+                  tag = node.attrib['type']
+              if tag == 'declare-styleable':
+                  tag = 'styleable'
+              return tag, node.attrib.get('name')
 
-          for directory in sorted(RES.glob("values*")):
+          for directory in sorted(RES.glob('values*')):
               if not directory.is_dir():
                   continue
-
               owners = {}
-              for path in sorted(directory.glob("*.xml")):
-                  try:
-                      root = ET.parse(path).getroot()
-                  except Exception:
-                      continue
+              for path in sorted(directory.glob('*.xml')):
+                  try: root = ET.parse(path).getroot()
+                  except Exception: continue
                   for node in list(root):
                       k = key(node)
-                      if k[1]:
-                          owners.setdefault(k, []).append(path)
-
+                      if k[1]: owners.setdefault(k, []).append(path)
               for k, paths in owners.items():
-                  if len(paths) < 2:
-                      continue
-
-                  tracked_paths = [p for p in paths if p in tracked]
-                  keep = sorted(tracked_paths or paths)[0]
-
+                  if len(paths) < 2: continue
+                  keep = sorted([p for p in paths if p in tracked] or paths)[0]
                   for path in paths:
-                      if path == keep:
-                          continue
+                      if path == keep: continue
                       try:
                           root = ET.parse(path).getroot()
-                          changed = False
                           for node in list(root):
-                              if key(node) == k:
-                                  root.remove(node)
-                                  changed = True
-                          if not changed:
-                              continue
-                          if list(root):
-                              ET.ElementTree(root).write(
-                                  path, encoding="utf-8", xml_declaration=True
-                              )
-                          else:
-                              path.unlink()
-                      except Exception:
-                          pass
+                              if key(node) == k: root.remove(node)
+                          if list(root): ET.ElementTree(root).write(path, encoding='utf-8', xml_declaration=True)
+                          else: path.unlink()
+                      except Exception: pass
 
           duplicates = []
-          for directory in sorted(RES.glob("values*")):
-              if not directory.is_dir():
-                  continue
+          for directory in sorted(RES.glob('values*')):
+              if not directory.is_dir(): continue
               seen = {}
-              for path in sorted(directory.glob("*.xml")):
-                  try:
-                      root = ET.parse(path).getroot()
-                  except Exception:
-                      continue
+              for path in sorted(directory.glob('*.xml')):
+                  try: root = ET.parse(path).getroot()
+                  except Exception: continue
                   for node in list(root):
                       k = key(node)
-                      if k[1]:
-                          seen.setdefault(k, []).append(path)
-              for k, paths in seen.items():
-                  if len(paths) > 1:
-                      duplicates.append((directory.name, k, [p.name for p in paths]))
-
+                      if k[1]: seen.setdefault(k, []).append(path.name)
+              duplicates.extend((directory.name, k, v) for k,v in seen.items() if len(v) > 1)
           if duplicates:
-              for item in duplicates[:50]:
-                  print("DUPLICATE_RESOURCE", item)
-              raise SystemExit(f"Found {len(duplicates)} duplicate Android resources")
-
-          print("VALUES_DEDUP_OK")
+              for d in duplicates[:50]: print('DUPLICATE_RESOURCE', d)
+              raise SystemExit(f'Found {len(duplicates)} duplicate Android resources')
+          print('VALUES_DEDUP_OK')
           PY
 
           find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
@@ -194,12 +153,10 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add app/src/main tools/finish_minimal_commons.py app/build.gradle.kts gradle/libs.versions.toml .github/workflows/extract-minimal-commons.yml
-
           if git diff --cached --quiet; then
             echo 'No generated changes to commit.'
             exit 0
           fi
-
           git commit -m 'vendor only used Fossify Commons code'
           git pull --rebase origin chore/minimal-commons
           git push origin HEAD:chore/minimal-commons
