@@ -4,7 +4,7 @@ import re, shutil
 import xml.etree.ElementTree as ET
 
 ROOT=Path.cwd(); C=Path('/tmp/commons/commons/src/main'); DEST=ROOT/'app/src/main'
-app=list((DEST/'kotlin').rglob('*.kt'))+list((DEST/'kotlin').rglob('*.java'))
+app=list((DEST/'kotlin').rglob('*.kt'))+list((DEST/'java').rglob('*.java'))
 texts=[p.read_text(errors='ignore') for p in app]
 manifest=(DEST/'AndroidManifest.xml').read_text(errors='ignore') if (DEST/'AndroidManifest.xml').exists() else ''
 src=list((C/'kotlin').rglob('*.kt'))+list((C/'java').rglob('*.java'))
@@ -69,25 +69,10 @@ for p in sel:
     base=C/'kotlin' if (C/'kotlin') in p.parents else C/'java'; out=DEST/('kotlin' if base.name=='kotlin' else 'java')/p.relative_to(base)
     out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out)
 
-need=set()
-for t in texts+[manifest]+[p.read_text(errors='ignore') for p in sel]:
-    need |= set(re.findall(r'org\.fossify\.commons\.R\.(\w+)\.(\w+)',t))
-
-# ViewBinding/DataBinding references do not appear as R.layout references.
-# Derive the corresponding layout names, e.g. ActivityAppLockBinding -> activity_app_lock.
-binding_layouts=set()
-for t in [p.read_text(errors='ignore') for p in sel]:
-    for cls in re.findall(r'\b([A-Z][A-Za-z0-9_]*)Binding\b',t):
-        name=cls[:-7]
-        snake=re.sub(r'(?<!^)([A-Z])',r'_\1',name).lower()
-        binding_layouts.add(snake)
-
 res=list((C/'res').rglob('*')); copied=set(); skipped=set()
 
 def is_app_owned_bank_resource(p):
     return p.is_file() and p.stem.startswith('bank_')
-
-VALUES_TAGS={'item','string','color','dimen','style','attr','declare-styleable','plurals','string-array','integer-array','bool','integer','fraction'}
 
 def values_children(path):
     try:
@@ -95,9 +80,6 @@ def values_children(path):
         return root, list(root)
     except Exception:
         return None, []
-
-def resource_key(p):
-    return (p.parent.name.split('-')[0], p.stem)
 
 def child_key(child):
     tag=child.tag.split('}')[-1]
@@ -131,25 +113,103 @@ def merge_values_resource(p, wanted):
         copied.add(p)
 
 def copyres(p):
-    if is_app_owned_bank_resource(p): skipped.add(p); return
+    if is_app_owned_bank_resource(p): skipped.add(p); return False
     out=DEST/'res'/p.relative_to(C/'res')
-    if out.exists(): skipped.add(p); return
-    out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p)
+    if out.exists(): skipped.add(p); return False
+    out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p); return True
 
-# Copy only the Commons resources actually referenced by the selected code.
-for typ,name in need:
+# Resource references in selected Commons code. Both fully-qualified Commons R
+# and the normal unqualified R are supported because these files live in the
+# org.fossify.commons package.
+need=set()
+for t in [p.read_text(errors='ignore') for p in sel]:
+    need |= set(re.findall(r'(?:(?:org\.fossify\.commons\.)?R)\.(\w+)\.(\w+)',t))
+
+# ViewBinding/DataBinding references may originate in app code while their
+# layouts live in Commons. Only copy the layout when the app does not already
+# provide it, so app-owned layouts always win.
+binding_layouts=set()
+for t in texts+[p.read_text(errors='ignore') for p in sel]:
+    for cls in re.findall(r'\b([A-Z][A-Za-z0-9_]*)Binding\b',t):
+        name=cls[:-7]
+        snake=re.sub(r'(?<!^)([A-Z])',r'_\1',name).lower()
+        binding_layouts.add(snake)
+
+# Track resource references discovered inside copied XML so that a layout's
+# own strings/dimens/drawables/ids are brought in as well.
+queue=list(need)
+seen=set()
+
+while queue:
+    typ,name=queue.pop()
+    key=(typ,name)
+    if key in seen: continue
+    seen.add(key)
+
     for p in res:
         if not p.is_file() or is_app_owned_bank_resource(p): continue
         if p.parent.name.startswith('values'):
-            merge_values_resource(p,{(typ,name)})
-        elif typ in ('layout','drawable','mipmap','xml') and p.stem==name:
-            copyres(p)
+            before=len(copied)
+            merge_values_resource(p,{key})
+            if len(copied)>before:
+                out=DEST/'res'/p.relative_to(C/'res')
+                if out.exists():
+                    try:
+                        xml=out.read_text(errors='ignore')
+                        queue.extend(re.findall(r'@(?:(?:\+)?)(string|color|dimen|drawable|mipmap|layout|xml|menu|style|font|array|plurals|integer|bool|fraction|id)/([A-Za-z0-9_]+)',xml))
+                    except Exception:
+                        pass
+        elif typ in ('layout','drawable','mipmap','xml','menu','font','raw','anim','animator') and p.stem==name:
+            if copyres(p):
+                try:
+                    xml=p.read_text(errors='ignore')
+                    queue.extend(re.findall(r'@(?:(?:\+)?)(string|color|dimen|drawable|mipmap|layout|xml|menu|style|font|array|plurals|integer|bool|fraction|id)/([A-Za-z0-9_]+)',xml))
+                except Exception:
+                    pass
+        elif typ=='id':
+            # IDs are commonly introduced by @+id/foo inside a layout. Find
+            # and copy the layout that owns the requested id.
+            try:
+                xml=p.read_text(errors='ignore')
+                if re.search(r'@\+id/'+re.escape(name)+r'\b',xml):
+                    if p.parent.name.startswith('layout') and copyres(p):
+                        queue.extend(re.findall(r'@(?:(?:\+)?)(string|color|dimen|drawable|mipmap|layout|xml|menu|style|font|array|plurals|integer|bool|fraction|id)/([A-Za-z0-9_]+)',xml))
+            except Exception:
+                pass
 
-# Copy layouts required by generated ViewBinding/DataBinding classes.
-for name in binding_layouts:
+# Copy missing layouts required by Binding classes. This also catches bindings
+# referenced by app adapters such as ItemContactWithNumberBinding.
+for name in sorted(binding_layouts):
+    if (DEST/'res'/'layout'/f'{name}.xml').exists():
+        continue
     for p in res:
         if p.is_file() and not is_app_owned_bank_resource(p) and p.stem==name and p.parent.name.startswith('layout'):
+            if copyres(p):
+                try:
+                    xml=p.read_text(errors='ignore')
+                    queue.extend(re.findall(r'@(?:(?:\+)?)(string|color|dimen|drawable|mipmap|layout|xml|menu|style|font|array|plurals|integer|bool|fraction|id)/([A-Za-z0-9_]+)',xml))
+                except Exception:
+                    pass
+            break
+
+# Finish any resource references discovered from binding layouts.
+while queue:
+    typ,name=queue.pop()
+    key=(typ,name)
+    if key in seen: continue
+    seen.add(key)
+    for p in res:
+        if not p.is_file() or is_app_owned_bank_resource(p): continue
+        if p.parent.name.startswith('values'):
+            merge_values_resource(p,{key})
+        elif typ in ('layout','drawable','mipmap','xml','menu','font','raw','anim','animator') and p.stem==name:
             copyres(p)
+        elif typ=='id' and p.parent.name.startswith('layout'):
+            try:
+                xml=p.read_text(errors='ignore')
+                if re.search(r'@\+id/'+re.escape(name)+r'\b',xml): copyres(p)
+            except Exception:
+                pass
 
 print('SELECTED',len(sel),'RESOURCES',len(copied),'SKIPPED_EXISTING_RESOURCES',len(skipped))
 for p in sorted(sel): print('SRC',p.relative_to(C))
