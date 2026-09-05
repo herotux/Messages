@@ -193,7 +193,7 @@ jobs:
           PY
 
           # Clean duplicate Android values resources after Commons extraction.
-python3 - <<'PY2'
+          python3 - <<'PY2'
 from pathlib import Path
 import subprocess
 import xml.etree.ElementTree as ET
