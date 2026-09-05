@@ -141,29 +141,150 @@ binding_classes = set()
 for s in texts:
     binding_classes.update(re.findall(r"\b([A-Z][A-Za-z0-9_]*)Binding\b", s))
 
-# Generated binding name is deterministic from the XML filename. Copy every
-# configuration variant of matching layouts, while preserving app-owned layouts.
-for p in sorted(resource_defs.get(("layout", "__never__"), [])):
-    pass
-layout_bases = {}
-for p in resource_defs.get(("layout", "__never__"), []):
-    layout_bases.setdefault(p.stem, []).append(p)
-for p in [p for p in RES.rglob("*") if p.is_file() and p.parent.name.startswith("layout") and not is_bank(p)]:
-    layout_bases.setdefault(p.stem, []).append(p)
-for stem, files in layout_bases.items():
-    if camel_binding(stem) not in binding_classes:
-        continue
-    for p in files:
-        out = APP_RES / p.relative_to(RES)
-        if out.exists():
-            continue
-        copy_resource(p)
-        try:
-            for typ, name in refs(read(p)):
-                resource_defs.get((typ, name), [])
-        except Exception:
-            pass
+# Find binding classes referenced by app or vendored Commons.
+texts = [
+    read(p)
+    for p in APP.rglob("*")
+    if p.is_file() and p.suffix.lower() in (".kt", ".java")
+]
 
+binding_classes = set()
+for text in texts:
+    binding_classes.update(
+        re.findall(r"\b([A-Z][A-Za-z0-9_]*)Binding\b", text)
+    )
+
+def binding_to_layout(cls):
+    base = cls[:-7]
+    return re.sub(r"(?<!^)([A-Z])", r"_\1", base).lower()
+
+# Build layout index from ALL Commons layout variants.
+layout_index = {}
+for p in RES.rglob("*"):
+    if not p.is_file() or is_bank(p):
+        continue
+    if p.parent.name.startswith("layout"):
+        layout_index.setdefault(p.stem, []).append(p)
+
+# Copy every Commons layout variant needed by a generated Binding.
+for cls in sorted(binding_classes):
+    layout = binding_to_layout(cls)
+    for src in layout_index.get(layout, []):
+        out = APP_RES / src.relative_to(RES)
+        if not out.exists():
+            copy_resource(src)
+
+# Collect resource references from every vendored Commons source.
+need = set()
+
+for p in APP.rglob("*.kt"):
+    s = read(p)
+    need.update(re.findall(r"\bR\.(\w+)\.(\w+)\b", s))
+
+for p in APP.rglob("*.java"):
+    s = read(p)
+    need.update(re.findall(r"\bR\.(\w+)\.(\w+)\b", s))
+
+# Also inspect all copied layouts for @+id and normal resource references.
+for p in APP_RES.rglob("*.xml"):
+    try:
+        s = read(p)
+    except Exception:
+        continue
+
+    need.update(
+        re.findall(
+            r"@(?:\+)?"
+            r"(string|color|dimen|drawable|mipmap|layout|xml|menu|"
+            r"style|font|array|plurals|integer|bool|fraction|id|raw|"
+            r"anim|animator)/([A-Za-z0-9_]+)",
+            s,
+        )
+    )
+
+# Resolve resources recursively.
+queue = list(need)
+seen = set()
+
+while queue:
+    typ, name = queue.pop()
+
+    if (typ, name) in seen:
+        continue
+
+    seen.add((typ, name))
+
+    # Normal resource definitions.
+    for src in resource_defs.get((typ, name), []):
+        if src.parent.name.startswith("values"):
+            merge_value(src, {(typ, name)})
+
+            try:
+                _, children = values_children(src)
+                for child in children:
+                    if key(child) == (typ, name):
+                        queue.extend(
+                            refs(ET.tostring(child, encoding="unicode"))
+                        )
+            except Exception:
+                pass
+        else:
+            try:
+                xml = read(src)
+                queue.extend(refs(xml))
+            except Exception:
+                pass
+
+            copy_resource(src)
+
+    # IDs declared as @+id/foo inside layouts.
+    if typ == "id":
+        for src in RES.rglob("*"):
+            if not src.is_file():
+                continue
+            if is_bank(src):
+                continue
+            if not src.parent.name.startswith("layout"):
+                continue
+
+            try:
+                xml = read(src)
+            except Exception:
+                continue
+
+            if re.search(r"@\+id/" + re.escape(name) + r"\b", xml):
+                copy_resource(src)
+                queue.extend(refs(xml))
+
+# One more pass over all newly copied layouts.
+for p in APP_RES.rglob("*.xml"):
+    try:
+        xml = read(p)
+    except Exception:
+        continue
+
+    for typ, name in refs(xml):
+        if (typ, name) not in seen:
+            queue.append((typ, name))
+
+while queue:
+    typ, name = queue.pop()
+
+    if (typ, name) in seen:
+        continue
+
+    seen.add((typ, name))
+
+    for src in resource_defs.get((typ, name), []):
+        if src.parent.name.startswith("values"):
+            merge_value(src, {(typ, name)})
+        else:
+            copy_resource(src)
+
+print("FINISH_MINIMAL_COMMONS_OK")
+print("BINDINGS_FOUND", len(binding_classes))
+print("BINDINGS", sorted(binding_classes))
+print("RESOLVED_RESOURCES", len(seen))
 # Collect R references from all current app sources and resolve them against Commons.
 need = set()
 for p in APP.rglob("*.kt"):
@@ -223,3 +344,74 @@ while queue:
 print("FINISH_MINIMAL_COMMONS_OK")
 print("BINDINGS", sorted(binding_classes))
 print("RESOLVED_RESOURCES", len(seen))
+
+# Final duplicate cleanup: when Commons strings collide with an existing
+# app-specific *_strings.xml in the same locale, keep the app-specific file.
+def cleanup_duplicate_values():
+    import xml.etree.ElementTree as ET
+
+    res_root = APP / 'res'
+    for values_dir in res_root.glob('values*'):
+        if not values_dir.is_dir():
+            continue
+
+        files = sorted(values_dir.glob('*.xml'))
+        resources = {}
+
+        for path in files:
+            try:
+                root = ET.parse(path).getroot()
+            except Exception:
+                continue
+
+            for child in list(root):
+                tag = child.tag.split('}')[-1]
+                name = child.attrib.get('name')
+                if tag == 'item' and child.attrib.get('type'):
+                    tag = child.attrib['type']
+                if not name:
+                    continue
+                resources.setdefault((tag, name), []).append((path, child))
+
+        for key, entries in resources.items():
+            if len(entries) < 2:
+                continue
+
+            # Prefer app-specific files such as settings_strings.xml over
+            # the generic Commons strings.xml when the same resource exists.
+            preferred = [
+                e for e in entries
+                if e[0].name != 'strings.xml'
+            ]
+
+            if preferred:
+                keep_path = preferred[0][0]
+            else:
+                keep_path = entries[0][0]
+
+            for path, child in entries:
+                if path == keep_path:
+                    continue
+
+                try:
+                    root = ET.parse(path).getroot()
+                    for node in list(root):
+                        tag = node.tag.split('}')[-1]
+                        node_name = node.attrib.get('name')
+                        if tag == 'item' and node.attrib.get('type'):
+                            tag = node.attrib['type']
+                        if (tag, node_name) == key:
+                            root.remove(node)
+
+                    if not list(root):
+                        path.unlink()
+                    else:
+                        ET.ElementTree(root).write(
+                            path,
+                            encoding='utf-8',
+                            xml_declaration=True
+                        )
+                except Exception:
+                    pass
+
+cleanup_duplicate_values()
