@@ -294,6 +294,76 @@ PY2
           test -f app/src/main/res/drawable/bank_tosee_taavon.xml
           test ! -e app/src/main/res/drawable/bank_tosee_taavon.png
 
+          # Final deterministic cleanup: app-specific values files win over generic strings.xml.
+          python3 - <<'PY3'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          RES = Path("app/src/main/res")
+
+          def key(node):
+              tag = node.tag.split("}")[-1]
+              if tag == "item" and node.attrib.get("type"):
+                  tag = node.attrib["type"]
+              return tag, node.attrib.get("name")
+
+          for d in RES.glob("values*"):
+              if not d.is_dir():
+                  continue
+
+              files = sorted(d.glob("*.xml"))
+              owners = {}
+
+              for f in files:
+                  try:
+                      root = ET.parse(f).getroot()
+                  except Exception:
+                      continue
+
+                  for node in list(root):
+                      k = key(node)
+                      if k[1]:
+                          owners.setdefault(k, []).append((f, node))
+
+              for k, entries in owners.items():
+                  if len(entries) < 2:
+                      continue
+
+                  preferred = [x for x in entries if x[0].name != "strings.xml"]
+
+                  if not preferred:
+                      continue
+
+                  keep = preferred[0][0]
+
+                  for f, node in entries:
+                      if f == keep:
+                          continue
+
+                      try:
+                          root = ET.parse(f).getroot()
+                          changed = False
+
+                          for child in list(root):
+                              if key(child) == k:
+                                  root.remove(child)
+                                  changed = True
+
+                          if changed:
+                              if len(list(root)) == 0:
+                                  f.unlink()
+                              else:
+                                  ET.ElementTree(root).write(
+                                      f,
+                                      encoding="utf-8",
+                                      xml_declaration=True
+                                  )
+                      except Exception:
+                          pass
+
+          print("FINAL_VALUES_DEDUP_OK")
+          PY3
+
           ./gradlew :app:compileCoreDebugKotlin --no-daemon --stacktrace
 
           git config user.name 'github-actions[bot]'
