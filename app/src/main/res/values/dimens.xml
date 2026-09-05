@@ -81,4 +81,7 @@
     <dimen name="social_logo">40dp</dimen>
     <dimen name="middle_text_size">17sp</dimen>
     <dimen name="min_row_height">60dp</dimen>
+    <dimen name="popup_menu_elevation">4dp</dimen>
+    <dimen name="min_radio_checkbox_height">44dp</dimen>
+
     </resources>
