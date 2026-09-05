@@ -25,8 +25,6 @@ jobs:
           git clone --quiet https://github.com/herotux/commons.git /tmp/commons
           git -C /tmp/commons checkout --quiet 5fe79e3f1ccd62c1905f73281370e1641baaf6db
 
-          # Remove the external Commons dependency. The app now contains the
-          # selected Commons source/resources directly.
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -45,6 +43,52 @@ jobs:
 
           python3 tools/extract_minimal_commons.py
           python3 tools/finish_minimal_commons.py
+
+          # Kotlin 2.4 no longer enables legacy context receivers by default.
+          # The pinned Commons revision only needs this helper as a normal
+          # SharedPreferences extension, so rewrite it without the experimental
+          # context-receiver syntax.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("app/src/main/kotlin/org/fossify/commons/extensions/SharedPreferencesProducerExtensions.kt")
+          if p.exists():
+              s = p.read_text()
+              s = s.replace(
+                  "context(sharedPreferences: SharedPreferences)\nfun <T> sharedPreferencesCallback(",
+                  "fun <T> SharedPreferences.sharedPreferencesCallback("
+              )
+              s = s.replace(
+                  "sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferencesListener)",
+                  "registerOnSharedPreferenceChangeListener(sharedPreferencesListener)"
+              )
+              s = s.replace(
+                  "sharedPreferences.unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)",
+                  "unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)"
+              )
+              p.write_text(s)
+          PY
+
+          # Android style names may contain dots in XML, while generated R
+          # identifiers contain underscores. The resource resolver intentionally
+          # handles simple names, so vendor the complete Commons styles file when
+          # any Commons style is needed. This also preserves transitive style
+          # parents and theme references such as AppTheme.Base.System.Light.
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          src = Path("/tmp/commons/commons/src/main/res/values/styles.xml")
+          dst = Path("app/src/main/res/values/styles.xml")
+          if src.exists() and not dst.exists():
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(src, dst)
+              print("COMMONS_STYLES_VENDORED")
+          elif dst.exists():
+              print("COMMONS_STYLES_ALREADY_PRESENT")
+          else:
+              raise SystemExit("Commons styles.xml is missing")
+          PY
 
           # The extractor can merge a Commons value into a locale file that is
           # already owned by Messages. Keep the existing app resource and remove
@@ -88,8 +132,6 @@ jobs:
                   if len(paths) < 2:
                       continue
 
-                  # Prefer a tracked Messages file. If the only conflict is
-                  # strings.xml vs another tracked file, the tracked file wins.
                   tracked_paths = [p for p in paths if p in tracked]
                   keep = sorted(tracked_paths or paths)[0]
 
@@ -114,10 +156,6 @@ jobs:
                       except Exception:
                           pass
 
-          # This is intentionally the final resource normalization pass: the
-          # previous finish step can be followed by another Commons resource
-          # discovery pass, so duplicate values must be removed after ALL
-          # extraction work and immediately before Gradle.
           duplicates = []
           for directory in sorted(RES.glob("values*")):
               if not directory.is_dir():
@@ -144,9 +182,6 @@ jobs:
           print("VALUES_DEDUP_OK")
           PY
 
-          # Bank logos are checked-in Messages resources. Sepah stays PNG;
-          # every other bank logo must be a VectorDrawable XML. Operator PNGs
-          # are unrelated and are left untouched.
           find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
           test -f app/src/main/res/drawable/bank_sepah.png
           test -f app/src/main/res/drawable/bank_sina.xml
@@ -158,7 +193,7 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add app/src/main tools/finish_minimal_commons.py app/build.gradle.kts gradle/libs.versions.toml
+          git add app/src/main tools/finish_minimal_commons.py app/build.gradle.kts gradle/libs.versions.toml .github/workflows/extract-minimal-commons.yml
 
           if git diff --cached --quiet; then
             echo 'No generated changes to commit.'
