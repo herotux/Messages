@@ -278,6 +278,39 @@ while queue:
 # Copy missing layouts required by generated Binding classes. This catches
 # ActivityAppLockBinding, DialogRenameItemsPatternBinding,
 # TabRenameSimpleBinding, ItemContactWithNumberBinding, etc.
+
+def find_layouts_for_id(resource_id):
+    """Find Commons layouts declaring @+id/resource_id or @id/resource_id."""
+    found = []
+    for rp in res:
+        if not rp.is_file():
+            continue
+        if not rp.parent.name.startswith("layout"):
+            continue
+        try:
+            xml = rp.read_text(errors="ignore")
+        except Exception:
+            continue
+        if re.search(r'@\+?id/' + re.escape(resource_id) + r'\b', xml):
+            found.append(rp)
+    return found
+
+# R.id.foo does not identify its owning layout by filename.
+# Find the Commons layout that actually declares each requested ID.
+for typ, name in sorted(need):
+    if typ != "id":
+        continue
+    for rp in find_layouts_for_id(name):
+        if copyres(rp):
+            try:
+                xml = rp.read_text(errors="ignore")
+                queue.extend(re.findall(
+                    r'@(?:(?:\+)?)(string|color|dimen|drawable|mipmap|layout|xml|menu|style|font|array|plurals|integer|bool|fraction|id)/([A-Za-z0-9_]+)',
+                    xml
+                ))
+            except Exception:
+                pass
+
 for name in sorted(binding_layouts):
     if (DEST / 'res' / 'layout' / f'{name}.xml').exists():
         continue
