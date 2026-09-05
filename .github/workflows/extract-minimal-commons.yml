@@ -364,7 +364,83 @@ PY2
           print("FINAL_VALUES_DEDUP_OK")
           PY3
 
-          ./gradlew :app:compileCoreDebugKotlin --no-daemon --stacktrace
+          # Final duplicate-resource cleanup after all Commons resource merges.
+python3 - <<'PY2'
+from pathlib import Path
+import xml.etree.ElementTree as ET
+
+root = Path("app/src/main/res")
+
+for d in root.glob("values*"):
+    if not d.is_dir():
+        continue
+
+    files = list(d.glob("*.xml"))
+    seen = {}
+
+    for f in files:
+        try:
+            tree = ET.parse(f)
+            xml = tree.getroot()
+        except Exception:
+            continue
+
+        for node in list(xml):
+            tag = node.tag.split("}")[-1]
+            name = node.attrib.get("name")
+
+            if tag == "item" and node.attrib.get("type"):
+                tag = node.attrib["type"]
+
+            if not name:
+                continue
+
+            key = (tag, name)
+            seen.setdefault(key, []).append((f, node))
+
+    for key, entries in seen.items():
+        if len(entries) <= 1:
+            continue
+
+        # Prefer the existing app-specific resource file over Commons strings.xml.
+        preferred = [
+            item for item in entries
+            if item[0].name != "strings.xml"
+        ]
+
+        keep = preferred[0][0] if preferred else entries[0][0]
+
+        for f, node in entries:
+            if f == keep:
+                continue
+
+            try:
+                tree = ET.parse(f)
+                xml = tree.getroot()
+
+                for child in list(xml):
+                    tag = child.tag.split("}")[-1]
+                    name = child.attrib.get("name")
+
+                    if tag == "item" and child.attrib.get("type"):
+                        tag = child.attrib["type"]
+
+                    if (tag, name) == key:
+                        xml.remove(child)
+
+                if list(xml):
+                    tree.write(
+                        f,
+                        encoding="utf-8",
+                        xml_declaration=True
+                    )
+                else:
+                    f.unlink()
+            except Exception:
+                pass
+PY2
+
+./gradlew :app:compileCoreDebugKotlin --no-daemon --stacktrace
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
