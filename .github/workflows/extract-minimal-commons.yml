@@ -30,9 +30,6 @@ jobs:
           p = Path('app/build.gradle.kts')
           s = p.read_text()
           s = re.sub(r'^\s*implementation\(libs\.fossify\.commons\)\s*\n', '', s, flags=re.M)
-          # Kotlin 2.4 replaced legacy context receivers with context parameters.
-          # The only Commons helper is migrated below, so this obsolete compiler
-          # flag must not remain enabled.
           s = re.sub(r'^\s*"-Xcontext-receivers"\s*,?\s*\n', '', s, flags=re.M)
           p.write_text(s)
           p = Path('gradle/libs.versions.toml')
@@ -49,7 +46,6 @@ jobs:
           from pathlib import Path
           import xml.etree.ElementTree as ET
 
-          # Migrate the legacy Commons context receiver to a normal extension.
           p = Path('app/src/main/kotlin/org/fossify/commons/extensions/SharedPreferencesProducerExtensions.kt')
           if p.exists():
               s = p.read_text()
@@ -58,15 +54,10 @@ jobs:
               s = s.replace('sharedPreferences.unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)', 'unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)')
               p.write_text(s)
 
-          # The extractor cannot represent Android style names containing dots
-          # as R identifiers during dependency discovery. Merge the complete
-          # Commons styles into the app-owned styles.xml so Android generates all
-          # required org.fossify.messages.R.style.* fields.
           src = Path('/tmp/commons/commons/src/main/res/values/styles.xml')
           dst = Path('app/src/main/res/values/styles.xml')
           if not src.exists():
               raise SystemExit('Commons styles.xml is missing')
-
           src_root = ET.parse(src).getroot()
           if dst.exists():
               dst_root = ET.parse(dst).getroot()
@@ -83,8 +74,6 @@ jobs:
           print('COMMONS_STYLES_MERGED')
           PY
 
-          # Remove duplicate value resources across files in the same values
-          # directory, preferring an already tracked app resource.
           python3 - <<'PY'
           from pathlib import Path
           import subprocess
@@ -158,5 +147,18 @@ jobs:
             exit 0
           fi
           git commit -m 'vendor only used Fossify Commons code'
-          git pull --rebase origin chore/minimal-commons
-          git push origin HEAD:chore/minimal-commons
+
+          # Another run may have generated a commit while this build was running.
+          # Rebase while preferring this deterministic generated commit, then retry
+          # the push. This avoids failing solely because parallel runs touched the
+          # same generated resource files.
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:chore/minimal-commons; then
+              exit 0
+            fi
+            echo "Push raced with another run; rebasing attempt ${attempt}..."
+            git fetch origin chore/minimal-commons
+            git rebase -X theirs origin/chore/minimal-commons
+          done
+          echo 'Unable to push after 5 synchronization attempts.'
+          exit 1
