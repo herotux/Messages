@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - chore/minimal-commons
       - test/foss-release-signed
       - feat/iranian-bank-registry
       - 'fix/**'
