@@ -24,6 +24,12 @@ jobs:
           p = Path('app/build.gradle.kts')
           s = p.read_text()
           s = re.sub(r'^\s*implementation\(libs\.fossify\.commons\)\s*\n', '', s, flags=re.M)
+          # Parcelize is supplied by the Kotlin Gradle plugin classpath. Applying it
+          # without a second version avoids the Kotlin 2.4 "unknown version" conflict.
+          if 'org.jetbrains.kotlin.plugin.parcelize' not in s:
+              s = s.replace('id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"\n', 'id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"\n')
+              marker = '}\n\nval keystorePropertiesFile'
+              s = s.replace(marker, '}\n\napply(plugin = "org.jetbrains.kotlin.plugin.parcelize")\n\nval keystorePropertiesFile', 1)
           p.write_text(s)
           p = Path('gradle/libs.versions.toml')
           s = p.read_text()
@@ -33,6 +39,7 @@ jobs:
           PY
 
           python3 tools/extract_minimal_commons.py
+          python3 tools/finish_minimal_commons.py
 
           # Minimal Commons is vendored into the app module, whose resource namespace is
           # org.fossify.messages. Rewrite old Commons R imports/references to the app R and
@@ -55,53 +62,134 @@ jobs:
                   need.add((typ, name))
               if 'org.fossify.commons.R' in s:
                   s = s.replace('org.fossify.commons.R', 'org.fossify.messages.R')
+              s = s.replace('org.fossify.commons.databinding', 'org.fossify.messages.databinding')
               if p.as_posix().startswith('app/src/main/kotlin/org/fossify/commons/') and re.search(r'\bR\.', s):
                   if 'import org.fossify.messages.R' not in s:
                       s = re.sub(r'(^\s*package\s+[^\n]+\n)', r'\1\nimport org.fossify.messages.R\n', s, count=1, flags=re.M)
               p.write_text(s)
 
-          # Collect bare R references from vendored Commons files after imports are fixed.
           for p in APP.joinpath('kotlin/org/fossify/commons').rglob('*.kt'):
               s = p.read_text(errors='ignore')
               for typ, name in re.findall(r'\bR\.(\w+)\.(\w+)', s):
                   need.add((typ, name))
 
-          def existing_keys():
-              keys = set()
-              res = APP / 'res'
-              for p in res.rglob('*'):
-                  if not p.is_file():
-                      continue
-                  d = p.parent.name.split('-')[0]
-                  if d.startswith('values'):
-                      try:
-                          root = ET.parse(p).getroot()
-                          for child in root:
-                              if child.attrib.get('name'):
-                                  keys.add((child.tag.split('}')[-1], child.attrib['name']))
-                      except Exception:
-                          pass
-                  else:
-                      keys.add((d, p.stem))
-              return keys
+          def values_children(path):
+              try:
+                  root = ET.parse(path).getroot()
+                  return root, list(root)
+              except Exception:
+                  return None, []
 
-          keys = existing_keys()
-          for typ, name in sorted(need):
-              for p in COMMONS_RES.rglob('*'):
-                  if not p.is_file() or p.stem != name or p.name.startswith('bank_'):
-                      continue
-                  d = p.parent.name.split('-')[0]
-                  if d != typ:
-                      continue
-                  key = (d, name)
-                  if key in keys:
-                      continue
-                  out = APP / 'res' / p.relative_to(COMMONS_RES)
+          def child_key(child):
+              tag = child.tag.split('}')[-1]
+              name = child.attrib.get('name')
+              if tag == 'item' and child.attrib.get('type'):
+                  tag = child.attrib['type']
+              if tag == 'declare-styleable':
+                  tag = 'styleable'
+              return tag, name
+
+          def merge_value(p, wanted):
+              src_root, src_children = values_children(p)
+              if src_root is None:
+                  return
+              selected = [c for c in src_children if child_key(c) in wanted]
+              if not selected:
+                  return
+              out = APP / 'res' / p.relative_to(COMMONS_RES)
+              out.parent.mkdir(parents=True, exist_ok=True)
+              if out.exists():
+                  dst_root, dst_children = values_children(out)
+                  if dst_root is None:
+                      return
+                  existing = {child_key(c) for c in dst_children}
+                  changed = False
+                  for child in selected:
+                      k = child_key(child)
+                      if k not in existing:
+                          dst_root.append(child); existing.add(k); changed = True
+                      elif k[0] == 'styleable':
+                          dst = next(c for c in dst_root if child_key(c) == k)
+                          have = {child_key(x) for x in dst}
+                          for nested in child:
+                              nk = child_key(nested)
+                              if nk not in have:
+                                  dst.append(nested); have.add(nk); changed = True
+                  if changed:
+                      ET.ElementTree(dst_root).write(out, encoding='utf-8', xml_declaration=True)
+              else:
+                  root = ET.Element(src_root.tag, src_root.attrib)
+                  for child in selected: root.append(child)
+                  ET.ElementTree(root).write(out, encoding='utf-8', xml_declaration=True)
+
+          def copy_resource(p):
+              if p.stem.startswith('bank_'):
+                  return
+              out = APP / 'res' / p.relative_to(COMMONS_RES)
+              if not out.exists():
                   out.parent.mkdir(parents=True, exist_ok=True)
                   shutil.copy2(p, out)
-                  keys.add(key)
 
-          print('COMMONS_R_RESOURCES', sorted(need))
+          def xml_refs(xml):
+              return re.findall(r'@\+?(string|color|dimen|drawable|mipmap|layout|xml|menu|style|font|array|plurals|integer|bool|fraction|id|raw|anim|animator)/([A-Za-z0-9_]+)', xml)
+
+          defs = {}
+          layouts = {}
+          for p in [x for x in COMMONS_RES.rglob('*') if x.is_file() and not x.stem.startswith('bank_')]:
+              if p.parent.name.startswith('values'):
+                  _, children = values_children(p)
+                  for c in children:
+                      k = child_key(c)
+                      if k[1]: defs.setdefault(k, []).append(p)
+              else:
+                  k = (p.parent.name.split('-')[0], p.stem)
+                  defs.setdefault(k, []).append(p)
+                  if p.parent.name.startswith('layout'):
+                      layouts.setdefault(p.stem, []).append(p)
+
+          # Generated View/Data Binding names are derived from layout filenames.
+          # Match the generated class exactly, then copy all configuration variants.
+          bindings = set()
+          for p in APP.rglob('*.kt'):
+              bindings.update(re.findall(r'\b([A-Z][A-Za-z0-9_]*)Binding\b', p.read_text(errors='ignore')))
+          for stem, files in layouts.items():
+              generated = ''.join(part[:1].upper() + part[1:] for part in stem.split('_')) + 'Binding'
+              if generated in bindings:
+                  for p in files:
+                      copy_resource(p)
+
+          # Resolve resources used by app/Commons code and by copied XML.
+          queue = list(need)
+          seen = set()
+          while queue:
+              typ, name = queue.pop()
+              if (typ, name) in seen:
+                  continue
+              seen.add((typ, name))
+              for p in defs.get((typ, name), []):
+                  if p.parent.name.startswith('values'):
+                      _, children = values_children(p)
+                      for c in children:
+                          if child_key(c) == (typ, name):
+                              queue.extend(xml_refs(ET.tostring(c, encoding='unicode')))
+                      merge_value(p, {(typ, name)})
+                  else:
+                      xml = p.read_text(errors='ignore') if p.suffix.lower() in ('.xml', '.svg') else ''
+                      queue.extend(xml_refs(xml))
+                      copy_resource(p)
+
+          # Resolve ids by locating the layout that declares @+id/name.
+          for typ, name in list(seen):
+              if typ != 'id':
+                  continue
+              for p in COMMONS_RES.rglob('*'):
+                  if not p.is_file() or not p.parent.name.startswith('layout') or p.stem.startswith('bank_'):
+                      continue
+                  xml = p.read_text(errors='ignore')
+                  if re.search(r'@\+id/' + re.escape(name) + r'\b', xml):
+                      copy_resource(p)
+
+          print('FINISH_RESOURCES', len(seen), 'BINDINGS', sorted(bindings))
           PY
 
           # Bank logos are permanent Messages source resources. They are NOT downloaded,
@@ -118,7 +206,7 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add app/src/main app/build.gradle.kts gradle/libs.versions.toml
+          git add app/src/main tools/finish_minimal_commons.py app/build.gradle.kts gradle/libs.versions.toml
           git diff --cached --stat
           if git diff --cached --quiet; then
             echo 'No changes to commit.'
