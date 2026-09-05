@@ -142,7 +142,7 @@ class ConversationDetailsActivity : SimpleActivity() {
         binding.conversationName.apply {
             ResourcesCompat.getDrawable(
                 resources,
-                org.fossify.commons.R.drawable.ic_edit_vector,
+                org.fossify.messages.R.drawable.ic_edit_vector,
                 theme
             )?.apply {
                 applyColorFilter(getProperTextColor())

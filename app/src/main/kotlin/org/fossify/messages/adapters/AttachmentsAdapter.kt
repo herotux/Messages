@@ -170,7 +170,7 @@ class AttachmentsAdapter(
     }
 
     private fun loadMediaPreview(binding: ItemAttachmentMediaPreviewBinding, attachment: AttachmentSelection) {
-        val roundedCornersRadius = resources.getDimension(org.fossify.commons.R.dimen.activity_margin).toInt()
+        val roundedCornersRadius = resources.getDimension(org.fossify.messages.R.dimen.activity_margin).toInt()
         val size = resources.getDimension(R.dimen.attachment_preview_size).toInt()
 
         val options = RequestOptions()
@@ -185,7 +185,7 @@ class AttachmentsAdapter(
             .listener(object : RequestListener<Drawable> {
                 override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
                     removeAttachment(attachment)
-                    activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    activity.toast(org.fossify.messages.R.string.unknown_error_occurred)
                     return false
                 }
 

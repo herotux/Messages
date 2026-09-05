@@ -138,7 +138,6 @@ android {
                 "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
                 "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
                 "-opt-in=com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi",
-                "-Xcontext-receivers"
             )
         )
     }

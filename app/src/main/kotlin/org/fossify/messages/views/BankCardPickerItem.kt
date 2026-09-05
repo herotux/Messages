@@ -25,7 +25,7 @@ class BankCardPickerItem @JvmOverloads constructor(
     init {
         orientation = VERTICAL
         gravity = Gravity.CENTER
-        val margin = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin)
+        val margin = resources.getDimensionPixelSize(org.fossify.messages.R.dimen.medium_margin)
         setPadding(margin, margin, margin, margin)
         minimumHeight = resources.getDimensionPixelSize(R.dimen.attachment_button_height)
         isClickable = true

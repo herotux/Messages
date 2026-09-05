@@ -21,8 +21,8 @@ class DeleteConfirmationDialog(
         binding.deleteRememberTitle.text = message
         binding.skipTheRecycleBinCheckbox.beGoneIf(!showSkipRecycleBinOption)
         activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.yes) { _, _ -> dialogConfirmed() }
-            .setNegativeButton(org.fossify.commons.R.string.no, null)
+            .setPositiveButton(org.fossify.messages.R.string.yes) { _, _ -> dialogConfirmed() }
+            .setNegativeButton(org.fossify.messages.R.string.no, null)
             .apply {
                 activity.setupDialogStuff(binding.root, this) { alertDialog ->
                     dialog = alertDialog

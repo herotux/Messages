@@ -338,7 +338,7 @@ object BankAccountsFeature {
             isClickable = true
             background = ContextCompat.getDrawable(activity, R.drawable.ripple_background)
             setPadding(dp(activity, 10), dp(activity, 8), dp(activity, 10), dp(activity, 8))
-            addView(ImageView(activity).apply { setImageResource(R.drawable.ic_credit_card_vector); setColorFilter(ContextCompat.getColor(activity, org.fossify.commons.R.color.color_primary)); scaleType = ImageView.ScaleType.CENTER_INSIDE }, LinearLayout.LayoutParams(-1, dp(activity, 42)))
+            addView(ImageView(activity).apply { setImageResource(R.drawable.ic_credit_card_vector); setColorFilter(ContextCompat.getColor(activity, org.fossify.messages.R.color.color_primary)); scaleType = ImageView.ScaleType.CENTER_INSIDE }, LinearLayout.LayoutParams(-1, dp(activity, 42)))
             addView(TextView(activity).apply { text = title(activity, "کارت بانکی", "Bank card"); textSize = 12f; gravity = Gravity.CENTER }, LinearLayout.LayoutParams(-1, -2))
             setOnClickListener {
                 showCardPicker(activity) { account ->
@@ -422,7 +422,7 @@ object BankAccountsFeature {
             if (!validCard(normalized)) return@forEach
             spannable.setSpan(object : ClickableSpan() {
                 override fun onClick(widget: View) { showDetectedCard(activity, normalized, original) }
-                override fun updateDrawState(ds: android.text.TextPaint) { ds.isUnderlineText = false; ds.color = ContextCompat.getColor(activity, org.fossify.commons.R.color.color_primary) }
+                override fun updateDrawState(ds: android.text.TextPaint) { ds.isUnderlineText = false; ds.color = ContextCompat.getColor(activity, org.fossify.messages.R.color.color_primary) }
             }, match.range.first, match.range.last + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         ibanMatches.forEach { match ->
@@ -430,7 +430,7 @@ object BankAccountsFeature {
             if (!validIban(normalized)) return@forEach
             spannable.setSpan(object : ClickableSpan() {
                 override fun onClick(widget: View) { showDetectedIban(activity, normalized) }
-                override fun updateDrawState(ds: android.text.TextPaint) { ds.isUnderlineText = false; ds.color = ContextCompat.getColor(activity, org.fossify.commons.R.color.color_primary) }
+                override fun updateDrawState(ds: android.text.TextPaint) { ds.isUnderlineText = false; ds.color = ContextCompat.getColor(activity, org.fossify.messages.R.color.color_primary) }
             }, match.range.first, match.range.last + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         view.text = spannable

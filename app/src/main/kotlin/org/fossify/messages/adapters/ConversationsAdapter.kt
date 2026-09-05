@@ -47,7 +47,7 @@ class ConversationsAdapter(
 
         menu.apply {
             findItem(R.id.cab_block_number).title =
-                activity.addLockedLabelIfNeeded(org.fossify.commons.R.string.block_number)
+                activity.addLockedLabelIfNeeded(org.fossify.messages.R.string.block_number)
             findItem(R.id.cab_add_number_to_contact).isVisible =
                 isSingleSelection && !isGroupConversation
             findItem(R.id.cab_dial_number).isVisible =
@@ -104,7 +104,7 @@ class ConversationsAdapter(
         val numbers = getSelectedItems().distinctBy { it.phoneNumber }.map { it.phoneNumber }
         val numbersString = TextUtils.join(", ", numbers)
         val question = String.format(
-            resources.getString(org.fossify.commons.R.string.block_confirmation),
+            resources.getString(org.fossify.messages.R.string.block_confirmation),
             numbersString
         )
         ConfirmationDialog(activity, question) { blockNumbers() }
@@ -137,7 +137,7 @@ class ConversationsAdapter(
     private fun askConfirmDelete() {
         val itemsCnt = selectedKeys.size
         val items = resources.getQuantityString(R.plurals.delete_conversations, itemsCnt, itemsCnt)
-        val baseString = org.fossify.commons.R.string.deletion_confirmation
+        val baseString = org.fossify.messages.R.string.deletion_confirmation
         val question = String.format(resources.getString(baseString), items)
         ConfirmationDialog(activity, question) {
             ensureBackgroundThread { deleteConversations() }

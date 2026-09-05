@@ -13,7 +13,7 @@ class SelectTextDialog(val activity: BaseSimpleActivity, val text: String) {
         }
 
         activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok) { _, _ -> { } }
+            .setPositiveButton(org.fossify.messages.R.string.ok) { _, _ -> { } }
             .apply {
                 activity.setupDialogStuff(binding.root, this)
             }

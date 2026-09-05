@@ -32,8 +32,8 @@ class ImportMessagesDialog(
         binding.importProgress.setIndicatorColor(activity.getProperPrimaryColor())
 
         activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok, null)
-            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .setPositiveButton(org.fossify.messages.R.string.ok, null)
+            .setNegativeButton(org.fossify.messages.R.string.cancel, null)
             .apply {
                 activity.setupDialogStuff(
                     view = binding.root,
@@ -53,7 +53,7 @@ class ImportMessagesDialog(
                         }
 
                         ignoreClicks = true
-                        activity.toast(org.fossify.commons.R.string.importing)
+                        activity.toast(org.fossify.messages.R.string.importing)
                         config.importSms = binding.importSmsCheckbox.isChecked
                         config.importMms = binding.importMmsCheckbox.isChecked
 
@@ -83,10 +83,10 @@ class ImportMessagesDialog(
     private fun handleParseResult(result: ImportResult) {
         activity.toast(
             when (result) {
-                ImportResult.IMPORT_OK -> org.fossify.commons.R.string.importing_successful
-                ImportResult.IMPORT_PARTIAL -> org.fossify.commons.R.string.importing_some_entries_failed
-                ImportResult.IMPORT_FAIL -> org.fossify.commons.R.string.importing_failed
-                else -> org.fossify.commons.R.string.no_items_found
+                ImportResult.IMPORT_OK -> org.fossify.messages.R.string.importing_successful
+                ImportResult.IMPORT_PARTIAL -> org.fossify.messages.R.string.importing_some_entries_failed
+                ImportResult.IMPORT_FAIL -> org.fossify.messages.R.string.importing_failed
+                else -> org.fossify.messages.R.string.no_items_found
             }
         )
     }

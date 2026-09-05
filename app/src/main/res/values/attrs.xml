@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources><declare-styleable name="MyAppBarLayout">
+        <attr name="applyWindowInsets" />
+    </declare-styleable>
+<declare-styleable name="MyFloatingActionButton">
+        <attr name="applyWindowInsets" />
+    </declare-styleable>
+
+    </resources>

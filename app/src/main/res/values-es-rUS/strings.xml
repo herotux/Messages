@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_launcher_name">Mensajes</string>
     <string name="type_a_message">Escriba un mensaje…</string>
@@ -28,4 +28,7 @@
     <string name="new_conversation">Nueva conversación</string>
     <string name="add_contact_or_number">Añadir contacto o número…</string>
     <string name="suggestions">Sugerencias</string>
-</resources>
+<string name="close">Cerrar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="ok">OK</string>
+    </resources>

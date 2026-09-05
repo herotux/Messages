@@ -40,8 +40,8 @@ class ExportMessagesDialog(
 
     init {
         activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok, null)
-            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .setPositiveButton(org.fossify.messages.R.string.ok, null)
+            .setNegativeButton(org.fossify.messages.R.string.cancel, null)
             .apply {
                 activity.setupDialogStuff(
                     view = binding.root,
@@ -54,9 +54,9 @@ class ExportMessagesDialog(
                         config.exportMms = binding.exportMmsCheckbox.isChecked
                         val filename = binding.exportMessagesFilename.value
                         when {
-                            filename.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
+                            filename.isEmpty() -> activity.toast(org.fossify.messages.R.string.empty_name)
                             filename.isAValidFilename() -> callback(filename)
-                            else -> activity.toast(org.fossify.commons.R.string.invalid_name)
+                            else -> activity.toast(org.fossify.messages.R.string.invalid_name)
                         }
                     }
                 }
@@ -94,7 +94,7 @@ class ExportMessagesDialog(
                     getMms = config.exportMms
                 ) { messagesToExport ->
                     if (messagesToExport.isEmpty()) {
-                        activity.toast(org.fossify.commons.R.string.no_entries_for_exporting)
+                        activity.toast(org.fossify.messages.R.string.no_entries_for_exporting)
                         dismiss()
                         return@getMessagesToExport
                     }
@@ -104,7 +104,7 @@ class ExportMessagesDialog(
                             json.encodeToStream(messagesToExport, outputStream)
                         }
                     success = true
-                    activity.toast(org.fossify.commons.R.string.exporting_successful)
+                    activity.toast(org.fossify.messages.R.string.exporting_successful)
                 }
             } catch (e: Throwable) {
                 activity.showErrorToast(e.toString())

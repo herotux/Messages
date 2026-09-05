@@ -18,8 +18,8 @@ class AddBlockedKeywordDialog(val activity: BaseSimpleActivity, private val orig
         }
 
         activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok, null)
-            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .setPositiveButton(org.fossify.messages.R.string.ok, null)
+            .setNegativeButton(org.fossify.messages.R.string.cancel, null)
             .apply {
                 activity.setupDialogStuff(binding.root, this) { alertDialog ->
                     alertDialog.showKeyboard(binding.addBlockedKeywordEdittext)

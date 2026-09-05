@@ -30,8 +30,8 @@ class RenameConversationDialog(
         }
 
         activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok, null)
-            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .setPositiveButton(org.fossify.messages.R.string.ok, null)
+            .setNegativeButton(org.fossify.messages.R.string.cancel, null)
             .apply {
                 activity.setupDialogStuff(binding.root, this, R.string.rename_conversation) { alertDialog ->
                     dialog = alertDialog
@@ -40,7 +40,7 @@ class RenameConversationDialog(
                         setOnClickListener {
                             val newTitle = binding.renameConvEditText.text.toString()
                             if (newTitle.isEmpty()) {
-                                activity.toast(org.fossify.commons.R.string.empty_name)
+                                activity.toast(org.fossify.messages.R.string.empty_name)
                                 return@setOnClickListener
                             }
 

@@ -71,7 +71,7 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
             context.showErrorToast(e)
         } catch (e: Error) {
             context.showErrorToast(
-                e.localizedMessage ?: context.getString(org.fossify.commons.R.string.unknown_error_occurred)
+                e.localizedMessage ?: context.getString(org.fossify.messages.R.string.unknown_error_occurred)
             )
         }
     }

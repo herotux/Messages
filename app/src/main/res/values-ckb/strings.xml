@@ -1,6 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_launcher_name">پەیام</string>
     <string name="type_a_message">نامەیەک بنووسە…</string>
     <string name="message_not_sent_short">نامەکە نەچوو</string>
-</resources>
+<string name="edit_with">دەستکاریکردن لەڕێی</string>
+    <string name="later">دواتر</string>
+    <string name="error">هەڵەی: %s</string>
+    <string name="invalid_file_format">جۆری فایل نادروستە</string>
+    <string name="back">گەڕانەوە</string>
+    <string name="close">داخستن</string>
+    <string name="cancel">پاشگەزبونەوە</string>
+    <string name="ok">باشە</string>
+    <string name="file_saved">فایلەکە بەسەرکەوتوویی پارێزرا</string>
+    <string name="open_with">کردنەوە وەک</string>
+    <string name="save_as">پاراستن وەک</string>
+    </resources>

@@ -1,2 +1,51 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<?xml version='1.0' encoding='utf-8'?>
+<resources><string name="edit_with">Gjer om med</string>
+    <string name="unknown">Ukjend</string>
+    <string name="birthday">Fødselsdag</string>
+    <string name="mobile">Mobil</string>
+<string name="record_video">Spel inn video</string>
+    <string name="no_app_found">Fann ingen gild app</string>
+    <string name="confirm_calling_person">Stadfest at du vil ringja %s</string>
+    <string name="phone_storage">Telefonlagring</string>
+    <string name="choose_contact">Vel ein kontakt</string>
+    <string name="value_copied_to_clipboard_show">Kopierte verdien til utklippstavla:\n%s</string>
+    <string name="notes">Merknader</string>
+    <string name="value_copied_to_clipboard">Kopierte verdien til utklippstavla</string>
+    <string name="later">Seinare</string>
+    <string name="updating">Oppdaterer…</string>
+    <string name="anniversary">Jubileum</string>
+    <string name="error">Feil: %s</string>
+    <string name="value">Verdi</string>
+    <string name="invalid_file_format">Ugilt filformat</string>
+    <string name="no_email_client_found">Fann ingen gild e-postklient</string>
+    <string name="back">Attende</string>
+    <string name="no_browser_found">Fann ingen gild nettlesar</string>
+    <string name="copy_number_to_clipboard">Kopier nummer til utklippstavla</string>
+    <string name="download">Lasta ned</string>
+    <string name="record_audio">Spel inn ljod</string>
+    <string name="close">Lat att</string>
+    <string name="number">Nummer</string>
+    <string name="cancel">Avbryt</string>
+    <string name="copy_to_clipboard">Kopier til utklippstavla</string>
+    <string name="phone_storage_hidden">Telefonlagring (ikkje synleg for andre appar)</string>
+    <string name="no_contacts_found">Fann ingen kontaktar</string>
+    <string name="ok">Greitt</string>
+    <string name="set_as">Nytta som</string>
+    <string name="home">Heim</string>
+    <string name="file_saved">Fila vart lagra</string>
+    <string name="sunday_short">Su</string>
+    <string name="saturday_short">La</string>
+    <string name="friday_short">Fr</string>
+    <string name="thursday_short">To</string>
+    <string name="wednesday_short">On</string>
+    <string name="tuesday_short">Ty</string>
+    <string name="monday_short">Må</string>
+    <string name="open_with">Opna med</string>
+    <string name="dial_number">Ring nummer</string>
+    <string name="notifications">Varsel</string>
+    <string name="take_photo">Tak eit bilete</string>
+    <string name="choose_video">Vel ein video</string>
+    <string name="choose_photo">Vel eit bilete</string>
+    <string name="choose_file">Vel ei fil</string>
+    <string name="save_as">Lagra som</string>
+    </resources>
