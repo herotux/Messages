@@ -20,6 +20,9 @@
     <issue id="RtlSymmetry" severity="warning" />
     <issue id="SetTextI18n" severity="warning" />
 
+    <!-- Fossify Commons legacy dotted .Base styles trigger false ResourceCycle reports. -->
+    <issue id="ResourceCycle" severity="ignore" />
+
     <!-- Warnings -->
     <issue id="AllowBackup" severity="warning" />
     <issue id="MissingTranslation" severity="warning" />
