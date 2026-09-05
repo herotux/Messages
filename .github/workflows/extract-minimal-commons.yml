@@ -192,7 +192,91 @@ jobs:
           print('FINISH_RESOURCES', len(seen), 'BINDINGS', sorted(bindings))
           PY
 
-          # Bank logos are permanent Messages source resources. They are NOT downloaded,
+          # Clean duplicate Android values resources after Commons extraction.
+python3 - <<'PY2'
+from pathlib import Path
+import subprocess
+import xml.etree.ElementTree as ET
+
+RES = Path("app/src/main/res")
+
+tracked = {
+    Path(x)
+    for x in subprocess.check_output(
+        ["git", "ls-files", "app/src/main/res"],
+        text=True
+    ).splitlines()
+}
+
+def resource_key(child):
+    tag = child.tag.split("}")[-1]
+
+    if tag == "item" and child.attrib.get("type"):
+        tag = child.attrib["type"]
+
+    if tag == "declare-styleable":
+        tag = "styleable"
+
+    name = child.attrib.get("name")
+    return tag, name
+
+for d in sorted(RES.glob("values*")):
+    if not d.is_dir():
+        continue
+
+    owners = {}
+
+    for f in sorted(d.glob("*.xml")):
+        try:
+            root = ET.parse(f).getroot()
+        except Exception:
+            continue
+
+        for child in list(root):
+            k = resource_key(child)
+
+            if k[1]:
+                owners.setdefault(k, []).append(f)
+
+    for k, files in owners.items():
+        if len(files) <= 1:
+            continue
+
+        tracked_files = [f for f in files if f in tracked]
+
+        keep = tracked_files[0] if tracked_files else files[0]
+
+        for f in files:
+            if f == keep:
+                continue
+
+            try:
+                root = ET.parse(f).getroot()
+            except Exception:
+                continue
+
+            changed = False
+
+            for child in list(root):
+                if resource_key(child) == k:
+                    root.remove(child)
+                    changed = True
+
+            if not changed:
+                continue
+
+            if len(list(root)) == 0:
+                f.unlink()
+            else:
+                ET.ElementTree(root).write(
+                    f,
+                    encoding="utf-8",
+                    xml_declaration=True
+                )
+
+print("VALUES_DUPLICATES_CLEANED")
+PY2
+# Bank logos are permanent Messages source resources. They are NOT downloaded,
           # converted, or regenerated in CI. Keep Sepah as PNG; all other bank logos
           # must be VectorDrawable XML. Operator PNGs are unrelated and untouched.
           find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
