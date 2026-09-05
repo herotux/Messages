@@ -1,0 +1,167 @@
+name: Build Minimal Commons
+
+on:
+  push:
+    branches:
+      - chore/minimal-commons
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    if: ${{ !contains(github.event.head_commit.message, 'vendor only used Fossify Commons code') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract and build
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf /tmp/commons
+          git clone --quiet https://github.com/herotux/commons.git /tmp/commons
+          git -C /tmp/commons checkout --quiet 5fe79e3f1ccd62c1905f73281370e1641baaf6db
+
+          # Remove the external Commons dependency. The app now contains the
+          # selected Commons source/resources directly.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path("app/build.gradle.kts")
+          s = p.read_text()
+          s = re.sub(r'^\s*implementation\(libs\.fossify\.commons\)\s*\n', '', s, flags=re.M)
+          p.write_text(s)
+
+          p = Path("gradle/libs.versions.toml")
+          s = p.read_text()
+          s = re.sub(r'^commons\s*=.*\n', '', s, flags=re.M)
+          s = re.sub(r'^fossify-commons\s*=.*\n', '', s, flags=re.M)
+          p.write_text(s)
+          PY
+
+          python3 tools/extract_minimal_commons.py
+          python3 tools/finish_minimal_commons.py
+
+          # The extractor can merge a Commons value into a locale file that is
+          # already owned by Messages. Keep the existing app resource and remove
+          # duplicate definitions deterministically before Gradle sees them.
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import xml.etree.ElementTree as ET
+
+          RES = Path("app/src/main/res")
+          tracked = {
+              Path(x) for x in subprocess.check_output(
+                  ["git", "ls-files", "app/src/main/res"], text=True
+              ).splitlines()
+          }
+
+          def key(node):
+              tag = node.tag.split("}")[-1]
+              if tag == "item" and node.attrib.get("type"):
+                  tag = node.attrib["type"]
+              if tag == "declare-styleable":
+                  tag = "styleable"
+              return tag, node.attrib.get("name")
+
+          for directory in sorted(RES.glob("values*")):
+              if not directory.is_dir():
+                  continue
+
+              owners = {}
+              for path in sorted(directory.glob("*.xml")):
+                  try:
+                      root = ET.parse(path).getroot()
+                  except Exception:
+                      continue
+                  for node in list(root):
+                      k = key(node)
+                      if k[1]:
+                          owners.setdefault(k, []).append(path)
+
+              for k, paths in owners.items():
+                  if len(paths) < 2:
+                      continue
+
+                  # Prefer a tracked Messages file. If the only conflict is
+                  # strings.xml vs another tracked file, the tracked file wins.
+                  tracked_paths = [p for p in paths if p in tracked]
+                  keep = sorted(tracked_paths or paths)[0]
+
+                  for path in paths:
+                      if path == keep:
+                          continue
+                      try:
+                          root = ET.parse(path).getroot()
+                          changed = False
+                          for node in list(root):
+                              if key(node) == k:
+                                  root.remove(node)
+                                  changed = True
+                          if not changed:
+                              continue
+                          if list(root):
+                              ET.ElementTree(root).write(
+                                  path, encoding="utf-8", xml_declaration=True
+                              )
+                          else:
+                              path.unlink()
+                      except Exception:
+                          pass
+
+          # Fail early if Android resource duplicates still exist.
+          duplicates = []
+          for directory in sorted(RES.glob("values*")):
+              if not directory.is_dir():
+                  continue
+              seen = {}
+              for path in sorted(directory.glob("*.xml")):
+                  try:
+                      root = ET.parse(path).getroot()
+                  except Exception:
+                      continue
+                  for node in list(root):
+                      k = key(node)
+                      if k[1]:
+                          seen.setdefault(k, []).append(path)
+              for k, paths in seen.items():
+                  if len(paths) > 1:
+                      duplicates.append((directory.name, k, [p.name for p in paths]))
+
+          if duplicates:
+              for item in duplicates[:50]:
+                  print("DUPLICATE_RESOURCE", item)
+              raise SystemExit(f"Found {len(duplicates)} duplicate Android resources")
+
+          print("VALUES_DEDUP_OK")
+          PY
+
+          # Bank logos are checked-in Messages resources. Sepah stays PNG;
+          # every other bank logo must be a VectorDrawable XML. Operator PNGs
+          # are unrelated and are left untouched.
+          find app/src/main/res/drawable -maxdepth 1 -type f -name 'bank_*.png' ! -name 'bank_sepah.png' -delete
+          test -f app/src/main/res/drawable/bank_sepah.png
+          test -f app/src/main/res/drawable/bank_sina.xml
+          test ! -e app/src/main/res/drawable/bank_sina.png
+          test -f app/src/main/res/drawable/bank_tosee_taavon.xml
+          test ! -e app/src/main/res/drawable/bank_tosee_taavon.png
+
+          ./gradlew :app:compileCoreDebugKotlin --no-daemon --stacktrace
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main tools/finish_minimal_commons.py app/build.gradle.kts gradle/libs.versions.toml
+
+          if git diff --cached --quiet; then
+            echo 'No generated changes to commit.'
+            exit 0
+          fi
+
+          git commit -m 'vendor only used Fossify Commons code'
+          git pull --rebase origin chore/minimal-commons
+          git push origin HEAD:chore/minimal-commons
