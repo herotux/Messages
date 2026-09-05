@@ -158,6 +158,14 @@ jobs:
                   for p in files:
                       copy_resource(p)
 
+          # Commons View/DataBinding classes depend on generated bindings.
+          # The binding generator only sees layouts that physically exist in the
+          # app resource tree, so vendor every Commons layout variant. This is
+          # still resource-only; Kotlin/Java remains minimal.
+          for layout_src in COMMONS_RES.rglob("*.xml"):
+              if layout_src.parent.name.startswith("layout") and not layout_src.stem.startswith("bank_"):
+                  copy_resource(layout_src)
+
           # Resolve resources used by app/Commons code and by copied XML.
           queue = list(need)
           seen = set()

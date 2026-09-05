@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
     id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"
+    id("org.jetbrains.kotlin.plugin.parcelize")
 }
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
