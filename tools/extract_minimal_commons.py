@@ -11,9 +11,6 @@ src=list((C/'kotlin').rglob('*.kt'))+list((C/'java').rglob('*.java'))
 by_pkg={}; decl={}
 
 def declared_names(t):
-    # Support modifiers, generic function parameters, extension receivers,
-    # properties, and regular classes/interfaces/objects. The previous regex
-    # missed declarations such as `inline fun <T> Iterable<T>.sumByLong(...)`.
     return set(re.findall(
         r'^\s*(?:(?:public|private|internal|protected|data|sealed|open|abstract|enum|value|annotation|suspend|inline|infix|operator|tailrec)\s+)*'
         r'(?:class|interface|object|typealias|fun|val|var)\s+'
@@ -54,8 +51,6 @@ for t in texts+[manifest]:
         for p in by_pkg.get(pkg,[]):
             if any(re.search(r'\b'+re.escape(n)+r'\b',t) for n in decl[p]): add(p)
 
-# SimpleActivity in Messages inherits BaseSimpleActivity, whose superclass
-# EdgeToEdgeActivity is in the same Commons package and therefore has no import.
 for root in ('BaseSimpleActivity.kt', 'EdgeToEdgeActivity.kt'):
     for p in src:
         if p.stem == Path(root).stem and p.parent.name == 'activities':
@@ -68,7 +63,6 @@ while q:
     for pkg in re.findall(r'^\s*import\s+(org\.fossify\.commons\.[\w.]+)\.\*',t,re.M):
         for r in by_pkg.get(pkg,[]):
             if any(re.search(r'\b'+re.escape(n)+r'\b',t) for n in decl[r]): add(r)
-    # Kotlin permits same-package references without imports.
     resolve_same_package(p,t)
 
 for p in sel:
@@ -78,64 +72,83 @@ for p in sel:
 need=set()
 for t in texts+[manifest]+[p.read_text(errors='ignore') for p in sel]:
     need |= set(re.findall(r'org\.fossify\.commons\.R\.(\w+)\.(\w+)',t))
+
+# ViewBinding/DataBinding references do not appear as R.layout references.
+# Derive the corresponding layout names, e.g. ActivityAppLockBinding -> activity_app_lock.
+binding_layouts=set()
+for t in [p.read_text(errors='ignore') for p in sel]:
+    for cls in re.findall(r'\b([A-Z][A-Za-z0-9_]*)Binding\b',t):
+        name=cls[:-7]
+        snake=re.sub(r'(?<!^)([A-Z])',r'_\1',name).lower()
+        binding_layouts.add(snake)
+
 res=list((C/'res').rglob('*')); copied=set(); skipped=set()
 
-# Resources owned by Messages must not be replaced by Commons. Bank logos are
-# maintained as permanent source files in Messages.
 def is_app_owned_bank_resource(p):
     return p.is_file() and p.stem.startswith('bank_')
 
-existing_keys=set()
-for p in (DEST/'res').rglob('*'):
-    if p.is_file() and p.parent.name.startswith(('drawable','mipmap','layout','xml')):
-        existing_keys.add((p.parent.name.split('-')[0], p.stem))
-
 VALUES_TAGS={'item','string','color','dimen','style','attr','declare-styleable','plurals','string-array','integer-array','bool','integer','fraction'}
-def values_keys(path):
-    out=[]
+
+def values_children(path):
     try:
         root=ET.parse(path).getroot()
-        for child in root:
-            name=child.attrib.get('name')
-            if name: out.append((child.tag.split('}')[-1], name))
+        return root, list(root)
     except Exception:
-        pass
-    return out
+        return None, []
 
-for p in (DEST/'res').rglob('*'):
-    if p.is_file() and p.parent.name.startswith('values'):
-        for tag,name in values_keys(p): existing_keys.add((tag,name))
+def resource_key(p):
+    return (p.parent.name.split('-')[0], p.stem)
 
-def copy_values(p):
-    try: root=ET.parse(p).getroot()
-    except Exception:
-        skipped.add(p); return
-    changed=False
-    for child in list(root):
-        tag=child.tag.split('}')[-1]; name=child.attrib.get('name')
-        if not name or (tag,name) not in existing_keys:
-            if name: existing_keys.add((tag,name))
-            continue
-        root.remove(child); changed=True
-    if len(root) == 0:
-        skipped.add(p); return
+def child_key(child):
+    tag=child.tag.split('}')[-1]
+    name=child.attrib.get('name')
+    return (tag,name)
+
+def merge_values_resource(p, wanted):
+    src_root, children=values_children(p)
+    if src_root is None: return
+    wanted_children=[c for c in children if child_key(c) in wanted]
+    if not wanted_children: return
     out=DEST/'res'/p.relative_to(C/'res'); out.parent.mkdir(parents=True,exist_ok=True)
-    ET.ElementTree(root).write(out,encoding='utf-8',xml_declaration=True)
-    copied.add(p)
+    if out.exists():
+        dst_root,dst_children=values_children(out)
+        if dst_root is None: return
+        existing={child_key(c) for c in dst_children}
+        changed=False
+        for child in wanted_children:
+            key=child_key(child)
+            if key not in existing:
+                dst_root.append(child); existing.add(key); changed=True
+        if changed:
+            ET.ElementTree(dst_root).write(out,encoding='utf-8',xml_declaration=True)
+            copied.add(p)
+        else:
+            skipped.add(p)
+    else:
+        root=ET.Element(src_root.tag, src_root.attrib)
+        for child in wanted_children: root.append(child)
+        ET.ElementTree(root).write(out,encoding='utf-8',xml_declaration=True)
+        copied.add(p)
 
 def copyres(p):
     if is_app_owned_bank_resource(p): skipped.add(p); return
-    out=DEST/'res'/p.relative_to(C/'res'); key=(p.parent.name.split('-')[0], p.stem)
-    if out.exists() or key in existing_keys:
-        skipped.add(p); return
-    out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p); existing_keys.add(key)
+    out=DEST/'res'/p.relative_to(C/'res')
+    if out.exists(): skipped.add(p); return
+    out.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,out); copied.add(p)
 
+# Copy only the Commons resources actually referenced by the selected code.
 for typ,name in need:
     for p in res:
         if not p.is_file() or is_app_owned_bank_resource(p): continue
         if p.parent.name.startswith('values'):
-            if any(tag == typ and nm == name for tag,nm in values_keys(p)): copy_values(p)
+            merge_values_resource(p,{(typ,name)})
         elif typ in ('layout','drawable','mipmap','xml') and p.stem==name:
+            copyres(p)
+
+# Copy layouts required by generated ViewBinding/DataBinding classes.
+for name in binding_layouts:
+    for p in res:
+        if p.is_file() and not is_app_owned_bank_resource(p) and p.stem==name and p.parent.name.startswith('layout'):
             copyres(p)
 
 print('SELECTED',len(sel),'RESOURCES',len(copied),'SKIPPED_EXISTING_RESOURCES',len(skipped))
