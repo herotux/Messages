@@ -114,7 +114,10 @@ jobs:
                       except Exception:
                           pass
 
-          # Fail early if Android resource duplicates still exist.
+          # This is intentionally the final resource normalization pass: the
+          # previous finish step can be followed by another Commons resource
+          # discovery pass, so duplicate values must be removed after ALL
+          # extraction work and immediately before Gradle.
           duplicates = []
           for directory in sorted(RES.glob("values*")):
               if not directory.is_dir():
