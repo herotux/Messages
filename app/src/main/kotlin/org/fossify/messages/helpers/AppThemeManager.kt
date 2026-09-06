@@ -59,7 +59,7 @@ object AppThemeManager {
             try {
                 activity.contentResolver.openInputStream(uri)?.use { input ->
                     BitmapFactory.decodeStream(input)?.let { bitmap ->
-                        BitmapDrawable(activity.resources, bitmap).apply { gravity = Gravity.CENTER_CROP }
+                        BitmapDrawable(activity.resources, bitmap).apply { gravity = Gravity.CENTER }
                     }
                 }
             } catch (_: Exception) { null }
@@ -74,7 +74,7 @@ object AppThemeManager {
             view.setTitleTextColor(contrast)
             view.setSubtitleTextColor(contrast)
             view.navigationIcon?.setTint(contrast)
-            for (index in 0 until view.menu.size) view.menu.getItem(index).icon?.setTint(contrast)
+            for (index in 0 until view.menu.size()) view.menu.getItem(index).icon?.setTint(contrast)
         }
 
         val tint = ColorStateList.valueOf(accent)
