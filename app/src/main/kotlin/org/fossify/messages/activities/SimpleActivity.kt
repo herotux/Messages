@@ -1,14 +1,57 @@
 package org.fossify.messages.activities
 
+import android.graphics.Typeface
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
 import org.fossify.commons.activities.BaseSimpleActivity
+import org.fossify.commons.helpers.FontHelper
 import org.fossify.messages.R
+import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.BackgroundThemeManager
 
 open class SimpleActivity : BaseSimpleActivity() {
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
         BackgroundThemeManager.apply(this)
+        applySelectedFontToViewTree(window.decorView)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-apply after returning from settings so every currently attached view uses
+        // the latest selected font. RecyclerView-backed screens also refresh their
+        // visible rows through their own adapters when needed.
+        applySelectedFontToViewTree(window.decorView)
+    }
+
+    /**
+     * Applies the font selected in Messages settings to every text-based view that is
+     * currently attached to this activity. Keeping this at the common activity level
+     * prevents individual screens from silently falling back to the system font.
+     */
+    private fun applySelectedFontToViewTree(view: View) {
+        val typeface = runCatching { FontHelper.getTypeface(this) }.getOrElse { Typeface.DEFAULT }
+        applyTypeface(view, typeface)
+    }
+
+    private fun applyTypeface(view: View, typeface: Typeface) {
+        if (view is TextView) {
+            val currentStyle = when (view.typeface?.style) {
+                Typeface.BOLD -> Typeface.BOLD
+                Typeface.ITALIC -> Typeface.ITALIC
+                Typeface.BOLD_ITALIC -> Typeface.BOLD_ITALIC
+                else -> Typeface.NORMAL
+            }
+            view.setTypeface(typeface, currentStyle)
+        }
+
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                applyTypeface(view.getChildAt(index), typeface)
+            }
+        }
     }
 
     override fun getAppIconIDs() = arrayListOf(
