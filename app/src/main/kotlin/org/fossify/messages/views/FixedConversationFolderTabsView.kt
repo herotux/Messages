@@ -28,6 +28,11 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        // ConversationFolderTabsView historically forced the internal row to RTL.
+        // That is correct for Persian/Arabic, but reverses tabs for LTR locales.
+        val direction = resources.configuration.layoutDirection
+        layoutDirection = direction
+        (privateField("tabs") as? View)?.layoutDirection = direction
         installPreDrawFix()
         post { sync(true) }
     }
