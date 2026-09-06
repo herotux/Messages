@@ -19,16 +19,12 @@ open class SimpleActivity : BaseSimpleActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Re-apply after returning from settings so every currently attached view uses
-        // the latest selected font. RecyclerView-backed screens also refresh their
-        // visible rows through their own adapters when needed.
         applySelectedFontToViewTree(window.decorView)
     }
 
     /**
-     * Applies the font selected in Messages settings to every text-based view that is
-     * currently attached to this activity. Keeping this at the common activity level
-     * prevents individual screens from silently falling back to the system font.
+     * Applies the selected Messages font to every text-based view currently attached
+     * to this activity, so screens do not silently fall back to the system font.
      */
     private fun applySelectedFontToViewTree(view: View) {
         val typeface = runCatching { FontHelper.getTypeface(this) }.getOrElse { Typeface.DEFAULT }
@@ -63,11 +59,6 @@ open class SimpleActivity : BaseSimpleActivity() {
         R.mipmap.ic_launcher_light_blue,
         R.mipmap.ic_launcher_cyan,
         R.mipmap.ic_launcher_teal,
-        R.mipmap.ic_launcher,
-        R.mipmap.ic_launcher_light_green,
-        R.mipmap.ic_launcher_lime,
-        R.mipmap.ic_launcher_yellow,
-        R.mipmap.ic_launcher_amber,
         R.mipmap.ic_launcher,
         R.mipmap.ic_launcher_light_green,
         R.mipmap.ic_launcher_lime,
