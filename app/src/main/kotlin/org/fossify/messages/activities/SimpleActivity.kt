@@ -8,7 +8,6 @@ import android.widget.TextView
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.helpers.FontHelper
 import org.fossify.messages.R
-import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.BackgroundThemeManager
 
 open class SimpleActivity : BaseSimpleActivity() {
@@ -64,6 +63,11 @@ open class SimpleActivity : BaseSimpleActivity() {
         R.mipmap.ic_launcher_light_blue,
         R.mipmap.ic_launcher_cyan,
         R.mipmap.ic_launcher_teal,
+        R.mipmap.ic_launcher,
+        R.mipmap.ic_launcher_light_green,
+        R.mipmap.ic_launcher_lime,
+        R.mipmap.ic_launcher_yellow,
+        R.mipmap.ic_launcher_amber,
         R.mipmap.ic_launcher,
         R.mipmap.ic_launcher_light_green,
         R.mipmap.ic_launcher_lime,
