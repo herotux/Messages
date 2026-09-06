@@ -11,10 +11,10 @@ data class PhoneNumber(
     var isPrimary: Boolean = false
 ) {
     override fun hashCode(): Int {
-        var result = value.hashCode()
+        var result = value?.hashCode() ?: 0
         result = 31 * result + type
-        result = 31 * result + label.hashCode()
-        result = 31 * result + normalizedNumber.hashCode()
+        result = 31 * result + (label?.hashCode() ?: 0)
+        result = 31 * result + (normalizedNumber?.hashCode() ?: 0)
         result = 31 * result + isPrimary.hashCode()
         return result
     }
