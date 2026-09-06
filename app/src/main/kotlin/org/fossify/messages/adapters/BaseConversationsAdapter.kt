@@ -131,6 +131,9 @@ abstract class BaseConversationsAdapter(
     private fun setupView(view: View, conversation: Conversation) {
         ItemConversationBinding.bind(view).apply {
             root.setupViewBackground(activity)
+            // Conversation rows must follow the actual locale direction. This is especially
+            // important because the tab view used to force RTL and could leak that direction.
+            root.layoutDirection = activity.resources.configuration.layoutDirection
             val smsDraft = drafts[conversation.threadId]
             draftIndicator.beVisibleIf(!smsDraft.isNullOrEmpty())
             draftIndicator.setTextColor(properPrimaryColor)
