@@ -369,10 +369,6 @@ class MainActivity : SimpleActivity() {
                 setupConversations(allConversations)
             }
 
-            // Do not rely only on appRunCount here. The local cache can legitimately be
-            // empty after a fresh install or after a compatibility reset, while appRunCount
-            // may already be greater than one. An empty cache must always be hydrated from
-            // the system SMS/MMS provider so conversation search works immediately.
             if (config.appRunCount == 1 || messagesDB.getCount() == 0) {
                 conversations.map { it.threadId }.forEach { threadId ->
                     val messages = getMessages(threadId, includeScheduledMessages = false)
@@ -521,3 +517,169 @@ class MainActivity : SimpleActivity() {
             .setRank(0)
             .build()
     }
+
+    private fun searchTextChanged(text: String, forceUpdate: Boolean = false) {
+        if (!binding.mainMenu.isSearchOpen && !forceUpdate) {
+            return
+        }
+
+        lastSearchedText = text
+        binding.searchPlaceholder2.beGoneIf(text.length >= 2)
+        if (text.length >= 2) {
+            ensureBackgroundThread {
+                val searchQuery = "%$text%"
+                val messages = messagesDB.getMessagesWithText(searchQuery)
+                val conversations = conversationsDB.getConversationsWithText(searchQuery)
+                if (text == lastSearchedText) {
+                    showSearchResults(messages, conversations, text)
+                }
+            }
+        } else {
+            binding.searchPlaceholder.beVisible()
+            binding.searchResultsList.beGone()
+        }
+    }
+
+    private fun showSearchResults(
+        messages: List<Message>,
+        conversations: List<Conversation>,
+        searchedText: String,
+    ) {
+        val searchResults = ArrayList<SearchResult>()
+        conversations.forEach { conversation ->
+            val date = (conversation.date * 1000L).formatDateOrTime(
+                context = this,
+                hideTimeOnOtherDays = true,
+                showCurrentYear = true
+            )
+
+            val searchResult = SearchResult(
+                messageId = -1,
+                title = conversation.title,
+                snippet = conversation.phoneNumber,
+                date = date,
+                threadId = conversation.threadId,
+                photoUri = conversation.photoUri
+            )
+            searchResults.add(searchResult)
+        }
+
+        messages.sortedByDescending { it.id }.forEach { message ->
+            var recipient = message.senderName
+            if (recipient.isEmpty() && message.participants.isNotEmpty()) {
+                val participantNames = message.participants.map { it.name }
+                recipient = TextUtils.join(", ", participantNames)
+            }
+
+            val date = (message.date * 1000L).formatDateOrTime(
+                context = this,
+                hideTimeOnOtherDays = true,
+                showCurrentYear = true
+            )
+
+            val searchResult = SearchResult(
+                messageId = message.id,
+                title = recipient,
+                snippet = message.body,
+                date = date,
+                threadId = message.threadId,
+                photoUri = message.senderPhotoUri
+            )
+            searchResults.add(searchResult)
+        }
+
+        runOnUiThread {
+            binding.searchResultsList.beVisibleIf(searchResults.isNotEmpty())
+            binding.searchPlaceholder.beVisibleIf(searchResults.isEmpty())
+
+            val currAdapter = binding.searchResultsList.adapter
+            if (currAdapter == null) {
+                SearchResultsAdapter(this, searchResults, binding.searchResultsList, searchedText) {
+                    hideKeyboard()
+                    Intent(this, ThreadActivity::class.java).apply {
+                        putExtra(THREAD_ID, (it as SearchResult).threadId)
+                        putExtra(THREAD_TITLE, it.title)
+                        putExtra(SEARCHED_MESSAGE_ID, it.messageId)
+                        startActivity(this)
+                    }
+                }.apply {
+                    binding.searchResultsList.adapter = this
+                }
+            } else {
+                (currAdapter as SearchResultsAdapter).updateItems(searchResults, searchedText)
+            }
+        }
+    }
+
+    private fun launchRecycleBin() {
+        hideKeyboard()
+        startActivity(Intent(applicationContext, RecycleBinConversationsActivity::class.java))
+    }
+
+    private fun launchArchivedConversations() {
+        hideKeyboard()
+        startActivity(Intent(applicationContext, ArchivedConversationsActivity::class.java))
+    }
+
+    private fun launchSettings() {
+        hideKeyboard()
+        startActivity(Intent(applicationContext, SettingsActivity::class.java))
+    }
+
+    private fun launchAbout() {
+        val licenses = LICENSE_EVENT_BUS or LICENSE_SMS_MMS or LICENSE_INDICATOR_FAST_SCROLL
+
+        val faqItems = arrayListOf(
+            FAQItem(
+                title = R.string.faq_2_title,
+                text = R.string.faq_2_text
+            ),
+            FAQItem(
+                title = R.string.faq_3_title,
+                text = R.string.faq_3_text
+            ),
+            FAQItem(
+                title = R.string.faq_4_title,
+                text = R.string.faq_4_text
+            ),
+            FAQItem(
+                title = org.fossify.messages.R.string.faq_9_title_commons,
+                text = org.fossify.messages.R.string.faq_9_text_commons
+            )
+        )
+
+        if (!resources.getBoolean(org.fossify.messages.R.bool.hide_google_relations)) {
+            faqItems.add(
+                FAQItem(
+                    title = org.fossify.messages.R.string.faq_2_title_commons,
+                    text = org.fossify.messages.R.string.faq_2_text_commons
+                )
+            )
+            faqItems.add(
+                FAQItem(
+                    title = org.fossify.messages.R.string.faq_6_title_commons,
+                    text = org.fossify.messages.R.string.faq_6_text_commons
+                )
+            )
+        }
+
+        startAboutActivity(
+            appNameId = R.string.app_name,
+            licenseMask = licenses,
+            versionName = BuildConfig.VERSION_NAME,
+            faqItems = faqItems,
+            showFAQBeforeMail = true
+        )
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun refreshConversations(@Suppress("unused") event: Events.RefreshConversations) {
+        initMessenger()
+    }
+
+    private fun checkWhatsNewDialog() {
+        arrayListOf<Release>().apply {
+            checkWhatsNew(this, BuildConfig.VERSION_CODE)
+        }
+    }
+}
