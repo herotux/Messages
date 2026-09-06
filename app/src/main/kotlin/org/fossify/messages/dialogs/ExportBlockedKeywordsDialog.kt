@@ -50,8 +50,8 @@ class ExportBlockedKeywordsDialog(
             }
 
         activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok, null)
-            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .setPositiveButton(org.fossify.messages.R.string.ok, null)
+            .setNegativeButton(org.fossify.messages.R.string.cancel, null)
             .apply {
                 activity.setupDialogStuff(
                     view = view.root,
@@ -62,12 +62,12 @@ class ExportBlockedKeywordsDialog(
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                         val filename = view.exportBlockedKeywordsFilename.value
                         when {
-                            filename.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
+                            filename.isEmpty() -> activity.toast(org.fossify.messages.R.string.empty_name)
                             filename.isAValidFilename() -> {
                                 val file =
                                     File(realPath, "$filename$BLOCKED_KEYWORDS_EXPORT_EXTENSION")
                                 if (!hidePath && file.exists()) {
-                                    activity.toast(org.fossify.commons.R.string.name_taken)
+                                    activity.toast(org.fossify.messages.R.string.name_taken)
                                     return@setOnClickListener
                                 }
 
@@ -79,7 +79,7 @@ class ExportBlockedKeywordsDialog(
                                 }
                             }
 
-                            else -> activity.toast(org.fossify.commons.R.string.invalid_name)
+                            else -> activity.toast(org.fossify.messages.R.string.invalid_name)
                         }
                     }
                 }

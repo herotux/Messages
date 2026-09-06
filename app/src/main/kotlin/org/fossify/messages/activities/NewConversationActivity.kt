@@ -180,9 +180,9 @@ class NewConversationActivity : SimpleActivity() {
 
         if (!hasContacts) {
             val placeholderText = if (hasPermission(PERMISSION_READ_CONTACTS)) {
-                org.fossify.commons.R.string.no_contacts_found
+                org.fossify.messages.R.string.no_contacts_found
             } else {
-                org.fossify.commons.R.string.no_access_to_contacts
+                org.fossify.messages.R.string.no_access_to_contacts
             }
 
             binding.noContactsPlaceholder.text = getString(placeholderText)

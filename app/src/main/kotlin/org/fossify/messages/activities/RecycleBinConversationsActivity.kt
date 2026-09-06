@@ -99,8 +99,8 @@ class RecycleBinConversationsActivity : SimpleActivity() {
             activity = this,
             message = "",
             messageId = R.string.empty_recycle_bin_messages_confirmation,
-            positive = org.fossify.commons.R.string.yes,
-            negative = org.fossify.commons.R.string.no
+            positive = org.fossify.messages.R.string.yes,
+            negative = org.fossify.messages.R.string.no
         ) {
             ensureBackgroundThread {
                 emptyMessagesRecycleBin()

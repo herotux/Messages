@@ -52,3 +52,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# Keep this source file stable; bank logos are maintained as checked-in resources.

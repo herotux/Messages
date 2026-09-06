@@ -62,8 +62,8 @@ class ScheduleMessageDialog(
     private fun showPreview() {
         if (previewShown) return
         activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok, null)
-            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .setPositiveButton(org.fossify.messages.R.string.ok, null)
+            .setNegativeButton(org.fossify.messages.R.string.cancel, null)
             .apply {
                 previewShown = true
                 activity.setupDialogStuff(binding.root, this, R.string.schedule_message) { dialog ->
@@ -104,7 +104,7 @@ class ScheduleMessageDialog(
             addView(monthPicker, android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             addView(dayPicker, android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
-        val dialog = activity.getAlertDialogBuilder().setTitle("انتخاب تاریخ").setView(container).setNegativeButton(org.fossify.commons.R.string.cancel, null).setPositiveButton(org.fossify.commons.R.string.ok, null).create()
+        val dialog = activity.getAlertDialogBuilder().setTitle("انتخاب تاریخ").setView(container).setNegativeButton(org.fossify.messages.R.string.cancel, null).setPositiveButton(org.fossify.messages.R.string.ok, null).create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val gregorian = PersianDateHelper.jalaliToGregorian(yearPicker.value, monthPicker.value, dayPicker.value)
@@ -127,7 +127,7 @@ class ScheduleMessageDialog(
             val timeSetListener = OnTimeSetListener { _, hours, minutes -> timeSet(hours, minutes) }
             TimePickerDialog(activity, activity.getDatePickerDialogTheme(), timeSetListener, hourOfDay, minute, DateFormat.is24HourFormat(activity)).apply {
                 show()
-                getButton(AlertDialog.BUTTON_NEGATIVE).apply { text = activity.getString(org.fossify.commons.R.string.cancel); setOnClickListener { dismiss() } }
+                getButton(AlertDialog.BUTTON_NEGATIVE).apply { text = activity.getString(org.fossify.messages.R.string.cancel); setOnClickListener { dismiss() } }
             }
         }
     }

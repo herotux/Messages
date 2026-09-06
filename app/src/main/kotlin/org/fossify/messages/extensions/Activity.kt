@@ -34,7 +34,7 @@ fun BaseSimpleActivity.dialNumber(phoneNumber: String, callback: (() -> Unit)? =
                 startActivity(this)
                 callback?.invoke()
             } catch (_: ActivityNotFoundException) {
-                toast(org.fossify.commons.R.string.no_app_found)
+                toast(org.fossify.messages.R.string.no_app_found)
             } catch (e: Exception) {
                 showErrorToast(e)
             }
@@ -56,7 +56,7 @@ fun Activity.launchViewIntent(uri: Uri, mimetype: String, filename: String) {
             if (newMimetype.isNotEmpty() && mimetype != newMimetype) {
                 launchViewIntent(uri, newMimetype, filename)
             } else {
-                toast(org.fossify.commons.R.string.no_app_found)
+                toast(org.fossify.messages.R.string.no_app_found)
             }
         } catch (e: Exception) {
             showErrorToast(e)

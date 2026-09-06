@@ -225,7 +225,7 @@ class MainActivity : SimpleActivity() {
                     startActivityForResult(intent, MAKE_DEFAULT_APP_REQUEST)
                 }
             } else {
-                toast(org.fossify.commons.R.string.unknown_error_occurred)
+                toast(org.fossify.messages.R.string.unknown_error_occurred)
                 finish()
             }
         } else {
@@ -251,7 +251,7 @@ class MainActivity : SimpleActivity() {
                                 if (!granted) {
                                     PermissionRequiredDialog(
                                         activity = this,
-                                        textId = org.fossify.commons.R.string.allow_notifications_incoming_messages,
+                                        textId = org.fossify.messages.R.string.allow_notifications_incoming_messages,
                                         positiveActionCallback = { openNotificationSettings() })
                                 }
                             }
@@ -499,10 +499,10 @@ class MainActivity : SimpleActivity() {
     private fun getCreateNewContactShortcut(appIconColor: Int): ShortcutInfo {
         val newEvent = getString(R.string.new_conversation)
         val drawable =
-            AppCompatResources.getDrawable(this, org.fossify.commons.R.drawable.shortcut_plus)
+            AppCompatResources.getDrawable(this, org.fossify.messages.R.drawable.shortcut_plus)
 
         (drawable as LayerDrawable).findDrawableByLayerId(
-            org.fossify.commons.R.id.shortcut_plus_background
+            org.fossify.messages.R.id.shortcut_plus_background
         ).applyColorFilter(appIconColor)
 
         val bmp = drawable.convertToBitmap()
@@ -643,22 +643,22 @@ class MainActivity : SimpleActivity() {
                 text = R.string.faq_4_text
             ),
             FAQItem(
-                title = org.fossify.commons.R.string.faq_9_title_commons,
-                text = org.fossify.commons.R.string.faq_9_text_commons
+                title = org.fossify.messages.R.string.faq_9_title_commons,
+                text = org.fossify.messages.R.string.faq_9_text_commons
             )
         )
 
-        if (!resources.getBoolean(org.fossify.commons.R.bool.hide_google_relations)) {
+        if (!resources.getBoolean(org.fossify.messages.R.bool.hide_google_relations)) {
             faqItems.add(
                 FAQItem(
-                    title = org.fossify.commons.R.string.faq_2_title_commons,
-                    text = org.fossify.commons.R.string.faq_2_text_commons
+                    title = org.fossify.messages.R.string.faq_2_title_commons,
+                    text = org.fossify.messages.R.string.faq_2_text_commons
                 )
             )
             faqItems.add(
                 FAQItem(
-                    title = org.fossify.commons.R.string.faq_6_title_commons,
-                    text = org.fossify.commons.R.string.faq_6_text_commons
+                    title = org.fossify.messages.R.string.faq_6_title_commons,
+                    text = org.fossify.messages.R.string.faq_6_text_commons
                 )
             )
         }

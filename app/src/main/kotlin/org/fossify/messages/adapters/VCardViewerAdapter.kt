@@ -78,7 +78,7 @@ class VCardViewerAdapter(
                         null
                     }
 
-                    val roundingRadius = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.big_margin)
+                    val roundingRadius = resources.getDimensionPixelSize(org.fossify.messages.R.dimen.big_margin)
                     val transformation = RoundedCorners(roundingRadius)
                     val options = RequestOptions()
                         .diskCacheStrategy(DiskCacheStrategy.RESOURCE)

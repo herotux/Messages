@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="type_a_message">Πληκτρολογήστε ένα μήνυμα…</string>
     <string name="message_not_sent_short">Το μήνυμα δεν εστάλη</string>
@@ -126,4 +126,453 @@
     <string name="group_mms">Ομαδοποίηση MMS</string>
     <string name="group_message_send_description">Το ομαδικό MMS διατηρεί τις απαντήσεις σε μία συνομιλία, αλλά ενδέχεται να ισχύουν χρεώσεις παρόχου κινητής τηλεφωνίας. Η ξεχωριστή αποστολή αποστέλλει ένα μήνυμα σε κάθε άτομο. Μπορείτε να το αλλάξετε αυτό αργότερα στις ρυθμίσεις της εφαρμογής.</string>
     <string name="send_group_message">Μορφή ομαδοποιημένων αποστολών</string>
-</resources>
+<string name="go_to_settings">Μετάβαση στις Ρυθμίσεις</string>
+    <string name="place_finger">Παρακαλώ τοποθετήστε το δάκτυλό σας στον αισθητήρα δακτυλικών αποτυπωμάτων</string>
+    <string name="add_fingerprint">Προσθήκη δακτυλικού αποτυπώματος</string>
+    <string name="invite_friends">Πρόσκληση φίλων</string>
+    <string name="read_faq">Συχνές Ερωτήσεις</string>
+    <string name="fingerprint">Δακτυλικό αποτύπωμα</string>
+    <string name="no_items_found">Δεν βρέθηκαν στοιχεία.</string>
+    <string name="list">Λίστα</string>
+    <string name="known_issues">Γνωστά προβλήματα</string>
+    <string name="privacy_policy">Πολιτική Απορρήτου</string>
+    <string name="edit_with">Επεξεργασία με</string>
+    <string name="invalid_name">Το όνομα περιέχει μη αποδεκτούς χαρακτήρες</string>
+    <string name="enter_password">Εισαγωγή κωδικού</string>
+    <string name="support">Υποστήριξη</string>
+    <string name="minutes_raw">λεπτά</string>
+    <string name="dark_red">Σκούρο Κόκκινο</string>
+    <string name="third_party_licences">Άδειες τρίτων</string>
+    <string name="favorites">Αγαπημένα</string>
+    <string name="unknown">Άγνωστο</string>
+    <string name="select_file">Επιλογή αρχείου</string>
+    <string name="proceed_with_deletion">Είστε βέβαιοι ότι θέλετε να συνεχίσετε τη διαγραφή;</string>
+    <string name="birthday">Γενέθλια</string>
+    <string name="source_and_destination_same">Η προέλευση και ο προορισμός δεν μπορούν να είναι ίδιες</string>
+    <string name="save_before_closing">Έχετε αλλαγές που δεν έχουν αποθηκευτεί. Αποθήκευση πριν από την έξοδο?</string>
+    <string name="discard">Απόρριψη</string>
+    <string name="mobile">Κινητό</string>
+    <string name="allow_notifications_incoming_messages">Πρέπει να επιτρέψετε στην εφαρμογή να εμφανίζει ειδοποιήσεις, διαφορετικά δεν μπορεί να εμφανίσει τα εισερχόμενα μηνύματα.</string>
+    <string name="faq_6_title_commons">Το εικονίδιο εκκίνησης εφαρμογών εξαφανίστηκε. Τι μπορώ να κάνω?</string>
+    <plurals name="weeks_before">
+        <item quantity="one">πρίν %d εβδομάδα</item>
+        <item quantity="other">πρίν %d εβδομάδες</item>
+    </plurals>
+    <string name="dark_theme">Σκοτεινό</string>
+    <string name="default_color">Προεπιλογή</string>
+    <string name="wednesday">Τετάρτη</string>
+    <string name="no_entries_for_exporting">Δεν βρέθηκαν καταχωρήσεις για Εξαγωγή</string>
+    <string name="confirm_usb_storage_access_text">Παρακαλώ επιλέξτε τον ριζικό κατάλογο της συσκευής USB στην επόμενη οθόνη, για παραχώρηση πρόσβασης</string>
+    <string name="skip">Παράβλεψη</string>
+    <string name="feature_locked">Κλειδωμένο</string>
+    <string name="enter_pin">Εισαγωγή PIN</string>
+    <string name="unknown_error_occurred">Παρουσιάστηκε άγνωστο σφάλμα</string>
+    <string name="name">Όνομα</string>
+    <string name="block_unknown_messages">Αποκλεισμός μηνυμάτων από μη αποθηκευμένες επαφές</string>
+    <string name="faq_1_title_commons">Γιατί δεν βλέπω αυτό το Γραφικό στοιχείο εφαρμογής στη λίστα;</string>
+    <string name="file_already_exists">Το αρχείο \"%s\" υπάρχει ήδη</string>
+    <string name="donate_short">Υποστηρίξτε μας αγοράζοντας το &lt;a href=https://play.google.com/store/apps/details?id=org.fossify.thankyou&gt;Fossify Ευχαριστώ&lt;/a&gt;. Θα ξεκλειδώσει επίσης όλες τις λειτουργίες της εφαρμογής, συμπεριλαμβανομένης της προσαρμογής χρωμάτων.</string>
+    <string name="development">Ανάπτυξη</string>
+    <string name="use_24_hour_time_format">Χρήση 24ώρου</string>
+    <string name="record_video">Εγγραφή βίντεο</string>
+    <string name="share_via">Κοινοποίηση μέσω</string>
+    <string name="wrong_root_selected_usb">Λάθος επιλεγμένος κατάλογος, παρακαλώ επιλέξτε το ριζικό κατάλογο της συσκευής USB</string>
+    <string name="authentication_failed">Ο έλεγχος ταυτότητας απέτυχε</string>
+    <string name="open_biometric_dialog">Άνοιγμα διαλόγου βιομετρικής πιστοποίησης ID</string>
+    <string name="confirm_storage_access_text_sd">Εάν δεν βλέπετε την κάρτα SD, δοκιμάστε αυτό</string>
+    <string name="no_app_found">Δεν βρέθηκε έγκυρη εφαρμογή</string>
+    <string name="cannot_rename_folder">Αδύνατη η μετονομασία αυτού του φακέλου</string>
+    <string name="monday">Δευτέρα</string>
+    <string name="badge_deprecated">(απαρχαιωμένο)</string>
+    <string name="confirm_folder_access_title">Επιβεβαίωση πρόσβασης φακέλου</string>
+    <string name="exporting">Εξαγωγή…</string>
+    <string name="artist">Καλλιτέχνης</string>
+    <string name="wrong_pin">Λάθος PIN</string>
+    <string name="enables_more_customization">Ενεργοποιεί περισσότερη προσαρμογή</string>
+    <string name="purchase_simple_thank_you">Αγορά Fossify Thank You</string>
+    <string name="accent_color_white">Χρώμα έμφασης Λευκού θέματος</string>
+    <string name="auto_light_dark_theme">Αυτόματο Φωτεινό / Σκοτεινό</string>
+    <string name="export_blocked_numbers">Εξαγωγή αποκλεισμένων αριθμών</string>
+    <string name="extra_large">Τεράστιο</string>
+    <string name="confirm_storage_access_title">Επιβεβαίωση πρόσβασης στην Εξωτερική αποθήκευση</string>
+    <string name="upgrade">Αναβάθμιση</string>
+    <string name="empty_password">Παρακαλώ εισάγετε τον κωδικό</string>
+    <string name="faq_2_title_commons">Θέλω να σας υποστηρίξω, αλλά δεν μπορώ να δωρίσω χρήματα. Υπάρχει κάτι άλλο που μπορώ να κάνω;</string>
+    <string name="copying_success_one">Το αρχείο αντιγράφηκε με επιτυχία</string>
+    <string name="altitude">Υψόμετρο</string>
+    <string name="confirm_calling_person">Επιβεβαίωση κλήσης %s</string>
+    <string name="blocked_numbers">Αποκλεισμένοι αριθμοί</string>
+    <string name="add_new_sound">Προσθέστε νέο ήχο</string>
+    <string name="properties">Ιδιότητες</string>
+    <string name="app_on_sd_card">Φαίνεται ότι έχετε εγκαταστήσει την εφαρμογή σε μια κάρτα SD, πράγμα που καθιστά τα Γραφικά στοιχεία εφαρμογών μη διαθέσιμα. Δεν θα τα δείτε ακόμη και στη λίστα των διαθέσιμων Γραφικών στοιχείων.
+        Είναι ένας περιορισμός του συστήματος, οπότε αν θέλετε να χρησιμοποιήσετε τα Γραφικά στοιχεία, θα πρέπει να μετακινήσετε την εφαρμογή πίσω στον εσωτερικό αποθηκευτικό χώρο.</string>
+    <string name="moving_success_one">Το αρχείο μετακινήθηκε με επιτυχία</string>
+    <string name="must_make_default_caller_id_app">Αδύνατη η φραγή αγνώστων αριθμών χωρίς άδεια ID κλήσεων.</string>
+    <string name="phone_storage">Αποθηκευτικός χώρος Τηλεφώνου</string>
+    <string name="add_blocked_number_helper_text">Εισάγετε έναν αριθμό ή ένα μοτίβο (π.χ. *12345*, +1*8888) για να μπλοκάρετε όλες τις κλήσεις και τα μηνύματα από αριθμούς που αντιστοιχούν στο μοτίβο.</string>
+    <string name="make_sure_latest">Επίσης, βεβαιωθείτε ότι χρησιμοποιείτε την τελευταία έκδοση της εφαρμογής.</string>
+    <string name="choose_contact">Επιλογή επαφής</string>
+    <string name="select_font_file">Επιλογή αρχείου γραμματοσειράς…</string>
+    <string name="more_info">Περισσότερα</string>
+    <string name="search">Αναζήτηση</string>
+    <string name="could_not_create_folder">Αδύνατη η δημιουργία του φακέλου %s</string>
+    <string name="system_service_disabled">Η υπηρεσία Συστήματος για την επιλογή αρχείων και φακέλων δεν είναι διαθέσιμη</string>
+    <string name="value_copied_to_clipboard_show">Η τιμή αντιγράφηκε στο πρόχειρο:\n%s</string>
+    <string name="fee_up_to_pct">Μέχρι %1$d%% χρέωση</string>
+    <plurals name="seconds_before">
+        <item quantity="one">%d δευτ. πρίν</item>
+        <item quantity="other">%d δευτ. πρίν</item>
+    </plurals>
+    <string name="light_theme">Φωτεινό</string>
+    <string name="confirm_storage_access_text">Επιλέξτε τον ριζικό φάκελο της κάρτας SD στην επόμενη οθόνη, για να επιτρέψετε πρόσβαση εγγραφής</string>
+    <string name="thursday">Πέμπτη</string>
+    <string name="rate_this_app">Αξιολόγηση</string>
+    <string name="confirm_create_doc_for_new_folder_text">Παρακαλώ πατήστε \'&lt;b&gt;Αποθήκευση&lt;/b&gt;\' στο κάτω μέρος της επόμενης οθόνης για να δημιουργήσετε το Νέο φάκελο.</string>
+    <string name="black_white">Μαύρο &amp; Άσπρο</string>
+    <string name="features_locked">Αυτή η λειτουργία είναι κλειδωμένη, αγοράστε το &lt;a href=https://play.google.com/store/apps/details?id=org.fossify.thankyou&gt;Fossify Thank You&lt;/a&gt; που ξεκλειδώνει ολόκληρη την εφαρμογή.&lt;br&gt;&lt;br&gt;Πρόκειται για μια εφάπαξ πληρωμή και εάν δεν είστε ικανοποιημένοι, μπορούμε να σας επιστρέψουμε τα χρήματά σας.</string>
+    <string name="import_blocked_numbers">Εισαγωγή αποκλεισμένων αριθμών</string>
+    <string name="notes">Σημειώσεις</string>
+    <string name="app_icon_color_warning">Προσοχή: Ορισμένα προγράμματα εκκίνησης ενδέχεται να μην χειρίζονται σωστά την προσαρμογή εικονιδίων εφαρμογών. Εάν το εικονίδιο εξαφανιστεί, δοκιμάστε να εκκινήσετε την εφαρμογή μέσω του Google Play ή ενός γραφικού στοιχείου, εάν είναι προσβάσιμο. Μετά την εκκίνηση, επαναφέρετε το προεπιλεγμένο πράσινο χρώμα εικονιδίου #106D1F. Σε ακραίες περιπτώσεις, ενδέχεται να χρειαστεί επανεγκατάσταση της εφαρμογής.</string>
+    <string name="sd_card">Κάρτα SD</string>
+    <string name="authentication_blocked">Αποκλεισμός ελέγχου ταυτότητας, προσπαθήστε ξανά σε λίγο</string>
+    <string name="value_copied_to_clipboard">Η τιμή αντιγράφηκε στο πρόχειρο</string>
+    <string name="alarm">Ειδοποιήσεις</string>
+    <string name="later">Αργότερα</string>
+    <string name="work_fax">Φαξ Εργασίας</string>
+    <string name="more_options">Περισσότερες επιλογές</string>
+    <string name="updating">Ενημέρωση…</string>
+    <string name="anniversary">Επέτειος</string>
+    <string name="global_theme_success">Τα χρώματα ενημερώθηκαν με επιτυχία. Ένα νέο θέμα που ονομάζεται  \"Κοινόχρηστο\" έχει προστεθεί, παρακαλούμε να χρησιμοποιήστε το για την ενημέρωση των χρωμάτων όλων των εφαρμ. στο μέλλον.</string>
+    <string name="rename">Μετονομασία</string>
+    <string name="no_reminder">Χωρίς υπενθύμιση</string>
+    <string name="manage_blocked_numbers">Διαχείριση αποκλεισμένων αριθμών</string>
+    <string name="no_fingerprints_registered">Δεν έχετε καταχωρήσει δακτυλικά αποτυπώματα, προσθέστε μερικά στις Ρυθμίσεις της συσκευής σας</string>
+    <plurals name="by_minutes">
+        <item quantity="one">αναβολή %d λεπτό</item>
+        <item quantity="other">αναβολή %d λεπτά</item>
+    </plurals>
+    <string name="seconds_letter">%dδ</string>
+    <string name="not_blocking_anyone">Χωρίς αποκλεισμο κανενός.</string>
+    <string name="no_sound">Χωρίς ήχο</string>
+    <plurals name="days">
+        <item quantity="one">%d ημέρα</item>
+        <item quantity="other">%d ημέρες</item>
+    </plurals>
+    <string name="delete">Διαγραφή</string>
+    <string name="custom">Προσαρμογή</string>
+    <string name="block_hidden_messages">Αποκλεισμός μηνυμάτων από κρυφούς αριθμούς</string>
+    <string name="little_to_no_fee">Μικρή έως καθόλου χρέωση</string>
+    <string name="create_new_folder">Δημιουργία νέου φακέλου</string>
+    <string name="whats_new_disclaimer">* μόνο οι μεγαλύτερες ενημερώσεις παρατίθενται εδώ, επίσης υπάρχουν πάντα μερικές μικρότερες βελτιώσεις</string>
+    <string name="error">Σφάλμα: %s</string>
+    <string name="permission_required">Απαιτείται άδεια</string>
+    <string name="saturday">Σαββάτο</string>
+    <plurals name="minutes_before">
+        <item quantity="one">%d λεπτό πρίν</item>
+        <item quantity="other">%d λεπτά πρίν</item>
+    </plurals>
+    <string name="value">Τιμή</string>
+    <string name="temporarily_show_excluded">Προσωρινή εμφάνιση αποκλεισμένων</string>
+    <string name="hours_letter">%dω</string>
+    <string name="wrong_root_selected">Επιλέξατε λάθος φάκελο, επιλέξτε τον ριζικό φάκελο της SD card</string>
+    <string name="upgrade_to_pro_long">Η έκδοση της εφαρμογής σας δεν θα ενημερώνεται πλέον. Παρακαλώ αναβαθμίστε την στην έκδοση Pro για να λάβετε νέες επιδιορθώσεις και βελτιώσεις.</string>
+    <string name="no_space">Ο προορισμός που επιλέξατε δεν διαθέτει τον απαιτούμενο χώρο.\nΑπαιτείται %1$s, διαθέσιμα %2$s</string>
+    <string name="size">Μέγεθος</string>
+    <string name="too_many_incorrect_attempts">Πάρα πολλές λανθασμένες προσπάθειες ξεκλειδώματος.\nΠροσπαθήστε ξανά σε %d δευτ.</string>
+    <string name="filename_invalid_characters">Το όνομα περιέχει μη έγκυρους χαρακτήρες</string>
+    <string name="resolution">Ανάλυση</string>
+    <string name="maximum_share_reached">Δεν μπορείτε να κοινοποιήσετε τόσο μεγάλο περιεχόμενο ταυτόχρονα</string>
+    <string name="last_modified">Τελευταία τροπ/ηση</string>
+    <string name="seconds_raw">δευτ/πτα</string>
+    <string name="contributors">Συντελεστές</string>
+    <string name="upgrade_to_pro">Αναβάθμιση στην Pro</string>
+    <string name="album">Αλμπουμ</string>
+    <string name="invalid_file_format">Μη έγκυρη μορφή αρχείου</string>
+    <string name="other">Άλλα</string>
+    <string name="no_email_client_found">Δεν βρέθηκε πελάτης email</string>
+    <string name="faq_1_text_commons">Είναι πολύ πιθανό επειδή μετακινήσατε την εφαρμογή σε μια κάρτα SD. Υπάρχει ένας περιορισμός του συστήματος Android που αποκρύπτει τα συγκεκριμένα Γραφικά στοιχεία εφαρμογών
+       σε αυτή την περίπτωση. Η μόνη λύση είναι να μετακινήσετε την εφαρμογή πίσω στην εσωτερική αποθήκευση μέσω των ρυθμίσεων της συσκευής σας.</string>
+    <string name="accent_color_black_and_white">Χρώμα έμφασης Μαύρου &amp; Λευκού θέματος</string>
+    <string name="faq_9_title_commons">Πώς μπορώ να επιλέξω πολλά στοιχεία ταυτόχρονα;</string>
+    <string name="back">Πίσω</string>
+    <string name="insert_pattern">Εισαγωγή μοτίβου</string>
+    <string name="save">Αποθήκευση</string>
+    <plurals name="hours">
+        <item quantity="one">%d ώρα</item>
+        <item quantity="other">%d ώρες</item>
+    </plurals>
+    <string name="kotlin_title">Kotlin (γλώσσα προγραμματισμού)</string>
+    <string name="no_browser_found">Δεν βρέθηκε φυλλομετρητής</string>
+    <string name="set_as_default">Ορισμός ως προεπιλογής</string>
+    <string name="help_us">Βοηθήστε μας</string>
+    <string name="moving">Μετακινούνται…</string>
+    <string name="small">Μικρό</string>
+    <plurals name="by_weeks">
+        <item quantity="one">%d εβδομάδα</item>
+        <item quantity="other">%d εβδομάδες</item>
+    </plurals>
+    <string name="cryptocurrency">Κρυπτονομίσματα</string>
+    <string name="copy_number_to_clipboard">Αντιγραφή αριθμού στο Πρόχειρο</string>
+    <string name="contributors_label">
+        
+            Αυτή η λίστα περιέχει όλους όσους βοήθησαν αισθητά οποιαδήποτε εφαρμογή της σουίτας Fossify, όχι μόνο αυτή. Οι μεταφράσεις γίνονται από εθελοντές,
+            πείτε μας αν θέλετε να βοηθήσετε κι εσείς. Ο οδηγός για τη μετάφραση βρίσκεται στον &lt;a href="https://github.com/FossifyOrg/General-Discussion#how-can-i-suggest-an-edit-to-a-file"&gt;ιστότοπο&lt;/a&gt;, ή επικοινωνήστε μαζί μας στο &lt;a href="mailto:hello@fossify.org"&gt;hello@fossify.org&lt;/a&gt; αν έχετε οποιεσδήποτε ερωτήσεις.
+            Ευχαριστούμε όλους τους συνεισφέροντες και υποστηρικτές!
+        
+    </string>
+    <string name="download">Λήψη</string>
+    <string name="medium">Μεσαίο</string>
+    <string name="no_access_to_contacts">Η εφαρμογή δεν έχει πρόσβαση στις επαφές σας</string>
+    <string name="move_to_recycle_bin_confirmation">Είστε βέβαιοι ότι θέλετε να μετακινήσετε %s στον κάδο ανακύκλωσης;</string>
+    <string name="file_already_exists_overwrite">Το αρχείο \"%s\" υπάρχει ήδη. Αντικατάσταση?</string>
+    <string name="repeat_pattern">Επανάληψη μοτίβου</string>
+    <string name="sunday">Κυριακή</string>
+    <string name="no_entries_for_importing">Δεν βρέθηκαν καταχωρήσεις για Εισαγωγή</string>
+    <string name="faq_6_text_commons">Αυτό το πρόβλημα προκύπτει όταν το πρόγραμμα εκκίνησης δεν υποστηρίζει πλήρως την προσαρμογή εικονιδίων. Δοκιμάστε να εκκινήσετε την εφαρμογή μέσω του Google Play ή ενός γραφικού στοιχείου, εάν είναι προσβάσιμο. Μετά την εκκίνηση, επαναφέρετε το προεπιλεγμένο πράσινο χρώμα εικονιδίου #106D1F. Σε ακραίες περιπτώσεις, ενδέχεται να χρειαστεί επανεγκατάσταση της εφαρμογής.</string>
+    <string name="overwrite">Αντικατάσταση</string>
+    <string name="remove_exif_confirmation">Σίγουρα θέλετε να αφαιρέσετε τις τιμές EXIF, όπως συντεταγμένες GPS, μοντέλο φωτογραφικής μηχανής κ.λ.π.?</string>
+    <string name="authenticate">Πιστοποίηση</string>
+    <string name="keep_both">Κρατήστε και τα δύο</string>
+    <string name="path">Διαδρομή</string>
+    <string name="allow_notifications_files">Πρέπει να επιτρέψετε στην εφαρμογή να εμφανίζει ειδοποιήσεις, διαφορετικά δεν μπορεί να εμφανίσει τη γραμμή προόδου..</string>
+    <string name="record_audio">Εγγραφή ήχου</string>
+    <string name="home_fax">Φαξ Οικίας</string>
+    <plurals name="years_before">
+        <item quantity="one">%d έτος πρίν</item>
+        <item quantity="other">%d έτη πρίν</item>
+    </plurals>
+    <string name="hours_raw">ώρες</string>
+    <string name="app_version">Έκδοση εφαρμογής: %s</string>
+    <string name="temporarily_show_hidden">Προσωρινή εμφάνιση κρυφών</string>
+    <string name="copy_move_failed">Ένα σφάλμα παρουσιάστηκε</string>
+    <string name="close">Κλείσιμο</string>
+    <string name="prepend_filenames">Προσθήκη κειμένου πριν τα ονόματα αρχείων</string>
+    <string name="append_filenames">Προσθήκη κειμένου μετά τα ονόματα αρχείων</string>
+    <string name="string_to_add">Κείμενο για προσθήκη</string>
+    <string name="pattern">Μοτίβο</string>
+    <string name="could_not_create_file">Αδύνατη η δημιουργία του αρχείου %s</string>
+    <plurals name="days_before">
+        <item quantity="one">%d ημέρα πρίν</item>
+        <item quantity="other">%d ημέρες πρίν</item>
+    </plurals>
+    <string name="importing_successful">Επιτυχής Εισαγωγή</string>
+    <string name="translation">Μετάφραση</string>
+    <string name="about">Σχετικά</string>
+    <string name="direct_children_count">Άμμεση καταμέτρηση παιδιών</string>
+    <string name="hello">Γεια :)</string>
+    <string name="internal">Εσωτερική</string>
+    <string name="during_day_at_hh_mm">Κατά τη διάρκεια της ημέρας στις hh:mm</string>
+    <string name="confirm_storage_access_android_text_specific">Επιτρέψτε την πρόσβαση σε \'<b>%s</b>\' στην επόμενη οθόνη πατώντας \'<b>Χρήση αυτού του φακέλου</b>\' στο κάτω μέρος.</string>
+    <string name="yes">Ναί</string>
+    <string name="deletion_confirmation">Είστε βέβαιοι ότι θέλετε να διαγράψετε %s;</string>
+    <string name="export_settings">Εξαγωγή ρυθμίσεων</string>
+    <string name="number">Αριθμός</string>
+    <plurals name="seconds">
+        <item quantity="one">%d δευτ.</item>
+        <item quantity="other">%d δευτ.</item>
+    </plurals>
+    <string name="faq_9_text_commons">Υπάρχουν πολλοί τρόποι για να γίνει αυτό. Το πρώτο είναι η εκκίνηση της λειτουργίας επιλογής πατώντας παρατεταμένα ένα στοιχείο και κατόπιν κάνοντας σύντομο κλικ σε άλλα για να τα επιλέξετε. Ο δεύτερος τρόπος είναι παρόμοιος με την επιλογή στοιχείων σε υπολογιστές με ποντίκι.
+        απλά ξεκινήστε τη λειτουργία επιλογής πατώντας παρατεταμένα ένα στοιχείο και, στη συνέχεια, κρατώντας πατημένο το δάχτυλό σας, σύρετέ το σε άλλα στοιχεία για επιλογή. Ο τρίτος τρόπος επιλογής πολλών στοιχείων είναι η μεγάλη διάρκεια πίεσης ενός στοιχείου και κατόπιν η μεγάλη διάρκεια πίεσης ενός άλλου και όλων των ενδιάμεσων γίνεται επιλεγμένη. Εάν
+        θέλετε να επιλέξετε όλα τα στοιχεία, πατήστε μόνο ένα στοιχείο και, στη συνέχεια, κάντε κλικ στον επιλεγμένο μετρητή στοιχείων στην επάνω αριστερή γωνία. Αυτό θα επιλέξει ή θα καταργήσει την επιλογή όλων των στοιχείων.</string>
+    <string name="importing_failed">Η Εισαγωγή απέτυχε</string>
+    <string name="no_contacts_permission">Απαιτείται άδεια Επαφών</string>
+    <string name="add_a_blocked_number">Προσθήκη ένος αποκλεισμένου αριθμού</string>
+    <string name="before_asking_question_read_faq">Πριν κάνετε μια ερώτηση, ελέγξτε τις ρυθμίσεις της εφαρμογής και διαβάστε πρώτα τις Συχνές Ερωτήσεις. Ίσως η λύση υπάρχει εκεί.</string>
+    <string name="title">Τίτλο</string>
+    <string name="name_taken">Ένα αρχείο ή φάκελος με αυτό το όνομα υπάρχει ήδη</string>
+    <string name="faq_4_text_commons">Ναι, καθώς σύρετε ένα γραφικό στοιχείο στην αρχική οθόνη σας, εμφανίζεται μια οθόνη διαμόρφωσης Γραφικού στοιχείου. Θα δείτε έγχρωμα τετράγωνα στην κάτω αριστερή γωνία, απλά πατήστε τα για να επιλέξετε ένα νέο χρώμα. Μπορείτε να χρησιμοποιήσετε το ρυθμιστικό για να ρυθμίσετε το alpha επίσης.</string>
+    <string name="select_storage">Επιλέξτε αποθήκευση</string>
+    <plurals name="minutes">
+        <item quantity="one">%d λεπτό</item>
+        <item quantity="other">%d λεπτά</item>
+    </plurals>
+    <string name="whats_new">Τι νέο υπάρχει</string>
+    <string name="pager">Βομβητής</string>
+    <plurals name="by_months">
+        <item quantity="one">%d μήνα</item>
+        <item quantity="other">%d μήνες</item>
+    </plurals>
+    <string name="block_unknown_calls">Αποκλεισμός κλήσεων από μη αποθηκευμένες επαφές</string>
+    <string name="cancel">Ακύρωση</string>
+    <string name="platforms">Πλατφόρμες</string>
+    <plurals name="by_days">
+        <item quantity="one">%d ημέρα</item>
+        <item quantity="other">%d ημέρες</item>
+    </plurals>
+    <string name="about_footer">Φτιαγμένο με ❤️ στη Σλοβακία</string>
+    <string name="work">Εργασία</string>
+    <string name="moving_success">Τα αρχεία μετακινήθηκαν με επιτυχία</string>
+    <string name="purchase_thank_you">
+            Παρακαλώ αγοράστε την &lt;a href="https://play.google.com/store/apps/details?id=org.fossify.thankyou"&gt;Fossify Thank You&lt;/a&gt; για να ξεκλειδώσετε αυτή τη λειτουργία για να υποστηρίξετε την ανάπτυξη. Ευχαριστώ!
+        </string>
+    <string name="select_folder">Επιλογή φακέλου</string>
+    <string name="items_selected">Επιλεγμένα στοιχεία</string>
+    <string name="remove_exif">Αφαίρεση EXIF</string>
+    <string name="importing">Εισαγωγή…</string>
+    <string name="allow_alarm_scheduled_messages">Πρέπει να επιτρέψετε στην εφαρμογή την πρόσβαση σε εσωτερικές ειδοποιήσεις, διαφορετικά δεν μπορεί να στείλει προγραμματισμένα μηνύματα.</string>
+    <string name="at_start">Κατά την έναρξη</string>
+    <string name="duration">Διάρκεια</string>
+    <plurals name="items">
+        <item quantity="one">%d στοιχείο</item>
+        <item quantity="other">%d στοιχεία</item>
+    </plurals>
+    <string name="moving_success_partial">Αδύνατη η μετακίνηση ορισμένων αρχείων</string>
+    <string name="frequently_asked_questions">Συχνές ερωτήσεις</string>
+    <string name="sd_card_usb_same">Οι διαδρομές συσκευών SD card και USB δεν μπορούν να είναι οι ίδιες</string>
+    <string name="gps_coordinates">Συντεταγμένες GPS</string>
+    <string name="please_select_destination">Επιλέξτε έναν προορισμό</string>
+    <string name="folder_already_exists">Ο φάκελος \"%s\" υπάρχει ήδη</string>
+    <plurals name="by_years">
+        <item quantity="one">%d έτος</item>
+        <item quantity="other">%d έτη</item>
+    </plurals>
+    <string name="simple_renaming">Απλή μετονομασία</string>
+    <string name="more_fossify_apps">Περισσότερες εφαρμογές Fossify</string>
+    <string name="block_confirmation">Σίγουρα να αποκλειστεί ο \"%s\"?</string>
+    <string name="repeat_pin">Επανάληψη PIN</string>
+    <string name="device_os">OS Συσκευής: %s</string>
+    <string name="faq_2_text_commons">
+        
+            Ναι, φυσικά. Μπορείτε να διαδώσετε τις εφαρμογές ή να δώσετε καλά σχόλια και αξιολογήσεις. Μπορείτε επίσης να βοηθήσετε με τη μετάφραση των εφαρμογών σε μια νέα γλώσσα ή απλώς να ενημερώστε κάποιες υπάρχουσες μεταφράσεις..
+            Ο οδηγός μετάφρασης βρίσκεται στον &lt;a href="https://github.com/FossifyOrg/General-Discussion#how-can-i-suggest-an-edit-to-a-file"&gt;ιστότοπο&lt;/a&gt;, ή απλά επικοινωνήστε μαζί μας στο &lt;a href="mailto:hello@fossify.org"&gt;hello@fossify.org&lt;/a&gt; αν έχετε οποιεσδήποτε ερωτήσεις.
+        
+    </string>
+    <string name="importing_some_entries_failed">Η Εισαγωγή μερικών καταχωρήσεων απέτυχε</string>
+    <string name="must_make_default_dialer">Θα πρέπει να οριστεί προεπιλεγμένη εφαρμογή για χρήση αποκλεισμένων αριθμών.</string>
+    <string name="copy_to_clipboard">Αντιγραφή στο Πρόχειρο</string>
+    <string name="minutes_letter">%dλ</string>
+    <string name="invalid_destination">Αδύνατη η εγγραφή στον επιλεγμένο προορισμό</string>
+    <string name="invalid_font_file">Μη έγκυρο αρχείο γραμματοσειράς</string>
+    <string name="copying_success_partial">Αδύνατη η αντιγραφή ορισμένων αρχείων</string>
+    <string name="donate_to_fossify">Δωρεά στο Fossify</string>
+    <string name="exporting_failed">Η Εξαγωγή απέτυχε</string>
+    <string name="faq_4_title_commons">Δεν μου αρέσουν τα χρώματα του Γραφικού στοιχείου, μπορώ να τα αλλάξω;</string>
+    <string name="copying_success">Τα αρχεία αντιγράφηκαν με επιτυχία</string>
+    <string name="no">Όχι</string>
+    <string name="folder">Φάκελος</string>
+    <string name="please_enter_pin">Παρακαλώ εισάγετε ένα PIN</string>
+    <string name="send_email">Αποστολή email</string>
+    <plurals name="hours_before">
+        <item quantity="one">%d ώρα πρίν</item>
+        <item quantity="other">%d ώρες πρίν</item>
+    </plurals>
+    <string name="password">Κωδικός πρόσβασης</string>
+    <string name="share_text">Έι, έλα να δεις %1$s στο %2$s</string>
+    <string name="block_hidden_calls">Αποκλεισμός κλήσεων από κρυφούς αριθμούς</string>
+    <string name="font_monospace">Monospace</string>
+    <string name="phone_storage_hidden">Μνήμη τηλεφώνου (κρυφή από άλλες εφαρμογές)</string>
+    <string name="invite_via">Πρόσκληση μέσω</string>
+    <string name="copy">Αντιγραφή</string>
+    <string name="no_contacts_found">Δεν βρέθηκαν Επαφές</string>
+    <string name="version_placeholder">Έκδοση %s</string>
+    <string name="ok">Εντάξει</string>
+    <string name="during_day_at">Κατά τη διάρκεια της ημέρας στις %1$02d:%2$02d</string>
+    <string name="set_as">Ορισμός ως</string>
+    <string name="social">Κοινωνικά</string>
+    <string name="large">Μεγάλο</string>
+    <string name="rename_date_time_pattern">%Y - έτος\n%M - μήνας\n%D - ημέρα\n%h - ώρα\n%m - λεπτό\n%s - δευτ/το\n%i - αύξηση αριθμού από 1</string>
+    <string name="exif_removed">Οι τιμές EXIF αφαιρέθηκαν επιτυχώς</string>
+    <string name="changing_color_description">Η αλλαγή ενός χρώματος θα αλλάξει το Προεπιλεγμένο θέμα</string>
+    <string name="wrong_pattern">Λάθος μοτίβο</string>
+    <string name="grid">Πλέγμα</string>
+    <string name="exporting_successful">Επιτυχής Εξαγωγή</string>
+    <string name="app_corrupt">Κατεστραμμένη Εφαρμογή</string>
+    <string name="camera">Κάμερα</string>
+    <string name="wrong_folder_selected">Επιλέξατε λάθος φάκελο, επιλέξτε τη διαδρομή \'%s\'</string>
+    <plurals name="months_before">
+        <item quantity="one">%d μήνα πρίν</item>
+        <item quantity="other">%d μήνες πρίν</item>
+    </plurals>
+    <string name="main_number">Κύριο</string>
+    <string name="block_number">Αποκλεισμός αριθμού</string>
+    <string name="white">Άσπρο</string>
+    <string name="tuesday">Τρίτη</string>
+    <string name="source_file_doesnt_exist">To αρχείο προέλευσης %s δεν υπάρχει</string>
+    <string name="empty_name">Παρακαλώ εισάγετε ένα όνομα</string>
+    <string name="song_title">Τίτλος τραγουδιού</string>
+    <string name="biometrics">Βιομετρικά</string>
+    <string name="purchase">Αγορά</string>
+    <string name="remove">Αφαίρεση</string>
+    <string name="pin_must_be_4_digits_long">PIN πρέπει να έχει μήκος τουλάχιστον 4 ψηφίων</string>
+    <string name="date_taken">Ημερ. λήψης</string>
+    <string name="home">Οικία</string>
+    <string name="copying">Αντιγράφονται…</string>
+    <string name="lock_folder_notice">Αυτή η προστασία λειτουργεί μόνο για αυτήν την εφαρμογή, δεν πρόκειται να αντικαταστήσει την πραγματική κρυπτογράφηση του Συστήματος.</string>
+    <string name="disclaimer">Αποποίηση ευθύνης</string>
+    <string name="file_saved">Αποθηκεύθηκε επιτυχώς</string>
+    <string name="apply_to_all">Εφαρμογή σε όλα</string>
+    <string name="merge">Συγχώνευση</string>
+    <string name="no_phone_number_found">Δεν βρέθηκε τηλεφωνικός αριθμός</string>
+    <string name="system_folder_restriction">Το Σύστημα δεν επιτρέπει τη λειτουργία σε αυτόν το φάκελο, παρακαλούμε επιλέξτε έναν άλλο φάκελο</string>
+    <string name="files_count">Αριθμός συνολικών αρχείων</string>
+    <string name="system_default">Προεπιλογή Συστήματος</string>
+    <string name="sunday_short">Κυρ</string>
+    <string name="saturday_short">Σαβ</string>
+    <string name="friday_short">Παρ</string>
+    <string name="thursday_short">Πέμ</string>
+    <string name="wednesday_short">Τετ</string>
+    <string name="tuesday_short">Τρί</string>
+    <string name="monday_short">Δευ</string>
+    <string name="grant_permission">Χορήγηση άδειας</string>
+    <string name="friday">Παρασκευή</string>
+    <string name="unblock">Μη Αποκλεισμός</string>
+    <string name="sideloaded_app">
+        
+            Φαίνεται ότι η έκδοση της εφαρμογής σας είναι κατεστραμμένη. Κατεβάστε την αρχική έκδοση από &lt;a href="%s"&gt;εδώ&lt;/a&gt;.
+        
+    </string>
+    <plurals name="by_seconds">
+        <item quantity="one">αναβολή %d δευτ.</item>
+        <item quantity="other">αναβολή %d δευτ.</item>
+    </plurals>
+    <string name="settings_exported_successfully">Επιτυχής εξαγωγή ρυθμίσεων</string>
+    <plurals name="by_hours">
+        <item quantity="one">αναβολή %d ώρα</item>
+        <item quantity="other">αναβολή %d ώρες</item>
+    </plurals>
+    <string name="filename_cannot_be_empty">Το όνομα αρχείου δεν μπορεί να είναι κενό</string>
+    <string name="days_raw">ημερ.</string>
+    <string name="open_with">Άνοιγμα με</string>
+    <string name="contacts_tab">Επαφές</string>
+    <string name="contact_details">Στοιχεία επαφής</string>
+    <string name="requires_fossify_thank_you">Χρειάζεται την Fossify Thank You</string>
+    <string name="apply_to_all_apps">Εφαρμογή θέματος σε όλες τις εφαρμογές Fossify</string>
+    <string name="all_fossify_apps">Όλες οι εφαρμογές Fossify</string>
+    <string name="app_font">Γραμματοσειρά εφαρμογής</string>
+    <string name="font">Γραμματοσειρά</string>
+    <string name="app_icon_color">Χρώμα εικονιδίου εφαρμογής</string>
+    <string name="primary_color">Πρωτεύον χρώμα</string>
+    <string name="background_color">Χρώμα φόντου</string>
+    <string name="text_color">Χρώμα κειμένου</string>
+    <string name="theme">Θέμα εφαρμογής</string>
+    <string name="theme_and_colors">Χρώματα θέματος</string>
+    <string name="customize_colors">Προσαρμογή εμφάνισης</string>
+    <string name="dial_number">Κλήση αριθμού</string>
+    <string name="filename_without_txt">Όνομα αρχείου (χωρίς .txt)</string>
+    <string name="loading">Φόρτωση…</string>
+    <string name="pattern_renaming">Μοτίβο</string>
+    <string name="notifications">Ειδοποιήσεις</string>
+    <string name="empty_recycle_bin">Άδειασμα του Κάδου Ανακύκλωσης</string>
+    <string name="view_contact_details">Προβολή λεπτομερειών επαφής</string>
+    <string name="system_sounds">Ήχοι συστήματος</string>
+    <string name="your_sounds">Οι ήχοι σας</string>
+    <string name="confirm_selection">Επιβεβαίωση επιλογής</string>
+    <string name="add_contact">Προσθήκη επαφής</string>
+    <string name="add_number_to_contact">Προσθήκη αριθμού στις επαφές</string>
+    <string name="select_text">Επιλογή κειμένου</string>
+    <string name="extension">Επέκταση</string>
+    <string name="share">Κοινοποίηση</string>
+    <string name="type_2_characters">Πληκτρολογήστε τουλάχιστον 2 χαρακτήρες για να ξεκινήσετε την αναζήτηση.</string>
+    <string name="filename_without_json">Όνομα αρχείου (χωρίς .json)</string>
+    <string name="settings">Ρυθμίσεις</string>
+    <string name="take_photo">Λήψη φωτογραφίας</string>
+    <string name="customize_notifications">Προσαρμογή ειδοποιήσεων</string>
+    <string name="choose_video">Επιλογή βίντεο</string>
+    <string name="choose_photo">Επιλογή φωτογραφίας</string>
+    <string name="choose_file">Επιλογή αρχείου</string>
+    <string name="recycle_bin">Κάδος Ανακύκλωσης</string>
+    <string name="show_the_recycle_bin">Εμφάνιση Κάδου Ανακύκλωσης</string>
+    <string name="request_the_required_permissions">Ζητούνται οι απαιτούμενες Άδειες</string>
+    <string name="save_as">Αποθήκευση ως</string>
+    <string name="select_all">Επιλογή όλων</string>
+    </resources>

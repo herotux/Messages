@@ -158,15 +158,15 @@ class NotificationHelper(private val context: Context) {
         }
 
         builder.addAction(
-            org.fossify.commons.R.drawable.ic_check_vector,
+            org.fossify.messages.R.drawable.ic_check_vector,
             context.getString(R.string.mark_as_read),
             markAsReadPendingIntent
         )
             .setChannelId(notificationChannelId)
         if (isNoReplySms) {
             builder.addAction(
-                org.fossify.commons.R.drawable.ic_delete_vector,
-                context.getString(org.fossify.commons.R.string.delete),
+                org.fossify.messages.R.drawable.ic_delete_vector,
+                context.getString(org.fossify.messages.R.string.delete),
                 deleteSmsPendingIntent
             ).setChannelId(notificationChannelId)
         }

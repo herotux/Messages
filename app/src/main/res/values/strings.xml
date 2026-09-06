@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_launcher_name">Homa</string>
     <string name="type_a_message">Type a message…</string>
@@ -126,4 +126,595 @@
     <string name="faq_3_text">Yes, you can schedule messages to be sent in the future by long pressing the Send button and picking the desired date and time.</string>
     <string name="faq_4_title">Why do my group message replies appear as individual texts to recipients?</string>
     <string name="faq_4_text">You need to enable \"Send group messages as MMS\" in the app settings. This will ensure that group messages are sent as proper MMS, allowing all participants to see each other\'s replies.</string>
-</resources>
+<string name="go_to_settings">Go to Settings</string>
+    <string name="place_finger">Please place your finger on the fingerprint sensor</string>
+    <string name="add_fingerprint">Add fingerprint</string>
+    <string name="invite_friends">Invite friends</string>
+    <string name="read_faq">Read FAQ</string>
+    <string name="pattern_title">PatternLockView (pattern protection)</string>
+    <string name="fingerprint">Fingerprint</string>
+    <string name="sanselan_title">Apache Sanselan (reading image metadata)</string>
+    <string name="no_items_found">No items found.</string>
+    <string name="list">List</string>
+    <string name="known_issues">Known issues</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="translation_polish">Polish</string>
+    <string name="edit_with">Edit with</string>
+    <string name="invalid_name">The name contains invalid characters</string>
+    <string name="enter_password">Enter password</string>
+    <string name="support">Support</string>
+    <string name="minutes_raw">minutes</string>
+    <string name="dark_red">Dark red</string>
+    <string name="translation_hindi">Hindi</string>
+    <string name="translation_chinese_hk">Chinese (Hong Kong)</string>
+    <string name="third_party_licences">Third-party licences</string>
+    <string name="favorites">Favorites</string>
+    <string name="unknown">Unknown</string>
+    <string name="select_file">Select a file</string>
+    <string name="proceed_with_deletion">Are you sure you want to proceed with the deletion?</string>
+    <string name="birthday">Birthday</string>
+    <string name="source_and_destination_same">Source and destination cannot be the same</string>
+    <string name="save_before_closing">You have unsaved changes. Save before exit?</string>
+    <string name="discard">Discard</string>
+    <string name="mobile">Mobile</string>
+    <string name="allow_notifications_incoming_messages">You must allow the app displaying notifications, else it cannot show incoming messages.</string>
+    <string name="faq_6_title_commons">The app launcher icon disappeared. What can I do?</string>
+    <plurals name="weeks_before">
+        <item quantity="one">%d week before</item>
+        <item quantity="other">%d weeks before</item>
+    </plurals>
+    <string name="dark_theme">Dark</string>
+    <string name="default_color">Default</string>
+    <string name="wednesday">Wednesday</string>
+    <string name="no_entries_for_exporting">No entries for exporting have been found</string>
+    <string name="confirm_usb_storage_access_text">Please choose the top folder of the USB device on the next screen, to grant access</string>
+    <string name="skip">Skip</string>
+    <string name="feature_locked">Locked</string>
+    <string name="translation_portuguese">Portuguese</string>
+    <string name="enter_pin">Enter PIN</string>
+    <string name="unknown_error_occurred">An unknown error occurred</string>
+
+    
+    <string name="gson_title">Gson (JSON parser)</string>
+    <string name="name">Name</string>
+    <string name="block_unknown_messages">Block messages from numbers not in contacts</string>
+    <string name="faq_1_title_commons">How come I don\'t see this apps widget on the list of widgets?</string>
+    <string name="file_already_exists">File \"%s\" already exists</string>
+    <string name="donate_short">Support us by purchasing &lt;a href=https://play.google.com/store/apps/details?id=org.fossify.thankyou&gt;Fossify Thank You&lt;/a&gt; please, it will also unlock all app features including color customization.</string>
+    <string name="development">Development</string>
+    <string name="use_24_hour_time_format">Use 24-hour time format</string>
+    <string name="record_video">Record video</string>
+    <string name="share_via">Share via</string>
+    <string name="wrong_root_selected_usb">Wrong folder selected, please select the main folder of your USB device</string>
+
+    
+    <string name="shared_theme_note">Note that even though you are using the Pro app version, you still need Fossify Thank You for technical reasons. It takes care of the color synchronization.</string>
+    <string name="authentication_failed">Authentication failed</string>
+    <string name="translation_swedish">Swedish</string>
+    <string name="open_biometric_dialog">Open biometric ID verification dialog</string>
+    <string name="confirm_storage_access_text_sd">If you don\'t see the SD card, try this</string>
+    <string name="no_app_found">No valid app found</string>
+    <string name="evalex_title">EvalEx (math expression evaluation)</string>
+    <string name="zip4j_title">Zip4j (ZIP compression and decompression)</string>
+    <string name="cannot_rename_folder">Cannot rename this folder</string>
+
+    
+    <string name="translation_russian">Russian</string>
+    <string name="monday">Monday</string>
+    <string name="badge_deprecated">(deprecated)</string>
+    <string name="translation_french">French</string>
+    <string name="confirm_folder_access_title">Confirm folder access</string>
+    <string name="exporting">Exporting…</string>
+    <string name="artist">Artist</string>
+    <string name="wrong_pin">Wrong PIN</string>
+    <string name="enables_more_customization">Enables more customization</string>
+    <string name="purchase_simple_thank_you">Purchase Fossify Thank You</string>
+    <string name="accent_color_white">Accent color of white theme</string>
+    <string name="auto_light_dark_theme">Auto light / dark</string>
+    <string name="export_blocked_numbers">Export blocked numbers</string>
+    <string name="extra_large">Extra large</string>
+    <string name="confirm_storage_access_title">Confirm external storage access</string>
+    <string name="upgrade">Upgrade</string>
+    <string name="empty_password">Please enter the password</string>
+    <string name="faq_2_title_commons">I want to support you, but I cannot donate money. Is there anything else I can do?</string>
+    <string name="root">Root</string>
+    <string name="copying_success_one">File copied successfully</string>
+    <string name="altitude">Altitude</string>
+    <string name="confirm_calling_person">Confirm calling %s</string>
+    <string name="blocked_numbers">Blocked numbers</string>
+    <string name="add_new_sound">Add a new sound</string>
+    <string name="properties">Properties</string>
+    <string name="translation_norwegian">Norwegian</string>
+    <string name="app_on_sd_card">You seem to have the app installed on an SD card, that makes the app widgets unavailable. You won\'t even see them on the list of available widgets.
+        It is a system limitation, so if you want to use the widgets, you have to move the app back on the internal storage.</string>
+    <string name="moving_success_one">File moved successfully</string>
+    <string name="must_make_default_caller_id_app">Can\'t block unknown numbers without caller ID permission.</string>
+    <string name="translation_hebrew">Hebrew</string>
+    <string name="phone_storage">Phone storage</string>
+    <string name="add_blocked_number_helper_text">Enter a number or a pattern (e.g. *12345*, +1*8888) to block all calls and messages from numbers matching the pattern.</string>
+    <string name="make_sure_latest">Also make sure that you are using the latest app version.</string>
+    <string name="commonmark_title">CommonMark (Markdown parser)</string>
+    <string name="translation_greek">Greek</string>
+    <string name="translation_galician">Galician</string>
+    <string name="indicator_fast_scroll_title">Indicator Fast Scroll (letters on scrollbar)</string>
+    <string name="choose_contact">Choose contact</string>
+    <string name="mammoth_title">Mammoth (DOCX converter)</string>
+    <string name="select_font_file">Select font file…</string>
+    <string name="more_info">More info</string>
+    <string name="search">Search</string>
+    <string name="could_not_create_folder">Could not create folder %s</string>
+    <string name="system_service_disabled">System service for selecting files and folders is unavailable</string>
+
+    
+    <string name="value_copied_to_clipboard_show">Value copied to clipboard:\n%s</string>
+    <string name="android_lame_title">AndroidLame (mp3 encoder)</string>
+    <string name="fee_up_to_pct">Up to %1$d%% fee</string>
+    <string name="cropper_title">Android Image Cropper (image crop and rotate)</string>
+    <plurals name="seconds_before">
+        <item quantity="one">%d second before</item>
+        <item quantity="other">%d seconds before</item>
+    </plurals>
+    <string name="audio_record_view_title">Audio Record View (audio visualization)</string>
+    <string name="light_theme">Light</string>
+    <string name="translation_chinese_tw">Chinese (Traditional)</string>
+
+    
+    <string name="autofittextview_title">AutoFitTextView (resizing text)</string>
+    <string name="sms_mms_title">SMS MMS (SMS and MMS handling)</string>
+    <string name="confirm_storage_access_text">Please choose the top folder of the SD card on the next screen, to grant write access</string>
+    <string name="thursday">Thursday</string>
+    <string name="rate_this_app">Rate this app</string>
+    <string name="confirm_create_doc_for_new_folder_text">Please press \'&lt;b&gt;Save&lt;/b&gt;\' at the bottom of the next screen to create the new folder.</string>
+    <string name="black_white">Black &amp; White</string>
+    <string name="features_locked">This feature is locked, please purchase &lt;a href=https://play.google.com/store/apps/details?id=org.fossify.thankyou&gt;Fossify Thank You&lt;/a&gt; for unlocking the full app.&lt;br&gt;&lt;br&gt;It is a one time payment only and if you won\'t be satisfied, we can refund you.</string>
+    <string name="glide_title">Glide (image loading and caching)</string>
+    <string name="import_blocked_numbers">Import blocked numbers</string>
+    <string name="notes">Notes</string>
+    <string name="translation_danish">Danish</string>
+    <string name="app_icon_color_warning">Caution: Certain launchers may not handle app icon customization correctly. If the icon disappears, attempt launching the app through Google Play or a widget, if accessible.
+        After launching, restore the default green icon color #106D1F. In extreme cases, reinstalling the app may be necessary.</string>
+    <string name="sd_card">SD Card</string>
+    <string name="authentication_blocked">Authentication blocked, please try again in a moment</string>
+    <string name="value_copied_to_clipboard">Value copied to clipboard</string>
+    <string name="alarm">Alarm</string>
+    <string name="translation_azerbaijani">Azerbaijani</string>
+    <string name="later">Later</string>
+    <string name="work_fax">Work Fax</string>
+    <string name="more_options">More options</string>
+    <string name="translation_croatian">Croatian</string>
+    <string name="updating">Updating…</string>
+    <string name="anniversary">Anniversary</string>
+
+    
+    <string name="global_theme_success">The current theme has been successfully applied to all Fossify apps. Any future changes to this theme will be synced automatically.</string>
+    <string name="rename">Rename</string>
+    <string name="no_reminder">No reminder</string>
+    <string name="manage_blocked_numbers">Manage blocked numbers</string>
+    <string name="no_fingerprints_registered">You have no fingerprints registered, please add some in the Settings of your device</string>
+    <plurals name="by_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <string name="seconds_letter">%ds</string>
+    <string name="not_blocking_anyone">You are not blocking anyone.</string>
+    <string name="no_sound">No sound</string>
+    <plurals name="days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="translation_hungarian">Hungarian</string>
+    <string name="delete">Delete</string>
+    <string name="custom">Custom</string>
+    <string name="block_hidden_messages">Block messages from hidden numbers</string>
+    <string name="little_to_no_fee">Little to no fee</string>
+    <string name="create_new_folder">Create new folder</string>
+    <string name="whats_new_disclaimer">* only the bigger updates are listed here, there are always some smaller improvements too</string>
+
+    
+    <string name="translation_tamil">Tamil</string>
+    <string name="error">Error: %s</string>
+    <string name="permission_required">Permission Required</string>
+
+    
+    <string name="saturday">Saturday</string>
+    <plurals name="minutes_before">
+        <item quantity="one">%d minute before</item>
+        <item quantity="other">%d minutes before</item>
+    </plurals>
+    <string name="pdf_view_pager_title">PDFViewPager (PDF viewer)</string>
+    <string name="translation_korean">Korean</string>
+    <string name="value">Value</string>
+    <string name="temporarily_show_excluded">Temporarily show excluded</string>
+    <string name="hours_letter">%dh</string>
+    <string name="leak_canary_title">Leak Canary (memory leak detector)</string>
+    <string name="jsoup_title">jsoup (HTML parser)</string>
+    <string name="translation_arabic">Arabic</string>
+    <string name="wrong_root_selected">Wrong folder selected, please select the main folder of your SD card</string>
+    <string name="upgrade_to_pro_long">Your app version will not be updated anymore. Please upgrade to the Pro version to receive new fixes and other improvements.</string>
+    <string name="m3u_parser_title">M3U Parser (m3u playlist file handling)</string>
+    <string name="picasso_title">Picasso (image loading and caching)</string>
+    <string name="translation_basque">Basque</string>
+    <string name="no_space">The destination does not have enough space available.\nRequired %1$s, available %2$s</string>
+    <string name="size">Size</string>
+    <string name="too_many_incorrect_attempts">Too many incorrect unlock attempts.\nTry again in %d seconds.</string>
+    <string name="translation_chinese_cn">Chinese (Simplified)</string>
+    <string name="filename_invalid_characters">Filename contains invalid characters</string>
+    <string name="translation_italian">Italian</string>
+    <string name="resolution">Resolution</string>
+    <string name="maximum_share_reached">You cannot share this much content at once</string>
+    <string name="last_modified">Last modified</string>
+    <string name="seconds_raw">seconds</string>
+    <string name="contributors">Contributors</string>
+    <string name="upgrade_to_pro">Upgrade to Pro</string>
+    <string name="album">Album</string>
+    <string name="invalid_file_format">Invalid file format</string>
+    <string name="exoplayer_title">ExoPlayer (video player)</string>
+    <string name="other">Other</string>
+    <string name="no_email_client_found">No email client found</string>
+    <string name="faq_1_text_commons">It is most likely because you moved the app on an SD card. There is an Android system limitation which hides the given app widgets
+        in that case. The only solution is to move the app back onto the Internal Storage via your device settings.</string>
+    <string name="accent_color_black_and_white">Accent color of Black &amp; White theme</string>
+    <string name="faq_9_title_commons">How can I select multiple items at once?</string>
+    <string name="translation_spanish">Spanish</string>
+    <string name="back">Back</string>
+    <string name="insert_pattern">Insert pattern</string>
+    <string name="save">Save</string>
+    <plurals name="hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <string name="kotlin_title">Kotlin (programming language)</string>
+    <string name="no_browser_found">No browser found</string>
+    <string name="translation_slovak">Slovak</string>
+    <string name="set_as_default">Set as default</string>
+    <string name="help_us">Help us</string>
+    <string name="moving">Moving…</string>
+    <string name="confirm_storage_access_restricted_text_open_system">Open in system app</string>
+    <string name="small">Small</string>
+    <plurals name="by_weeks">
+        <item quantity="one">%d week</item>
+        <item quantity="other">%d weeks</item>
+    </plurals>
+    <string name="cryptocurrency">Cryptocurrency</string>
+
+    
+    <string name="copy_number_to_clipboard">Copy number to clipboard</string>
+    <string name="contributors_label">
+        
+            This list contains everyone that noticeably helped any app within the Fossify suite, not only this one. Translations are handled by volunteers,
+            let us know if you want to help too. The guide to translating is at &lt;a href="https://github.com/FossifyOrg/General-Discussion#how-can-i-suggest-an-edit-to-a-file"&gt;this website&lt;/a&gt;, or just contact us at &lt;a href="mailto:hello@fossify.org"&gt;hello@fossify.org&lt;/a&gt; if you have any questions.
+            Thanks to all contributors and other supporters!
+        
+    </string>
+
+    <string name="download">Download</string>
+    <string name="pin">PIN</string>
+    <string name="medium">Medium</string>
+    <string name="no_access_to_contacts">The app could not access your contacts</string>
+    <string name="move_to_recycle_bin_confirmation">Are you sure you want to move %s into the recycle bin?</string>    
+    <string name="translation_german">German</string>
+    <string name="file_already_exists_overwrite">File \"%s\" already exists. Overwrite?</string>
+    <string name="repeat_pattern">Repeat pattern</string>
+    <string name="sunday">Sunday</string>
+
+    <string name="exif">EXIF</string>
+    <string name="no_entries_for_importing">No entries for importing have been found</string>
+    <string name="translation_ukrainian">Ukrainian</string>
+    <string name="faq_6_text_commons">This issue arises when your launcher does not fully support icon customization. Attempt launching the app through Google Play or a widget, if accessible.
+        After launching, restore the default green icon color #106D1F. In extreme cases, reinstalling the app may be necessary.</string>
+    <string name="overwrite">Overwrite</string>
+    <string name="remove_exif_confirmation">Are you sure you want to remove EXIF values like GPS coordinates, camera model etc?</string>
+    <string name="authenticate">Authenticate</string>
+    <string name="keep_both">Keep both</string>
+    <string name="path">Path</string>
+    <string name="allow_notifications_files">You must allow the app displaying notifications, else it cannot show the progress bar.</string>
+    <string name="record_audio">Record audio</string>
+    <string name="home_fax">Home Fax</string>
+    <plurals name="years_before">
+        <item quantity="one">%d year before</item>
+        <item quantity="other">%d years before</item>
+    </plurals>
+
+    
+    <string name="hours_raw">hours</string>
+    <string name="app_version">App version: %s</string>
+    <string name="pdf_viewer_title">Android PdfViewer (PDF viewer)</string>
+    <string name="usb">USB</string>
+    <string name="temporarily_show_hidden">Temporarily show hidden</string>
+    <string name="translation_finnish">Finnish</string>
+    <string name="event_bus_title">Event Bus (communication within the app)</string>
+    <string name="copy_move_failed">An error occurred</string>
+    <string name="translation_slovenian">Slovenian</string>
+    <string name="close">Close</string>
+    <string name="translation_japanese">Japanese</string>
+    <string name="prepend_filenames">Add text before filenames</string>
+    <string name="append_filenames">Add text after filenames</string>
+    <string name="string_to_add">Text to add</string>
+    <string name="pattern">Pattern</string>
+    <string name="joda_title">Joda-Time (Java date replacement)</string>
+    <string name="could_not_create_file">Could not create file %s</string>
+    <plurals name="days_before">
+        <item quantity="one">%d day before</item>
+        <item quantity="other">%d days before</item>
+    </plurals>
+    <string name="importing_successful">Importing successful</string>
+    <string name="translation">Translation</string>
+    <string name="about">About</string>
+    <string name="direct_children_count">Direct children count</string>
+    <string name="hello">Hello :)</string>
+    <string name="internal">Internal</string>
+    <string name="during_day_at_hh_mm">During the day at hh:mm</string>
+    <string name="confirm_storage_access_android_text_specific">Please allow access to \'&lt;b&gt;%s&lt;/b&gt;\' on the next screen by pressing \'&lt;b&gt;Use this folder&lt;/b&gt;\' at the bottom.</string>
+    <string name="yes">Yes</string>
+    <string name="deletion_confirmation">Are you sure you want to delete %s?</string>    
+    <string name="export_settings">Export settings</string>
+    <string name="label_with_badge">%1$s %2$s</string>
+
+    
+    <string name="number">Number</string>
+    <plurals name="seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+    <string name="faq_9_text_commons">There are multiple ways of doing that. The first one is starting the selection mode by long pressing one item, then short clicking on others to select them. The second way is similar to selecting items on PCs with a mouse,
+        just start the selection mode by long pressing one item, then with your finger still down drag it across other items for selecting. The third way of selecting multiple items is long pressing one item, then long pressing another one and everything in between gets selected. If you
+        want to select all items, just long press one item, then click at the selected item counter at the top left corner. That will select or unselect all everything.</string>
+    <string name="importing_failed">Importing failed</string>
+    <string name="no_contacts_permission">Contacts permission is required</string>
+    <string name="add_a_blocked_number">Add a blocked number</string>
+    <string name="before_asking_question_read_faq">Before you ask a question, please check the app settings and read the Frequently Asked Questions first. Maybe the solution is there.</string>
+    <string name="title">Title</string>
+    <string name="name_taken">A file or folder with that name already exists</string>
+    <string name="faq_4_text_commons">Yep, as you drag a widget on your home screen a widget config screen appears. You will see colored squares at the bottom left corner, just press them to pick a new color. You can use the slider for adjusting the alpha too.</string>
+    <string name="select_storage">Select storage</string>
+    <plurals name="minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <string name="whats_new">What\'s new</string>
+    <string name="pager">Pager</string>
+    <string name="reprint_title">Reprint (fingerprint protection)</string>
+    <plurals name="by_months">
+        <item quantity="one">%d month</item>
+        <item quantity="other">%d months</item>
+    </plurals>
+    <string name="block_unknown_calls">Block calls from numbers not in contacts</string>
+    <string name="cancel">Cancel</string>
+    <string name="platforms">Platforms</string>
+    <plurals name="by_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="about_footer">Made with ❤️ in Slovakia</string>
+    <string name="work">Work</string>
+
+    
+    <string name="moving_success">Files moved successfully</string>
+    <string name="rtl_viewpager_title">RtlViewPager (right to left swiping)</string>
+    <string name="purchase_thank_you">
+        
+            Please purchase &lt;a href="https://play.google.com/store/apps/details?id=org.fossify.thankyou"&gt;Fossify Thank You&lt;/a&gt; to use this feature and support development. Thank you!
+        
+    </string>
+
+    
+    <string name="select_folder">Select a folder</string>
+    <string name="translation_lithuanian">Lithuanian</string>
+    <string name="items_selected">Items selected</string>
+    <string name="remove_exif">Remove EXIF</string>
+    <string name="importing">Importing…</string>
+    <string name="allow_alarm_scheduled_messages">You must allow the app accessing internal alarms, else it cannot send scheduled messages.</string>
+    <string name="at_start">At start</string>
+    <string name="duration">Duration</string>
+    <plurals name="items">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+
+    
+    <string name="subsampling_title">Subsampling Scale Image View (zoomable imageviews)</string>
+    <string name="moving_success_partial">Some files could not be moved</string>
+    <string name="frequently_asked_questions">Frequently asked questions</string>
+    <string name="sd_card_usb_same">SD card and USB device paths cannot be the same</string>
+    <string name="gps_coordinates">GPS coordinates</string>
+    <string name="please_select_destination">Please select a destination</string>
+    <string name="folder_already_exists">Folder \"%s\" already exists</string>
+    <plurals name="by_years">
+        <item quantity="one">%d year</item>
+        <item quantity="other">%d years</item>
+    </plurals>
+
+    
+    <string name="translation_bengali">Bengali</string>
+    <string name="simple_renaming">Simple renaming</string>
+    <string name="translation_romanian">Romanian</string>
+    <string name="more_fossify_apps">More Fossify apps</string>
+    <string name="block_confirmation">Are you sure you want to block \"%s\"?</string>
+    <string name="repeat_pin">Repeat PIN</string>
+    <string name="device_os">Device OS: %s</string>
+    <string name="gesture_views_title">Gesture Views (zoomable images)</string>
+    <string name="faq_2_text_commons">
+        
+            Yes, of course. You can spread the word about the apps or give good feedback and ratings. You can also help by translating the apps in a new language, or just update some existing translations.
+            The guide to translating is at &lt;a href="https://github.com/FossifyOrg/General-Discussion#how-can-i-suggest-an-edit-to-a-file"&gt;this website&lt;/a&gt;, or just contact us at &lt;a href="mailto:hello@fossify.org"&gt;hello@fossify.org&lt;/a&gt; if you have any questions.
+        
+    </string>
+    <string name="importing_some_entries_failed">Importing some entries failed</string>
+    <string name="must_make_default_dialer">You have to make this app the default dialer app to make use of blocked numbers.</string>
+    <string name="copy_to_clipboard">Copy to clipboard</string>
+    <string name="minutes_letter">%dm</string>
+    <string name="invalid_destination">Could not write to the selected destination</string>
+    <string name="invalid_font_file">Invalid font file</string>
+    <string name="confirm_storage_access_restricted_text">Due to system restrictions, this folder is not available.</string>
+    <string name="copying_success_partial">Some files could not be copied</string>
+    <string name="donate_to_fossify">Donate to Fossify</string>
+    <string name="exporting_failed">Exporting failed</string>
+    <string name="faq_4_title_commons">I don\'t like the widget colors, can I change them?</string>
+    <string name="copying_success">Files copied successfully</string>
+    <string name="no">No</string>
+    <string name="folder">Folder</string>
+    <string name="translation_dutch">Dutch</string>
+    <string name="please_enter_pin">Please enter a PIN</string>
+    <string name="send_email">Send email</string>
+    <plurals name="hours_before">
+        <item quantity="one">%d hour before</item>
+        <item quantity="other">%d hours before</item>
+    </plurals>
+    <string name="password">Password</string>
+    <string name="share_text">Hey, come check out %1$s at %2$s</string>
+    <string name="espresso_title">Espresso (testing helper)</string>
+    <string name="translation_indonesian">Indonesian</string>
+    <string name="block_hidden_calls">Block calls from hidden numbers</string>
+    <string name="font_monospace">Monospace</string>
+    <string name="phone_storage_hidden">Phone storage (not visible by other apps)</string>
+    <string name="invite_via">Invite via</string>
+    <string name="copy">Copy</string>
+    <string name="no_contacts_found">No contacts found</string>
+    <string name="version_placeholder">Version %s</string>
+    <string name="ok">OK</string>
+    <string name="during_day_at">During the day at %1$02d:%2$02d</string>
+
+    
+    <string name="set_as">Set as</string>
+    <string name="social">Social</string>
+    <string name="large">Large</string>
+    <string name="apng_title">APNG Android (animated WebP support)</string>
+    <string name="rename_date_time_pattern">%Y - year\n%M - month\n%D - day\n%h - hour\n%m - minute\n%s - second\n%i - number increasing from 1</string>
+    <string name="translation_turkish">Turkish</string>
+    <string name="exif_removed">EXIF values removed successfully</string>
+
+    
+    <string name="translation_nepali">Nepali</string>
+    <string name="gif_drawable_title">Gif Drawable (loading GIFs)</string>
+    <string name="changing_color_description">Changing a color will make it switch to Custom theme</string>
+    <string name="wrong_pattern">Wrong pattern</string>
+    <string name="grid">Grid</string>
+    <string name="exporting_successful">Exporting successful</string>
+    <string name="translation_persian">Persian</string>
+    <string name="app_corrupt">App Corrupt</string>
+    <string name="camera">Camera</string>
+    <string name="wrong_folder_selected">Wrong folder selected, please select path \'%s\'</string>
+
+    
+    <plurals name="months_before">
+        <item quantity="one">%d month before</item>
+        <item quantity="other">%d months before</item>
+    </plurals>
+    <string name="main_number">Main</string>
+    <string name="confirm_storage_access_restricted_text_not_found">A system file manager app could not be found.</string>
+    <string name="robolectric_title">Robolectric (testing framework)</string>
+    <string name="block_number">Block number</string>
+    <string name="translation_welsh">Welsh</string>
+    <string name="white">White</string>
+    <string name="tuesday">Tuesday</string>
+    <string name="source_file_doesnt_exist">Source file %s doesn\'t exist</string>
+    <string name="empty_name">Please enter a name</string>
+    <string name="song_title">Song title</string>
+    <string name="biometrics">Biometrics</string>
+    <string name="purchase">Purchase</string>
+    <string name="remove">Remove</string>
+    <string name="pin_must_be_4_digits_long">PIN must be at least 4 digits long</string>
+    <string name="date_taken">Date taken</string>
+    <string name="home">Home</string>
+    <string name="otto_title">Otto (event bus)</string>
+    <string name="copying">Copying…</string>
+    <string name="lock_folder_notice">This protection works in this app only, it is not supposed to replace a real systemwide folder encryption.</string>
+    <string name="disclaimer">Disclaimer</string>
+    <string name="file_saved">File saved successfully</string>
+    <string name="apply_to_all">Apply to all</string>
+    <string name="merge">Merge</string>
+    <string name="no_phone_number_found">No phone number has been found</string>
+
+    
+    <string name="stetho_title">Stetho (debugging databases)</string>
+    <string name="system_folder_restriction">The system does not allow the operation in this folder, please pick another one</string>
+    <string name="translation_catalan">Catalan</string>
+    <string name="files_count">Total files count</string>
+    <string name="system_default">System default</string>
+
+    
+    <string name="sunday_short">Sun</string>
+
+    
+    <string name="saturday_short">Sat</string>
+    <string name="friday_short">Fri</string>
+    <string name="thursday_short">Thu</string>
+    <string name="wednesday_short">Wed</string>
+    <string name="tuesday_short">Tue</string>
+    <string name="monday_short">Mon</string>
+    <string name="days_letter">%dd</string>
+    <string name="commons_csv_title">Apache Commons CSV (CSV parser)</string>
+
+    
+    <string name="grant_permission">Grant Permission</string>
+    <string name="friday">Friday</string>
+    <string name="unblock">Unblock</string>
+
+    
+    <string name="translation_czech">Czech</string>
+    <string name="sideloaded_app">
+        
+            It looks like your app version is corrupt. Please download the original version &lt;a href="%s"&gt;here&lt;/a&gt;.
+        
+    </string>
+
+    
+    <string name="photoview_title">PhotoView (zoomable GIFs)</string>
+    <string name="filters_title">Android Photo Filters (image filters)</string>
+    <plurals name="by_seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+    <string name="number_picker_title">Number Picker (customizable number picker)</string>
+    <string name="settings_exported_successfully">Settings exported successfully</string>
+    <plurals name="by_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <string name="filename_cannot_be_empty">Filename cannot be empty</string>
+    <string name="days_raw">days</string>
+    <string name="open_with">Open with</string>
+    <string name="contacts_tab">Contacts</string>
+    <string name="contact_details">Contact details</string>
+    <string name="requires_fossify_thank_you">Requires Fossify Thank You</string>
+    <string name="apply_to_all_apps">Apply theme to all Fossify Apps</string>
+    <string name="all_fossify_apps">All Fossify apps</string>
+
+    
+    <string name="app_font">App font</string>
+    <string name="font">Font</string>
+    <string name="app_icon_color">App icon color</string>
+    <string name="primary_color">Primary color</string>
+    <string name="background_color">Background color</string>
+    <string name="text_color">Text color</string>
+    <string name="theme">App theme</string>
+    <string name="theme_and_colors">Theme &amp; colors</string>
+    <string name="dial_number">Dial number</string>
+    <string name="filename_without_txt">Filename (without .txt)</string>
+    <string name="loading">Loading…</string>
+    <string name="pattern_renaming">Pattern</string>
+    <string name="notifications">Notifications</string>
+    <string name="empty_recycle_bin">Empty the recycle bin</string>
+    <string name="view_contact_details">View contact details</string>
+    <string name="system_sounds">System sounds</string>
+    <string name="your_sounds">Your sounds</string>
+    <string name="confirm_selection">Confirm selection</string>
+    <string name="add_contact">Add contact</string>
+    <string name="add_number_to_contact">Add number to contact</string>
+    <string name="select_text">Select text</string>
+    <string name="extension">Extension</string>
+    <string name="share">Share</string>
+    <string name="type_2_characters">Type in at least 2 characters to start the search.</string>
+    <string name="filename_without_json">Filename (without .json)</string>
+    <string name="settings">Settings</string>
+    <string name="take_photo">Take photo</string>
+    <string name="customize_notifications">Customize notifications</string>
+    <string name="choose_video">Choose video</string>
+    <string name="choose_photo">Choose photo</string>
+    <string name="choose_file">Choose file</string>
+    <string name="recycle_bin">Recycle bin</string>
+    <string name="show_the_recycle_bin">Show the recycle bin</string>
+    <string name="request_the_required_permissions">Request the required permissions</string>
+    <string name="save_as">Save as</string>
+    <string name="select_all">Select all</string>
+    </resources>

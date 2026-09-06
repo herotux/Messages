@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="type_a_message">Ievadīt ziņojumu…</string>
     <string name="message_not_sent_short">Ziņojums nav nosūtīts</string>
@@ -125,4 +125,21 @@
     <string name="keep_conversations_archived">Paturēt sarunas arhivētas</string>
     <string name="faq_4_text">Lietotnes iestatījumos nepieciešams iespējot “Nosūtīt kopu ziņas kā MMS”. Tas nodrošinās, ka kopu ziņas tiek pareizi nosūtītas kā MMS, ļaujot visiem dalībniekiem redzēt citam cita atbildes.</string>
     <string name="faq_4_title">Kādēļ manas kopu ziņu atbildes saņēmējiem parādās kā atsevišķas īsziņas?</string>
-</resources>
+<string name="enables_more_customization">Iespējo vairāk pielāgojumu</string>
+    <string name="phone_storage">Tālruņa krātuve</string>
+    <string name="updating">Atjaunina…</string>
+    <string name="invalid_file_format">Nederīgs datnes veidols</string>
+    <string name="label_with_badge">%1$s %2$s</string>
+    <string name="translation_lithuanian">Lietuviešu</string>
+    <plurals name="items">
+        <item quantity="zero">%d vienumu</item>
+        <item quantity="one">%d vienums</item>
+        <item quantity="other">%d vienumi</item>
+    </plurals>
+    <string name="frequently_asked_questions">Bieži uzdoti jautājumi</string>
+    <string name="phone_storage_hidden">Tālruņa krātuve (nav redzama citām lietotnēm)</string>
+    <string name="requires_fossify_thank_you">Nepieciešama lietotne \"Fossify paldies\"</string>
+    <string name="theme_and_colors">Izskats un krāsas</string>
+    <string name="customize_colors">Pielāgot izskatu</string>
+    <string name="recycle_bin">Atkritne</string>
+    </resources>

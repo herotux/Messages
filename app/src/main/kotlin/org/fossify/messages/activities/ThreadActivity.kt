@@ -256,7 +256,7 @@ class ThreadActivity : SimpleActivity() {
 
         val extras = intent.extras
         if (extras == null) {
-            toast(org.fossify.commons.R.string.unknown_error_occurred)
+            toast(org.fossify.messages.R.string.unknown_error_occurred)
             finish()
             return
         }
@@ -366,7 +366,7 @@ class ThreadActivity : SimpleActivity() {
                 participants.size > 1 && conversation != null && !isRecycleBin
             findItem(R.id.conversation_details).isVisible = conversation != null && !isRecycleBin
             findItem(R.id.block_number).title =
-                addLockedLabelIfNeeded(org.fossify.commons.R.string.block_number)
+                addLockedLabelIfNeeded(org.fossify.messages.R.string.block_number)
             findItem(R.id.block_number).isVisible = !isRecycleBin
             findItem(R.id.dial_number).isVisible =
                 participants.size == 1 && !isSpecialNumber() && !isRecycleBin
@@ -536,7 +536,7 @@ class ThreadActivity : SimpleActivity() {
                 val name = intent.getStringExtra(THREAD_TITLE) ?: ""
                 val number = intent.getStringExtra(THREAD_NUMBER)
                 if (number == null) {
-                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    toast(org.fossify.messages.R.string.unknown_error_occurred)
                     finish()
                     return@ensureBackgroundThread
                 }
@@ -979,7 +979,7 @@ class ThreadActivity : SimpleActivity() {
             } else {
                 PermissionRequiredDialog(
                     activity = this,
-                    textId = org.fossify.commons.R.string.allow_alarm_scheduled_messages,
+                    textId = org.fossify.messages.R.string.allow_alarm_scheduled_messages,
                     positiveActionCallback = {
                         openRequestExactAlarmSettings(BuildConfig.APPLICATION_ID)
                     },
@@ -1053,7 +1053,7 @@ class ThreadActivity : SimpleActivity() {
                         text = getString(R.string.invalid_short_code_desc)
                     )
                 }
-                tooltipText = getString(org.fossify.commons.R.string.more_info)
+                tooltipText = getString(org.fossify.messages.R.string.more_info)
             }
         }
     }
@@ -1161,7 +1161,7 @@ class ThreadActivity : SimpleActivity() {
         val numbers = participants.getAddresses()
         val numbersString = TextUtils.join(", ", numbers)
         val question = String.format(
-            resources.getString(org.fossify.commons.R.string.block_confirmation),
+            resources.getString(org.fossify.messages.R.string.block_confirmation),
             numbersString
         )
 
@@ -1398,7 +1398,7 @@ class ThreadActivity : SimpleActivity() {
     private fun launchActivityForResult(
         intent: Intent,
         requestCode: Int,
-        @StringRes error: Int = org.fossify.commons.R.string.no_app_found,
+        @StringRes error: Int = org.fossify.messages.R.string.no_app_found,
     ) {
         hideKeyboard()
         try {
@@ -1472,11 +1472,11 @@ class ThreadActivity : SimpleActivity() {
                             addAttachment(vCardUri)
                         }
                     } else {
-                        toast(org.fossify.commons.R.string.unknown_error_occurred)
+                        toast(org.fossify.messages.R.string.unknown_error_occurred)
                     }
                 }
             } else {
-                toast(org.fossify.commons.R.string.unknown_error_occurred)
+                toast(org.fossify.messages.R.string.unknown_error_occurred)
             }
         }
     }
@@ -1497,7 +1497,7 @@ class ThreadActivity : SimpleActivity() {
 
         val mimeType = contentResolver.getType(uri)
         if (mimeType == null) {
-            toast(org.fossify.commons.R.string.unknown_error_occurred)
+            toast(org.fossify.messages.R.string.unknown_error_occurred)
             return
         }
         val isImage = mimeType.isImageMimeType()
@@ -1560,7 +1560,7 @@ class ThreadActivity : SimpleActivity() {
                     copyToUri(pendingAttachmentsToSave!!.first().getUri(), resultData.data!!)
                 }
 
-                toast(org.fossify.commons.R.string.file_saved)
+                toast(org.fossify.messages.R.string.file_saved)
             } catch (e: Exception) {
                 showErrorToast(e)
             } finally {
@@ -1588,7 +1588,7 @@ class ThreadActivity : SimpleActivity() {
     private fun sendMessage() {
         var text = binding.messageHolder.threadTypeMessage.value
         if (text.isEmpty() && getAttachmentSelections().isEmpty()) {
-            showErrorToast(getString(org.fossify.commons.R.string.unknown_error_occurred))
+            showErrorToast(getString(org.fossify.messages.R.string.unknown_error_occurred))
             return
         }
         scrollToBottom()
@@ -1669,7 +1669,7 @@ class ThreadActivity : SimpleActivity() {
             }
         } catch (e: Exception) {
             showErrorToast(
-                e.localizedMessage ?: getString(org.fossify.commons.R.string.unknown_error_occurred)
+                e.localizedMessage ?: getString(org.fossify.messages.R.string.unknown_error_occurred)
             )
         }
     }
@@ -1695,7 +1695,7 @@ class ThreadActivity : SimpleActivity() {
             showErrorToast(e)
         } catch (e: Error) {
             showErrorToast(
-                e.localizedMessage ?: getString(org.fossify.commons.R.string.unknown_error_occurred)
+                e.localizedMessage ?: getString(org.fossify.messages.R.string.unknown_error_occurred)
             )
         }
     }
@@ -1742,10 +1742,10 @@ class ThreadActivity : SimpleActivity() {
 
         val sideMargin =
             (binding.selectedContacts.layoutParams as RelativeLayout.LayoutParams).leftMargin
-        val mediumMargin = resources.getDimension(org.fossify.commons.R.dimen.medium_margin).toInt()
+        val mediumMargin = resources.getDimension(org.fossify.messages.R.dimen.medium_margin).toInt()
         val parentWidth = realScreenSize.x - sideMargin * 2
         val firstRowWidth =
-            parentWidth - resources.getDimension(org.fossify.commons.R.dimen.normal_icon_size)
+            parentWidth - resources.getDimension(org.fossify.messages.R.dimen.normal_icon_size)
                 .toInt() + sideMargin / 2
         var widthSoFar = 0
         var isFirstRow = true
@@ -1841,7 +1841,7 @@ class ThreadActivity : SimpleActivity() {
                 launchActivityForResult(
                     intent = this,
                     requestCode = PICK_SAVE_FILE_INTENT,
-                    error = org.fossify.commons.R.string.system_service_disabled
+                    error = org.fossify.messages.R.string.system_service_disabled
                 )
             }
         } else {
@@ -1850,7 +1850,7 @@ class ThreadActivity : SimpleActivity() {
                 launchActivityForResult(
                     intent = this,
                     requestCode = PICK_SAVE_DIR_INTENT,
-                    error = org.fossify.commons.R.string.system_service_disabled
+                    error = org.fossify.messages.R.string.system_service_disabled
                 )
             }
         }
@@ -1927,7 +1927,7 @@ class ThreadActivity : SimpleActivity() {
         val items = arrayListOf(
             RadioItem(TYPE_EDIT, getString(R.string.update_message)),
             RadioItem(TYPE_SEND, getString(R.string.send_now)),
-            RadioItem(TYPE_DELETE, getString(org.fossify.commons.R.string.delete))
+            RadioItem(TYPE_DELETE, getString(org.fossify.messages.R.string.delete))
         )
         RadioGroupDialog(
             activity = this,
@@ -2071,14 +2071,14 @@ class ThreadActivity : SimpleActivity() {
 
     private fun setupAttachmentPickerView() = binding.messageHolder.attachmentPicker.apply {
         val buttonColors = arrayOf(
-            org.fossify.commons.R.color.md_red_500,
-            org.fossify.commons.R.color.md_brown_500,
-            org.fossify.commons.R.color.md_pink_500,
-            org.fossify.commons.R.color.md_purple_500,
-            org.fossify.commons.R.color.md_teal_500,
-            org.fossify.commons.R.color.md_green_500,
-            org.fossify.commons.R.color.md_indigo_500,
-            org.fossify.commons.R.color.md_blue_500
+            org.fossify.messages.R.color.md_red_500,
+            org.fossify.messages.R.color.md_brown_500,
+            org.fossify.messages.R.color.md_pink_500,
+            org.fossify.messages.R.color.md_purple_500,
+            org.fossify.messages.R.color.md_teal_500,
+            org.fossify.messages.R.color.md_green_500,
+            org.fossify.messages.R.color.md_indigo_500,
+            org.fossify.messages.R.color.md_blue_500
         ).map { ResourcesCompat.getColor(resources, it, theme) }
         arrayOf(
             choosePhotoIcon,
@@ -2169,7 +2169,7 @@ class ThreadActivity : SimpleActivity() {
     }
 
     private fun getBottomBarColor() = if (isDynamicTheme()) {
-        resources.getColor(org.fossify.commons.R.color.you_bottom_bar_color)
+        resources.getColor(org.fossify.messages.R.color.you_bottom_bar_color)
     } else {
         getBottomNavigationBackgroundColor()
     }

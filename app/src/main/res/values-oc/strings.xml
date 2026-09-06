@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources><string name="go_to_settings">Dobrir los paramètres</string>
+    <string name="edit_with">Modificar amb</string>
+    <string name="search">Recercar</string>
+    <string name="notes">Nòtas</string>
+    <string name="later">Mai tard</string>
+    <string name="work_fax">Fax del trabalh</string>
+    <string name="anniversary">Anniversari</string>
+    <string name="back">Retorn</string>
+    <string name="download">Telecargar</string>
+    <string name="home_fax">Fax del domicili</string>
+    <string name="close">Tampar</string>
+    <string name="about">A prepaus</string>
+    <string name="export_settings">Exportar los paramètres</string>
+    <string name="number">Numèro</string>
+    <string name="cancel">Anullar</string>
+    <string name="work">Trabalh</string>
+    <string name="phone_storage_hidden">Emmagazinatge del telefòn (non visible per las autras aplicacions)</string>
+    <string name="ok">D’acòrdi</string>
+    <string name="set_as">Definir coma</string>
+    <string name="grid">Grasilha</string>
+    <string name="block_number">Blocar lo numèro</string>
+    <string name="home">Domicili</string>
+    <string name="open_with">Dobrir amb</string>
+    <string name="save_as">Salvar coma</string>
+    </resources>

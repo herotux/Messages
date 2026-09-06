@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="type_a_message">ഒരു സന്ദേശം ടൈപ്പ് ചെയ്യുക…</string>
     <string name="message_not_sent_short">സന്ദേശം അയച്ചിട്ടില്ല</string>
@@ -45,4 +45,11 @@
     <string name="use_simple_characters">സന്ദേശങ്ങൾ അയയ്‌ക്കുമ്പോൾ ഉച്ചാരണങ്ങളും ഡയക്രിറ്റിക്‌സും നീക്കംചെയ്യുക</string>
     <string name="faq_1_title">എന്തുകൊണ്ടാണ് ആപ്പിന് ഇന്റർനെറ്റ് ആക്‌സസ് ആവശ്യമായി വരുന്നത്\?</string>
     <string name="faq_1_text">നിർഭാഗ്യവശാൽ, MMS അറ്റാച്ചുമെന്റുകൾ അയക്കുന്നതിനു ഇത് ആവശ്യമാണ്. മറ്റ് ആപ്ലിക്കേഷനുകളുമായി താരതമ്യപ്പെടുത്തുമ്പോൾ MMS അയയ്ക്കാൻ കഴിയുന്നില്ല എന്നത് ഒരു വലിയ പോരായ്മയാണ്, അതിനാൽ ഞങ്ങൾ ഈ റൂട്ടിൽ പോകാൻ തീരുമാനിച്ചു. എന്നിരുന്നാലും, സാധാരണപോലെ, പരസ്യങ്ങളോ ട്രാക്കിംഗ് അല്ലെങ്കിൽ അനലിറ്റിക്സുകളോ ഇല്ല. ഇന്റർനെറ്റ് MMS അയയ്ക്കുന്നതിന് മാത്രമാണ് ഉപയോഗിക്കുന്നത്.</string>
+    <string name="birthday">ജന്മദിനം</string>
+    <string name="phone_storage">ഫോൺ സ്റ്റോറേജ്</string>
+    <string name="updating">പുതുക്കുന്നു…</string>
+    <string name="anniversary">വാർഷികം</string>
+    <string name="phone_storage_hidden">ഫോൺ സ്റ്റോറേജ് (മറ്റ് അപ്ലിക്കേഷനുകൾക്ക് ദൃശ്യമല്ല)</string>
+    <string name="take_photo">ഫോട്ടോ എടുക്കുക</string>
+    <string name="choose_photo">ഫോട്ടോ തിരഞ്ഞെടുക്കുക</string>
     </resources>

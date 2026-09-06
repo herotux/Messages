@@ -10,6 +10,8 @@ import android.provider.Settings
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.widget.HorizontalScrollView
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -32,6 +34,7 @@ import org.fossify.commons.helpers.FontHelper
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.messages.R
 import org.fossify.messages.extensions.config
+import org.fossify.messages.helpers.BackgroundThemeManager
 import org.fossify.messages.helpers.FILE_SIZE_100_KB
 import org.fossify.messages.helpers.FILE_SIZE_1_MB
 import org.fossify.messages.helpers.FILE_SIZE_200_KB
@@ -120,6 +123,7 @@ class SettingsActivity : SimpleActivity() {
         scroll.addView(content, LinearLayout.LayoutParams(-1, -2))
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
+        BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))
         when (page) {
             GENERAL -> general(content)
             APPEARANCE -> appearance(content)
@@ -194,11 +198,48 @@ class SettingsActivity : SimpleActivity() {
             getSharedPreferences("messages_settings_ui", MODE_PRIVATE).edit().putBoolean("dark_mode", it).apply()
             AppCompatDelegate.setDefaultNightMode(if (it) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
         }
+        backgroundThemes(root)
         row(root, t("فونت برنامه", "App font"), fontLabel()) { chooseFont() }
         row(root, t("اندازه متن", "Text size"), fontSizeLabel()) { chooseFontSize() }
         slider(root, t("اندازه متن گفتگو", "Conversation text size"), config.fontSize.toFloat().coerceIn(1f, 4f)) { config.fontSize = it.toInt() }
         toggle(root, t("شمارنده کاراکتر", "Character counter"), t("نمایش تعداد کاراکتر هنگام نوشتن", "Show character count while typing"), config.showCharacterCounter) { config.showCharacterCounter = it }
         toggle(root, t("نویسه‌های ساده", "Simple characters"), t("استفاده از نویسه‌های ساده‌تر", "Use simpler characters"), config.useSimpleCharacters) { config.useSimpleCharacters = it }
+    }
+
+    private fun backgroundThemes(root: LinearLayout) {
+        section(root, t("پس‌زمینه‌های آماده", "Ready-made backgrounds"))
+        val selected = BackgroundThemeManager.selectedId(this)
+        val scroller = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+        }
+        val strip = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, dp(6)) }
+        BackgroundThemeManager.themes.filter { it.id != BackgroundThemeManager.NONE }.forEach { theme ->
+            val card = MaterialCardView(this).apply {
+                radius = dp(18).toFloat()
+                cardElevation = if (theme.id == selected) dp(5).toFloat() else 0f
+                strokeWidth = if (theme.id == selected) dp(3) else dp(1)
+                strokeColor = color(androidx.appcompat.R.attr.colorPrimary)
+                setCardBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant))
+                setOnClickListener {
+                    BackgroundThemeManager.select(this@SettingsActivity, theme.id)
+                    render(APPEARANCE)
+                }
+            }
+            val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(5), dp(5), dp(5), dp(7)) }
+            box.addView(ImageView(this).apply {
+                setImageResource(theme.drawable)
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                contentDescription = if (english()) theme.titleEn else theme.titleFa
+            }, LinearLayout.LayoutParams(dp(132), dp(76)))
+            box.addView(label(if (english()) theme.titleEn else theme.titleFa, 13f, true).apply { gravity = Gravity.CENTER; setPadding(0, dp(5), 0, 0) })
+            card.addView(box)
+            val lp = LinearLayout.LayoutParams(dp(144), dp(118)); lp.setMargins(dp(5), 0, dp(5), 0)
+            strip.addView(card, lp)
+        }
+        scroller.addView(strip, LinearLayout.LayoutParams(-2, -2))
+        root.addView(scroller, margins(0, 8))
     }
 
     private fun messages(root: LinearLayout) {

@@ -35,7 +35,7 @@ class RecycleBinConversationsAdapter(
         val itemsCnt = selectedKeys.size
         val items = resources.getQuantityString(R.plurals.delete_conversations, itemsCnt, itemsCnt)
 
-        val baseString = org.fossify.commons.R.string.deletion_confirmation
+        val baseString = org.fossify.messages.R.string.deletion_confirmation
         val question = String.format(resources.getString(baseString), items)
 
         ConfirmationDialog(activity, question) {

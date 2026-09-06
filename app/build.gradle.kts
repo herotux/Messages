@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"
+    id("org.jetbrains.kotlin.plugin.parcelize")
 }
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
@@ -77,7 +79,9 @@ android {
 
     buildFeatures {
         viewBinding = true
+        dataBinding = true
         buildConfig = true
+        compose = true
     }
 
     buildTypes {
@@ -128,10 +132,17 @@ android {
         compilerOptions.jvmTarget.set(
             JvmTarget.fromTarget(project.libs.versions.app.build.kotlinJVMTarget.get())
         )
+        compilerOptions.freeCompilerArgs.set(
+            listOf(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
+                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+                "-opt-in=com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi",
+            )
+        )
     }
 
-    // Keep the app module's source/BuildConfig namespace stable.
-    // The installed Android application ID is controlled independently by APP_ID.
     namespace = "org.fossify.messages"
 
     lint {
@@ -161,7 +172,6 @@ detekt {
 }
 
 dependencies {
-    implementation(libs.fossify.commons)
     implementation(libs.eventbus)
     implementation(libs.indicator.fast.scroll)
     implementation(libs.mmslib)
@@ -175,6 +185,45 @@ dependencies {
     implementation(libs.zxing)
     implementation(libs.mlkit.text.recognition)
     implementation(libs.tapsell.plus)
+
+    // Fossify Commons runtime/API dependencies required by the vendored subset.
+    implementation("androidx.core:core-ktx:1.18.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("androidx.biometric:biometric-ktx:1.4.0-alpha02")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.5.1")
+
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.compose.animation:animation:1.7.6")
+    implementation("androidx.compose.foundation:foundation:1.7.6")
+    implementation("androidx.compose.material:material:1.7.6")
+    implementation("androidx.compose.material3:material3:1.4.0")
+    implementation("androidx.compose.material:material-icons-extended:1.7.6")
+    implementation("androidx.compose.runtime:runtime:1.7.6")
+    implementation("androidx.compose.ui:ui:1.7.6")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.7.6")
+    implementation("androidx.compose.ui:ui-viewbinding:1.7.6")
+
+    implementation("com.github.bumptech.glide:glide:5.0.7")
+    implementation("com.github.bumptech.glide:compose:4.14.0")
+    ksp("com.github.bumptech.glide:compiler:5.0.7")
+
+    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("com.github.aritraroy:patternLockView:a90b0d4bf0")
+    implementation("com.github.tibbi:reprint:2cb206415d")
+    implementation("com.github.tibbi:RecyclerView-FastScroller:5a95285b1f")
+    implementation("com.github.naveensingh:rtl-viewpager:2.0.2")
+    implementation("joda-time:joda-time:2.14.3")
+    // Joda-Time exposes optional @FromString/@ToString annotations at runtime;
+    // R8 release builds require the optional joda-convert classes to be present.
+    implementation("org.joda:joda-convert:1.9.2")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation("com.google.android.material:material:1.14.0")
+
     ksp(libs.androidx.room.compiler)
     detektPlugins(libs.compose.detekt)
     testImplementation("junit:junit:4.13.2")

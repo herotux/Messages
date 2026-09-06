@@ -111,7 +111,7 @@ class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListe
         try {
             getContent.launch(mimeType)
         } catch (_: ActivityNotFoundException) {
-            toast(org.fossify.commons.R.string.system_service_disabled, Toast.LENGTH_LONG)
+            toast(org.fossify.messages.R.string.system_service_disabled, Toast.LENGTH_LONG)
         } catch (e: Exception) {
             showErrorToast(e)
         }
@@ -123,7 +123,7 @@ class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListe
             "content" -> {
                 val tempFile = getTempFile("blocked", "blocked_keywords.txt")
                 if (tempFile == null) {
-                    toast(org.fossify.commons.R.string.unknown_error_occurred)
+                    toast(org.fossify.messages.R.string.unknown_error_occurred)
                     return
                 }
 
@@ -137,7 +137,7 @@ class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListe
                 }
             }
 
-            else -> toast(org.fossify.commons.R.string.invalid_file_format)
+            else -> toast(org.fossify.messages.R.string.invalid_file_format)
         }
     }
 
@@ -146,8 +146,8 @@ class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListe
             val result = BlockedKeywordsImporter(this).importBlockedKeywords(path)
             toast(
                 when (result) {
-                    BlockedKeywordsImporter.ImportResult.IMPORT_OK -> org.fossify.commons.R.string.importing_successful
-                    BlockedKeywordsImporter.ImportResult.IMPORT_FAIL -> org.fossify.commons.R.string.no_items_found
+                    BlockedKeywordsImporter.ImportResult.IMPORT_OK -> org.fossify.messages.R.string.importing_successful
+                    BlockedKeywordsImporter.ImportResult.IMPORT_FAIL -> org.fossify.messages.R.string.no_items_found
                 }
             )
             updateBlockedKeywords()
@@ -158,13 +158,13 @@ class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListe
         ensureBackgroundThread {
             val blockedKeywords = config.blockedKeywords.toArrayList()
             if (blockedKeywords.isEmpty()) {
-                toast(org.fossify.commons.R.string.no_entries_for_exporting)
+                toast(org.fossify.messages.R.string.no_entries_for_exporting)
             } else {
                 BlockedKeywordsExporter.exportBlockedKeywords(blockedKeywords, outputStream) {
                     toast(
                         when (it) {
-                            ExportResult.EXPORT_OK -> org.fossify.commons.R.string.exporting_successful
-                            else -> org.fossify.commons.R.string.exporting_failed
+                            ExportResult.EXPORT_OK -> org.fossify.messages.R.string.exporting_successful
+                            else -> org.fossify.messages.R.string.exporting_failed
                         }
                     )
                 }
@@ -182,7 +182,7 @@ class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListe
                 createDocument.launch(file.name)
             } catch (_: ActivityNotFoundException) {
                 toast(
-                    org.fossify.commons.R.string.system_service_disabled,
+                    org.fossify.messages.R.string.system_service_disabled,
                     Toast.LENGTH_LONG
                 )
             } catch (e: Exception) {

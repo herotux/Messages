@@ -17,7 +17,6 @@ eventbus = "3.3.1"
 #Room
 room = "2.8.4"
 #Fossify
-commons = "5fe79e3f1c"
 mmslib = "1.0.0"
 indicator-fast-scroll = "4524cd0b61"
 #Gradle
@@ -48,7 +47,6 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 #Compose
 compose-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "detektCompose" }
 #Fossify
-fossify-commons = { module = "com.github.herotux.commons:commons", version.ref = "commons" }
 indicator-fast-scroll = { module = "org.fossify:IndicatorFastScroll", version.ref = "indicator-fast-scroll" }
 mmslib = { module = "org.fossify:mmslib", version.ref = "mmslib" }
 #EventBus
@@ -57,6 +55,7 @@ eventbus = { module = "org.greenrobot:eventbus", version.ref = "eventbus" }
 ez-vcard = { module = "com.googlecode.ez-vcard:ez-vcard", version.ref = "ez-vcard" }
 zxing = { module = "com.google.zxing:core", version.ref = "zxing" }
 mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text-recognition" }
+#Ads
 tapsell-plus = { module = "ir.tapsell.plus:tapsell-plus-sdk-android", version.ref = "tapsell-plus" }
 #Kotlin
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
