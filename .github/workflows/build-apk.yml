@@ -14,11 +14,113 @@ on:
 permissions:
   contents: read
 
+# Keep the three tests and the three release variants independent so one slow
+# Gradle task does not block every other task on the same runner.
 jobs:
-  test-and-build:
-    name: Test and build Android APKs
+  unit-tests:
+    name: Unit tests (${{ matrix.variant }})
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: Core
+            task: testCoreDebugUnitTest
+          - variant: FOSS
+            task: testFossDebugUnitTest
+          - variant: GPlay
+            task: testGplayDebugUnitTest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Run ${{ matrix.variant }} unit tests
+        run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon
+
+      - name: Upload ${{ matrix.variant }} test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-report-${{ matrix.variant }}
+          path: app/build/reports/tests/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+  lint:
+    name: Android lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Run lint
+        run: ./gradlew lint --stacktrace --no-daemon
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-lint-report
+          path: app/build/reports/lint-results-*.html
+          if-no-files-found: ignore
+          retention-days: 14
+
+  build-apks:
+    name: Build ${{ matrix.variant }} release APK
+    needs:
+      - unit-tests
+      - lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: Core
+            task: assembleCoreRelease
+            apk_glob: '*core*release*.apk'
+            artifact: Messages-core-release
+            filename: Messages-core-release.apk
+          - variant: FOSS
+            task: assembleFossRelease
+            apk_glob: '*foss*release*.apk'
+            artifact: Messages-foss-release
+            filename: Messages-foss-release.apk
+          - variant: GPlay
+            task: assembleGplayRelease
+            apk_glob: '*gplay*release*.apk'
+            artifact: Messages-gplay-release
+            filename: Messages-gplay-release.apk
 
     env:
       SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -56,81 +158,22 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Run Core unit tests
-        run: ./gradlew testCoreDebugUnitTest --stacktrace
+      - name: Build ${{ matrix.variant }} release APK
+        run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon
 
-      - name: Run FOSS unit tests
-        run: ./gradlew testFossDebugUnitTest --stacktrace
-
-      - name: Run GPlay unit tests
-        run: ./gradlew testGplayDebugUnitTest --stacktrace
-
-      - name: Run lint
-        run: ./gradlew lint --stacktrace
-
-      - name: Build Core release APK
-        run: ./gradlew assembleCoreRelease --stacktrace
-
-      - name: Build FOSS release APK
-        run: ./gradlew assembleFossRelease --stacktrace
-
-      - name: Build GPlay release APK
-        run: ./gradlew assembleGplayRelease --stacktrace
-
-      - name: Collect Core APK
+      - name: Collect APK
         run: |
-          mkdir -p artifacts/core
-          APK=$(find app/build/outputs/apk -type f -name '*core*release*.apk' | head -n 1)
+          mkdir -p artifact
+          APK=$(find app/build/outputs/apk -type f -name '${{ matrix.apk_glob }}' | head -n 1)
           test -n "$APK"
-          cp "$APK" artifacts/core/Messages-core-release.apk
+          cp "$APK" "artifact/${{ matrix.filename }}"
 
-      - name: Collect FOSS APK
-        run: |
-          mkdir -p artifacts/foss
-          APK=$(find app/build/outputs/apk -type f -name '*foss*release*.apk' | head -n 1)
-          test -n "$APK"
-          cp "$APK" artifacts/foss/Messages-foss-release.apk
-
-      - name: Collect GPlay APK
-        run: |
-          mkdir -p artifacts/gplay
-          APK=$(find app/build/outputs/apk -type f -name '*gplay*release*.apk' | head -n 1)
-          test -n "$APK"
-          cp "$APK" artifacts/gplay/Messages-gplay-release.apk
-
-      - name: Upload Core APK
+      - name: Upload ${{ matrix.variant }} APK
         uses: actions/upload-artifact@v4
         with:
-          name: Messages-core-release
-          path: artifacts/core/Messages-core-release.apk
+          name: ${{ matrix.artifact }}
+          path: artifact/${{ matrix.filename }}
           if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload FOSS APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Messages-foss-release
-          path: artifacts/foss/Messages-foss-release.apk
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload GPlay APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Messages-gplay-release
-          path: artifacts/gplay/Messages-gplay-release.apk
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-test-reports
-          path: |
-            app/build/reports/tests/**
-            app/build/reports/lint-results-*.html
-          if-no-files-found: ignore
           retention-days: 14
 
       - name: Remove release keystore
