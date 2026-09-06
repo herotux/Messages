@@ -8,8 +8,11 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.ContactsContract
+import android.view.View
+import android.view.ViewGroup
 import org.fossify.commons.FossifyApp
 import org.fossify.commons.extensions.baseConfig
+import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -51,11 +54,18 @@ class App : FossifyApp() {
         override fun onActivityResumed(activity: Activity) {
             AppLanguageManager.apply(activity)
             AppThemeManager.apply(activity)
+
+            // Keep the system bars in the same visual family as the selected app theme.
+            val backgroundColor = activity.getProperBackgroundColor()
+            activity.window.statusBarColor = backgroundColor
+            activity.window.navigationBarColor = backgroundColor
+
             if (activity is MainActivity) {
                 activity.findViewById<android.view.View>(R.id.folder_tabs)?.visibility =
                     if (ConversationFolderManager.areFoldersVisible(activity)) android.view.View.VISIBLE else android.view.View.GONE
                 BankAccountsFeature.installPersianFonts(activity)
                 TapsellAds.showBanner(activity)
+                clearOverflowButtonBackgrounds(activity)
             }
             if (activity is ThreadActivity) {
                 TapsellAds.hideBanner()
@@ -70,6 +80,26 @@ class App : FossifyApp() {
         override fun onActivityStopped(activity: Activity) = Unit
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
         override fun onActivityDestroyed(activity: Activity) = Unit
+    }
+
+    private fun clearOverflowButtonBackgrounds(activity: Activity) {
+        val root = activity.findViewById<View>(R.id.main_menu) as? ViewGroup ?: return
+        clearOverflowButtonBackgrounds(root)
+    }
+
+    private fun clearOverflowButtonBackgrounds(parent: ViewGroup) {
+        for (index in 0 until parent.childCount) {
+            val child = parent.getChildAt(index)
+            val description = child.contentDescription?.toString().orEmpty()
+            if (description.contains("more", ignoreCase = true) ||
+                description.contains("options", ignoreCase = true) ||
+                description.contains("گزینه", ignoreCase = true)) {
+                child.background = null
+            }
+            if (child is ViewGroup) {
+                clearOverflowButtonBackgrounds(child)
+            }
+        }
     }
 
     private val contactsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
