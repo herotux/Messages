@@ -39,7 +39,6 @@ object BackgroundThemeManager {
 
     fun apply(activity: Activity) {
         val selected = selectedId(activity)
-        if (selected == NONE) return
         val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
         val root = if (content.childCount == 1 && content.getChildAt(0) is ViewGroup) content.getChildAt(0) as ViewGroup else content
         applyToRoot(root, selected)
@@ -47,6 +46,10 @@ object BackgroundThemeManager {
 
     fun applyToRoot(root: ViewGroup, themeId: String) {
         val theme = themes.firstOrNull { it.id == themeId } ?: return
-        if (theme.drawable != 0) root.setBackgroundResource(theme.drawable)
+        if (theme.drawable != 0) {
+            root.setBackgroundResource(theme.drawable)
+        } else {
+            root.background = null
+        }
     }
 }
