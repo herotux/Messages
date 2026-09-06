@@ -4,19 +4,18 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
-import android.view.View
-import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.Toolbar
 import com.google.android.material.appbar.MaterialToolbar
 import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.checkAppIconColor
 import org.fossify.commons.extensions.getThemeId
+import org.fossify.commons.helpers.APP_ICON_IDS
+import org.fossify.commons.helpers.APP_LAUNCHER_NAME
 import org.fossify.messages.R
 import org.fossify.messages.helpers.AppThemeManager
 
@@ -32,8 +31,8 @@ class CustomizationActivity : BaseSimpleActivity() {
         refresh()
     }
 
-    override fun getAppIconIDs() = intent.getIntegerArrayListExtra("app_icon_ids") ?: arrayListOf()
-    override fun getAppLauncherName() = intent.getStringExtra("app_launcher_name") ?: getString(R.string.app_name)
+    override fun getAppIconIDs() = intent.getIntegerArrayListExtra(APP_ICON_IDS) ?: arrayListOf()
+    override fun getAppLauncherName() = intent.getStringExtra(APP_LAUNCHER_NAME) ?: ""
     override fun getRepositoryName() = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
