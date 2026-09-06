@@ -25,9 +25,18 @@ data class SimpleContact(
         result = 31 * result + contactId
         result = 31 * result + (name?.hashCode() ?: 0)
         result = 31 * result + (photoUri?.hashCode() ?: 0)
-        result = 31 * result + phoneNumbers.hashCode()
-        result = 31 * result + birthdays.hashCode()
-        result = 31 * result + anniversaries.hashCode()
+        result = 31 * result + safeListHash(phoneNumbers)
+        result = 31 * result + safeListHash(birthdays)
+        result = 31 * result + safeListHash(anniversaries)
+        return result
+    }
+
+    private fun safeListHash(list: List<*>?): Int {
+        if (list == null) return 0
+        var result = 1
+        for (item in list) {
+            result = 31 * result + (item?.hashCode() ?: 0)
+        }
         return result
     }
 
