@@ -31,6 +31,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout Homa Commons locally
+        run: |
+          git clone --depth 1 https://github.com/herotux/commons.git commons
+          cd commons
+          git fetch --depth 1 origin 5fe79e3f1c
+          git checkout --detach 5fe79e3f1c
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
