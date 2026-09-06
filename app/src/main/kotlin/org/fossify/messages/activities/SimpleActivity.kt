@@ -19,6 +19,7 @@ open class SimpleActivity : BaseSimpleActivity() {
 
     override fun onResume() {
         super.onResume()
+        BackgroundThemeManager.apply(this)
         applySelectedFontToViewTree(window.decorView)
     }
 
