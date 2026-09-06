@@ -217,6 +217,9 @@ dependencies {
     implementation("com.github.tibbi:RecyclerView-FastScroller:5a95285b1f")
     implementation("com.github.naveensingh:rtl-viewpager:2.0.2")
     implementation("joda-time:joda-time:2.14.3")
+    // Joda-Time exposes optional @FromString/@ToString annotations at runtime;
+    // R8 release builds require the optional joda-convert classes to be present.
+    implementation("org.joda:joda-convert:1.9.2")
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("com.google.android.material:material:1.14.0")
 
