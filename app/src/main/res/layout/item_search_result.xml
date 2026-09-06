@@ -28,6 +28,8 @@
         android:layout_marginHorizontal="@dimen/activity_margin"
         android:ellipsize="end"
         android:maxLines="1"
+        android:textAlignment="viewStart"
+        android:textDirection="anyRtl"
         android:textSize="@dimen/list_primary_text_size"
         app:layout_constraintBottom_toTopOf="@id/search_result_snippet"
         app:layout_constraintEnd_toStartOf="@id/search_result_date"
