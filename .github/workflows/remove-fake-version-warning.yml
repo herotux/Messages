@@ -1,0 +1,56 @@
+name: One-time fake-version warning cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/remove-fake-version-warning.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Remove legacy fake-version checks
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path("app/src/main/kotlin/org/fossify/commons/activities/BaseSimpleActivity.kt")
+          text = path.read_text(encoding="utf-8")
+          original = text
+
+          text = text.replace("import org.fossify.commons.extensions.random\n", "")
+          text = text.replace("import org.fossify.commons.extensions.showModdedAppWarning\n", "")
+
+          on_create = '''        if (!packageName.startsWith("org.fossify.", true)) {\n            if ((0..50).random() == 10 || baseConfig.appRunCount % 100 == 0) {\n                showModdedAppWarning()\n            }\n        }\n'''
+          if on_create not in text:
+              raise SystemExit("Expected onCreate fake-version block was not found")
+          text = text.replace(on_create, "", 1)
+
+          customization = '''        if (!packageName.contains("yfissof".reversed(), true)) {\n            if (baseConfig.appRunCount > 100) {\n                showModdedAppWarning()\n                return\n            }\n        }\n'''
+          if customization not in text:
+              raise SystemExit("Expected customization fake-version block was not found")
+          text = text.replace(customization, "", 1)
+
+          if "showModdedAppWarning" in text or "extensions.random" in text:
+              raise SystemExit("Legacy fake-version references still remain")
+
+          path.write_text(text, encoding="utf-8")
+          print(f"Changed {len(original) - len(text)} characters")
+
+      - name: Remove temporary workflow and commit
+        shell: bash
+        run: |
+          rm -f .github/workflows/remove-fake-version-warning.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/org/fossify/commons/activities/BaseSimpleActivity.kt .github/workflows/remove-fake-version-warning.yml
+          git commit -m "Remove fake-version checks safely"
+          git push origin HEAD:main
