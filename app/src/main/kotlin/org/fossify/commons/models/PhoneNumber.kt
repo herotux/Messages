@@ -9,5 +9,13 @@ data class PhoneNumber(
     var label: String,
     var normalizedNumber: String,
     var isPrimary: Boolean = false
-)
-
+) {
+    override fun hashCode(): Int {
+        var result = value.hashCode()
+        result = 31 * result + type
+        result = 31 * result + label.hashCode()
+        result = 31 * result + normalizedNumber.hashCode()
+        result = 31 * result + isPrimary.hashCode()
+        return result
+    }
+}
