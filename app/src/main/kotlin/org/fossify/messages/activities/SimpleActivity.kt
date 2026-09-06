@@ -5,22 +5,67 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.google.android.material.slider.Slider
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.helpers.FontHelper
 import org.fossify.messages.R
+import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.BackgroundThemeManager
 
 open class SimpleActivity : BaseSimpleActivity() {
+    private var appliedFontSize = -1
+
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
         BackgroundThemeManager.apply(this)
         applySelectedFontToViewTree(window.decorView)
+        hideDuplicateAppearanceSlider()
+        appliedFontSize = config.fontSize
     }
 
     override fun onResume() {
         super.onResume()
         BackgroundThemeManager.apply(this)
         applySelectedFontToViewTree(window.decorView)
+        hideDuplicateAppearanceSlider()
+
+        // Settings changes must take effect when returning to an existing screen.
+        // Recreate the current screen instead of requiring the user to restart the app.
+        if (appliedFontSize != -1 && appliedFontSize != config.fontSize && this !is SettingsActivity) {
+            appliedFontSize = config.fontSize
+            recreate()
+            return
+        }
+        appliedFontSize = config.fontSize
+    }
+
+    /**
+     * The appearance page used to expose two controls backed by the same fontSize
+     * preference. Keep the single, user-friendly "Text size" chooser and remove the
+     * duplicate conversation-size slider from the settings UI.
+     */
+    private fun hideDuplicateAppearanceSlider() {
+        if (this !is SettingsActivity) return
+
+        window.decorView.post {
+            findSliders(window.decorView).forEach { slider ->
+                val parent = slider.parent as? ViewGroup
+                parent?.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun findSliders(view: View): List<Slider> {
+        val result = ArrayList<Slider>()
+        if (view is Slider) {
+            result += view
+        }
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                result += findSliders(view.getChildAt(index))
+            }
+        }
+        return result
     }
 
     /**
