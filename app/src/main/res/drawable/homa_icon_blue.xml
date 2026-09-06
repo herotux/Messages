@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <bitmap android:src="@drawable/homa_icon_base" android:gravity="fill" />
+    </item>
+    <item>
+        <bitmap android:src="@drawable/homa_icon_color_mask" android:gravity="fill" android:tint="#1565FF" />
+    </item>
+</layer-list>
