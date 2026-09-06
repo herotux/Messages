@@ -20,6 +20,17 @@ data class SimpleContact(
         var sorting = -1
     }
 
+    override fun hashCode(): Int {
+        var result = rawId
+        result = 31 * result + contactId
+        result = 31 * result + (name?.hashCode() ?: 0)
+        result = 31 * result + (photoUri?.hashCode() ?: 0)
+        result = 31 * result + phoneNumbers.hashCode()
+        result = 31 * result + birthdays.hashCode()
+        result = 31 * result + anniversaries.hashCode()
+        return result
+    }
+
     override fun compareTo(other: SimpleContact): Int {
         if (sorting == -1) {
             return compareByFullName(other)
