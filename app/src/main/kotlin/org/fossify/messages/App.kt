@@ -16,6 +16,7 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.activities.ThreadActivity
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
+import org.fossify.messages.helpers.AppLanguageManager
 import org.fossify.messages.helpers.AppThemeManager
 import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.BankCardsCrashLogger
@@ -29,6 +30,8 @@ class App : FossifyApp() {
 
     override fun onCreate() {
         super.onCreate()
+        // Initialize the app language before the first Activity is created.
+        AppLanguageManager.initialize(this)
         // User-selected theme is authoritative; never fall back to system Light/Dark.
         baseConfig.isSystemThemeEnabled = false
         BankCardsCrashLogger.install(this)
@@ -46,6 +49,7 @@ class App : FossifyApp() {
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
 
         override fun onActivityResumed(activity: Activity) {
+            AppLanguageManager.apply(activity)
             AppThemeManager.apply(activity)
             if (activity is MainActivity) {
                 activity.findViewById<android.view.View>(R.id.folder_tabs)?.visibility =
