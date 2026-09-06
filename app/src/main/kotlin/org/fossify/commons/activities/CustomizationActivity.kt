@@ -1,159 +1,928 @@
 package org.fossify.commons.activities
 
-import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.content.ContentValues
 import android.graphics.Color
+import android.graphics.Typeface
+import android.net.Uri
 import android.os.Bundle
-import android.view.Gravity
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
-import com.google.android.material.appbar.MaterialToolbar
+import org.fossify.messages.R
+import org.fossify.messages.databinding.ActivityCustomizationBinding
+import org.fossify.commons.dialogs.ColorPickerDialog
+import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
+import org.fossify.commons.dialogs.ConfirmationDialog
+import org.fossify.commons.dialogs.LineColorPickerDialog
+import org.fossify.commons.dialogs.PurchaseThankYouDialog
+import org.fossify.commons.dialogs.RadioGroupDialog
+import org.fossify.commons.extensions.applyFontToViewRecursively
 import org.fossify.commons.extensions.baseConfig
+import org.fossify.commons.extensions.beVisibleIf
+import org.fossify.commons.extensions.canAccessGlobalConfig
 import org.fossify.commons.extensions.checkAppIconColor
+import org.fossify.commons.extensions.getColoredMaterialStatusBarColor
+import org.fossify.commons.extensions.getContrastColor
+import org.fossify.commons.extensions.getFilenameFromUri
+import org.fossify.commons.extensions.getProperPrimaryColor
+import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.getThemeId
+import org.fossify.commons.extensions.isDynamicTheme
+import org.fossify.commons.extensions.isFontFile
+import org.fossify.commons.extensions.isOrWasThankYouInstalled
+import org.fossify.commons.extensions.isThankYouFontsSupported
+import org.fossify.commons.extensions.isSystemInDarkMode
+import org.fossify.commons.extensions.isThankYouInstalled
+import org.fossify.commons.extensions.setFillWithStroke
+import org.fossify.commons.extensions.toast
+import org.fossify.commons.extensions.updateGlobalConfig
+import org.fossify.commons.extensions.value
+import org.fossify.commons.extensions.viewBinding
+import org.fossify.commons.extensions.withGlobalConfig
 import org.fossify.commons.helpers.APP_ICON_IDS
 import org.fossify.commons.helpers.APP_LAUNCHER_NAME
-import org.fossify.messages.R
-import org.fossify.messages.helpers.AppThemeManager
+import org.fossify.commons.helpers.DARK_GREY
+import org.fossify.commons.helpers.FONT_TYPE_CUSTOM
+import org.fossify.commons.helpers.FONT_TYPE_MONOSPACE
+import org.fossify.commons.helpers.FONT_TYPE_SYSTEM_DEFAULT
+import org.fossify.commons.helpers.FontHelper
+import org.fossify.commons.helpers.MyContentProvider.COL_ACCENT_COLOR
+import org.fossify.commons.helpers.MyContentProvider.COL_APP_ICON_COLOR
+import org.fossify.commons.helpers.MyContentProvider.COL_BACKGROUND_COLOR
+import org.fossify.commons.helpers.MyContentProvider.COL_FONT_NAME
+import org.fossify.commons.helpers.MyContentProvider.COL_FONT_TYPE
+import org.fossify.commons.helpers.MyContentProvider.COL_PRIMARY_COLOR
+import org.fossify.commons.helpers.MyContentProvider.COL_TEXT_COLOR
+import org.fossify.commons.helpers.MyContentProvider.COL_THEME_TYPE
+import org.fossify.commons.helpers.MyContentProvider.FONTS_URI
+import org.fossify.commons.helpers.MyContentProvider.GLOBAL_THEME_CUSTOM
+import org.fossify.commons.helpers.MyContentProvider.GLOBAL_THEME_DISABLED
+import org.fossify.commons.helpers.MyContentProvider.GLOBAL_THEME_SYSTEM
+import org.fossify.commons.helpers.NavigationIcon
+import org.fossify.commons.helpers.SAVE_DISCARD_PROMPT_INTERVAL
+import org.fossify.commons.helpers.isSPlus
+import org.fossify.commons.models.GlobalConfig
+import org.fossify.commons.models.MyTheme
+import org.fossify.commons.models.RadioItem
+import org.fossify.commons.models.isGlobalThemingEnabled
+import java.io.File
+import kotlin.math.abs
 
 class CustomizationActivity : BaseSimpleActivity() {
-    private lateinit var list: LinearLayout
-
-    private val imagePicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri ?: return@registerForActivityResult
-        try {
-            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        } catch (_: Exception) { }
-        AppThemeManager.setBackgroundImageUri(this, uri)
-        refresh()
+    companion object {
+        private const val THEME_LIGHT = 0
+        private const val THEME_DARK = 1
+        private const val THEME_SOLARIZED = 2
+        private const val THEME_DARK_RED = 3
+        private const val THEME_BLACK_WHITE = 4
+        private const val THEME_CUSTOM = 5
+        private const val THEME_WHITE = 6
+        private const val THEME_SYSTEM = 7
     }
 
-    override fun getAppIconIDs() = intent.getIntegerArrayListExtra(APP_ICON_IDS) ?: arrayListOf()
+    private var curTextColor = 0
+    private var curBackgroundColor = 0
+    private var curPrimaryColor = 0
+    private var curAccentColor = 0
+    private var curAppIconColor = 0
+    private var curSelectedThemeId = 0
+    private var originalAppIconColor = 0
+    private var curFontType = 0
+    private var curFontFileName = ""
+    private var lastSavePromptTS = 0L
+    private var hasUnsavedChanges = false
+    private val predefinedThemes = LinkedHashMap<Int, MyTheme>()
+    private var curPrimaryLineColorPicker: LineColorPickerDialog? = null
+    private var globalConfig: GlobalConfig? = null
+
+    private val fontFilePicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let { handleFontFileSelected(it) }
+        }
+
+    override fun getAppIconIDs() = intent.getIntegerArrayListExtra(APP_ICON_IDS) ?: ArrayList()
+
     override fun getAppLauncherName() = intent.getStringExtra(APP_LAUNCHER_NAME) ?: ""
+
     override fun getRepositoryName() = null
 
+    private val binding by viewBinding(ActivityCustomizationBinding::inflate)
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        baseConfig.isSystemThemeEnabled = false
-        setTheme(getThemeId(baseConfig.primaryColor))
         super.onCreate(savedInstanceState)
-        useDynamicTheme = false
-        buildUi()
-        refresh()
-    }
+        setContentView(binding.root)
 
-    private fun buildUi() {
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val toolbar = MaterialToolbar(this).apply {
-            title = getString(R.string.customize_colors)
-            navigationIcon = resources.getDrawable(R.drawable.ic_arrow_left_vector, theme)
-            setNavigationOnClickListener { finish() }
-            layoutParams = LinearLayout.LayoutParams(-1, dp(56))
-        }
-        root.addView(toolbar)
-        val scroll = ScrollView(this).apply { layoutParams = LinearLayout.LayoutParams(-1, 0, 1f) }
-        list = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(8), dp(16), dp(24))
-        }
-        scroll.addView(list)
-        root.addView(scroll)
-        setContentView(root)
-    }
+        setupOptionsMenu()
+        refreshMenuItems()
+        setupEdgeToEdge(padBottomSystem = listOf(binding.customizationHolder))
 
-    private fun refresh() {
-        baseConfig.isSystemThemeEnabled = false
-        setTheme(getThemeId(baseConfig.primaryColor))
-        AppThemeManager.apply(this)
-        list.removeAllViews()
-        section("تم و رنگ‌ها")
-        action("تم آماده", "انتخاب ترکیب کامل") { presets() }
-        action("رنگ متن", hex(baseConfig.textColor)) { color("رنگ متن", baseConfig.textColor) }
-        action("رنگ پس‌زمینه", hex(baseConfig.backgroundColor)) { color("رنگ پس‌زمینه", baseConfig.backgroundColor) }
-        action("رنگ اصلی", hex(baseConfig.primaryColor)) { color("رنگ اصلی", baseConfig.primaryColor) }
-        action("رنگ Accent", hex(baseConfig.accentColor)) { color("رنگ Accent", baseConfig.accentColor) }
-        section("پس‌زمینه")
-        action("تصویر پس‌زمینه", if (AppThemeManager.getBackgroundImageUri(this) == null) "استفاده از رنگ" else "تصویر انتخاب شده") { background() }
-        section("آیکن برنامه")
-        action("رنگ آیکن برنامه", hex(baseConfig.appIconColor)) { iconColors() }
-        section("حالت تم")
-        info("تم انتخاب‌شده منبع اصلی رنگ‌هاست و Dark/Light سیستم روی آن غلبه نمی‌کند.")
-    }
-
-    private fun section(text: String) = list.addView(TextView(this).apply {
-        this.text = text; textSize = 14f; setTypeface(typeface, 1); setPadding(dp(4), dp(20), dp(4), dp(8))
-    })
-
-    private fun action(title: String, value: String, click: () -> Unit) {
-        list.addView(LinearLayout(this).apply {
-            gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(16), dp(16), dp(16)); isClickable = true
-            setBackgroundResource(android.R.drawable.list_selector_background); setOnClickListener { click() }
-            val a = TextView(context).apply { text = title; textSize = 16f; layoutParams = LinearLayout.LayoutParams(0, -2, 1f) }
-            val b = TextView(context).apply { text = value; textSize = 14f }
-            addView(a); addView(b)
-        })
-    }
-
-    private fun info(text: String) = list.addView(TextView(this).apply { this.text = text; alpha = .7f; setPadding(dp(4), dp(4), dp(4), dp(12)) })
-
-    private fun presets() {
-        val names = arrayOf("روشن", "تیره", "آبی", "سبز", "بنفش", "قرمز", "سفید")
-        AlertDialog.Builder(this).setTitle("تم آماده").setItems(names) { _, i ->
-            when (i) {
-                0 -> preset(Color.DKGRAY, Color.WHITE, Color.rgb(67,160,71), Color.rgb(67,160,71))
-                1 -> preset(Color.WHITE, Color.rgb(22,22,22), Color.rgb(67,160,71), Color.rgb(105,240,174))
-                2 -> preset(Color.DKGRAY, Color.WHITE, Color.rgb(25,118,210), Color.rgb(25,118,210))
-                3 -> preset(Color.DKGRAY, Color.WHITE, Color.rgb(46,125,50), Color.rgb(46,125,50))
-                4 -> preset(Color.DKGRAY, Color.WHITE, Color.rgb(123,31,162), Color.rgb(123,31,162))
-                5 -> preset(Color.WHITE, Color.rgb(55,20,20), Color.rgb(211,47,47), Color.rgb(255,82,82))
-                6 -> preset(Color.DKGRAY, Color.WHITE, Color.WHITE, Color.DKGRAY)
-            }
-        }.show()
-    }
-
-    private fun preset(text: Int, bg: Int, primary: Int, accent: Int) {
-        baseConfig.textColor = text; baseConfig.backgroundColor = bg; baseConfig.primaryColor = primary; baseConfig.accentColor = accent
-        baseConfig.isSystemThemeEnabled = false; refresh()
-    }
-
-    private fun color(title: String, current: Int) {
-        val input = EditText(this).apply { setSingleLine(); setText(hex(current)); selectAll() }
-        AlertDialog.Builder(this).setTitle(title).setView(input).setNegativeButton("انصراف", null).setPositiveButton("اعمال") { _, _ ->
-            try {
-                val c = Color.parseColor(input.text.toString().trim())
-                when (title) {
-                    "رنگ متن" -> baseConfig.textColor = c
-                    "رنگ پس‌زمینه" -> baseConfig.backgroundColor = c
-                    "رنگ اصلی" -> baseConfig.primaryColor = c
-                    "رنگ Accent" -> baseConfig.accentColor = c
+        initColorVariables()
+        if (canAccessGlobalConfig()) {
+            withGlobalConfig {
+                globalConfig = it
+                baseConfig.isGlobalThemeEnabled = it.isGlobalThemingEnabled()
+                runOnUiThread {
+                    setupThemes()
+                    showOrHideThankYouFeatures()
                 }
-                baseConfig.isSystemThemeEnabled = false; refresh()
-            } catch (_: Exception) { }
-        }.show()
+            }
+        } else {
+            setupThemes()
+            baseConfig.isGlobalThemeEnabled = false
+        }
+
+        showOrHideThankYouFeatures()
+        originalAppIconColor = baseConfig.appIconColor
+        updateLabelColors()
+        updateHeaderColors()
     }
 
-    private fun background() {
-        val has = AppThemeManager.getBackgroundImageUri(this) != null
-        val items = if (has) arrayOf("انتخاب تصویر", "حذف تصویر") else arrayOf("انتخاب تصویر")
-        AlertDialog.Builder(this).setTitle("پس‌زمینه").setItems(items) { _, i ->
-            if (i == 0) imagePicker.launch(arrayOf("image/*")) else { AppThemeManager.clearBackgroundImage(this); refresh() }
-        }.show()
+    override fun onResume() {
+        super.onResume()
+        setTheme(getThemeId(getCurrentPrimaryColor()))
+
+        if (!isDynamicTheme()) {
+            updateBackgroundColor(getCurrentBackgroundColor())
+        }
+
+        curPrimaryLineColorPicker?.getSpecificColor()?.apply {
+            setTheme(getThemeId(this))
+        }
+
+        setupTopAppBar(
+            topAppBar = binding.appBar,
+            navigationIcon = NavigationIcon.Arrow,
+            topBarColor = getColoredMaterialStatusBarColor()
+        )
+        showOrHideThankYouFeatures()
+        updateApplyToAllColors()
     }
 
-    private fun iconColors() {
-        val t = resources.obtainTypedArray(R.array.md_app_icon_colors)
-        val colors = IntArray(t.length()) { t.getColor(it, baseConfig.appIconColor) }
-        t.recycle()
-        val labels = Array(colors.size) { hex(colors[it]) }
-        AlertDialog.Builder(this).setTitle("رنگ آیکن برنامه").setItems(labels) { _, i ->
-            baseConfig.appIconColor = colors[i]
-            try { checkAppIconColor() } catch (_: Exception) { }
-            refresh()
-        }.show()
+    private fun refreshMenuItems() {
+        binding.customizationToolbar.menu.findItem(R.id.save).isVisible = hasUnsavedChanges
     }
 
-    private fun hex(c: Int) = String.format("#%06X", c and 0xFFFFFF)
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    private fun setupOptionsMenu() {
+        binding.customizationToolbar.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.save -> {
+                    saveChanges(true)
+                    true
+                }
+
+                else -> false
+            }
+        }
+    }
+
+    override fun onBackPressedCompat(): Boolean {
+        return if (hasUnsavedChanges && System.currentTimeMillis() - lastSavePromptTS > SAVE_DISCARD_PROMPT_INTERVAL) {
+            promptSaveDiscard()
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun setupThemes() {
+        predefinedThemes.apply {
+            put(
+                THEME_SYSTEM,
+                if (isSPlus()) {
+                    getSystemThemeColors()
+                } else {
+                    getAutoThemeColors()
+                }
+            )
+            put(
+                THEME_LIGHT,
+                MyTheme(
+                    labelId = R.string.light_theme,
+                    textColorId = R.color.theme_light_text_color,
+                    backgroundColorId = R.color.theme_light_background_color,
+                    primaryColorId = R.color.color_primary,
+                    appIconColorId = R.color.color_primary
+                )
+            )
+            put(
+                THEME_DARK,
+                MyTheme(
+                    labelId = R.string.dark_theme,
+                    textColorId = R.color.theme_dark_text_color,
+                    backgroundColorId = R.color.theme_dark_background_color,
+                    primaryColorId = R.color.color_primary,
+                    appIconColorId = R.color.color_primary
+                )
+            )
+            put(
+                THEME_DARK_RED,
+                MyTheme(
+                    labelId = R.string.dark_red,
+                    textColorId = R.color.theme_dark_text_color,
+                    backgroundColorId = R.color.theme_dark_background_color,
+                    primaryColorId = R.color.theme_dark_red_primary_color,
+                    appIconColorId = R.color.md_red_700
+                )
+            )
+            put(
+                THEME_WHITE,
+                MyTheme(
+                    labelId = R.string.white,
+                    textColorId = R.color.dark_grey,
+                    backgroundColorId = android.R.color.white,
+                    primaryColorId = android.R.color.white,
+                    appIconColorId = R.color.color_primary
+                )
+            )
+            put(
+                THEME_BLACK_WHITE,
+                MyTheme(
+                    labelId = R.string.black_white,
+                    textColorId = android.R.color.white,
+                    backgroundColorId = android.R.color.black,
+                    primaryColorId = android.R.color.black,
+                    appIconColorId = R.color.md_grey_black
+                )
+            )
+            put(THEME_CUSTOM, MyTheme(R.string.custom, 0, 0, 0, 0))
+        }
+
+        setupThemePicker()
+        setupColorsPickers()
+    }
+
+    private fun setupThemePicker() {
+        curSelectedThemeId = getCurrentThemeId()
+        binding.customizationTheme.text = getThemeText()
+        updateAutoThemeFields()
+        handleAccentColorLayout()
+        binding.customizationThemeHolder.setOnClickListener {
+            if (baseConfig.wasAppIconCustomizationWarningShown) {
+                themePickerClicked()
+            } else {
+                ConfirmationDialog(
+                    activity = this,
+                    message = "",
+                    messageId = R.string.app_icon_color_warning,
+                    positive = R.string.ok,
+                    negative = 0
+                ) {
+                    baseConfig.wasAppIconCustomizationWarningShown = true
+                    themePickerClicked()
+                }
+            }
+        }
+    }
+
+    private fun themePickerClicked() {
+        val items = arrayListOf<RadioItem>()
+        for ((key, value) in predefinedThemes) {
+            items.add(RadioItem(key, getString(value.labelId)))
+        }
+
+        RadioGroupDialog(this@CustomizationActivity, items, curSelectedThemeId) {
+            updateColorTheme(it as Int, true)
+            if (
+                it != THEME_CUSTOM
+                && it != THEME_SYSTEM
+                && !baseConfig.wasCustomThemeSwitchDescriptionShown
+            ) {
+                baseConfig.wasCustomThemeSwitchDescriptionShown = true
+                toast(R.string.changing_color_description)
+            }
+
+            updateMenuItemColors(binding.customizationToolbar.menu, getCurrentTopBarColor())
+            setupTopAppBar(
+                topAppBar = binding.appBar,
+                navigationIcon = NavigationIcon.Arrow,
+                topBarColor = getCurrentTopBarColor()
+            )
+        }
+    }
+
+    private fun updateColorTheme(themeId: Int, useStored: Boolean = false) {
+        curSelectedThemeId = themeId
+        binding.customizationTheme.text = getThemeText()
+
+        if (curSelectedThemeId == THEME_CUSTOM) {
+            if (useStored) {
+                curTextColor = baseConfig.customTextColor
+                curBackgroundColor = baseConfig.customBackgroundColor
+                curPrimaryColor = baseConfig.customPrimaryColor
+                curAccentColor = baseConfig.customAccentColor
+                curAppIconColor = baseConfig.customAppIconColor
+                setTheme(getThemeId(curPrimaryColor))
+                updateMenuItemColors(binding.customizationToolbar.menu, curPrimaryColor)
+                setupTopAppBar(binding.appBar, NavigationIcon.Arrow, curPrimaryColor)
+                setupColorsPickers()
+            } else {
+                baseConfig.customPrimaryColor = curPrimaryColor
+                baseConfig.customAccentColor = curAccentColor
+                baseConfig.customBackgroundColor = curBackgroundColor
+                baseConfig.customTextColor = curTextColor
+                baseConfig.customAppIconColor = curAppIconColor
+            }
+        } else {
+            val theme = predefinedThemes[curSelectedThemeId]!!
+            curTextColor = getColor(theme.textColorId)
+            curBackgroundColor = getColor(theme.backgroundColorId)
+
+            if (curSelectedThemeId != THEME_SYSTEM) {
+                curPrimaryColor = getColor(theme.primaryColorId)
+                curAppIconColor = getColor(theme.appIconColorId)
+                if (curAccentColor == 0) {
+                    curAccentColor = getColor(R.color.color_primary)
+                }
+            }
+
+            setTheme(getThemeId(getCurrentPrimaryColor()))
+            colorChanged()
+            updateMenuItemColors(binding.customizationToolbar.menu, getCurrentTopBarColor())
+            setupTopAppBar(
+                topAppBar = binding.appBar,
+                navigationIcon = NavigationIcon.Arrow,
+                topBarColor = getCurrentTopBarColor()
+            )
+        }
+
+        hasUnsavedChanges = true
+        refreshMenuItems()
+        updateLabelColors(getCurrentTextColor())
+        updateHeaderColors(getCurrentAccentOrPrimaryColor())
+        updateBackgroundColor(getCurrentBackgroundColor())
+        updateAutoThemeFields()
+        updateApplyToAllColors()
+        handleAccentColorLayout()
+    }
+
+    private fun getAutoThemeColors(): MyTheme {
+        val isDarkTheme = isSystemInDarkMode()
+        val textColor = if (isDarkTheme) {
+            R.color.theme_dark_text_color
+        } else {
+            R.color.theme_light_text_color
+        }
+        val backgroundColor = if (isDarkTheme) {
+            R.color.theme_dark_background_color
+        } else {
+            R.color.theme_light_background_color
+        }
+        return MyTheme(
+            labelId = R.string.auto_light_dark_theme,
+            textColorId = textColor,
+            backgroundColorId = backgroundColor,
+            primaryColorId = R.color.color_primary,
+            appIconColorId = R.color.color_primary
+        )
+    }
+
+    // doesn't really matter what colors we use here, everything will be taken from the system.
+    // Use the default dark theme values here.
+    private fun getSystemThemeColors(): MyTheme {
+        return MyTheme(
+            labelId = R.string.system_default,
+            textColorId = R.color.theme_dark_text_color,
+            backgroundColorId = R.color.theme_dark_background_color,
+            primaryColorId = R.color.color_primary,
+            appIconColorId = R.color.color_primary
+        )
+    }
+
+    private fun getCurrentThemeId(): Int {
+        if (
+            (baseConfig.isSystemThemeEnabled && !hasUnsavedChanges)
+            || curSelectedThemeId == THEME_SYSTEM
+        ) {
+            return THEME_SYSTEM
+        }
+
+        var themeId = THEME_CUSTOM
+        resources.apply {
+            for ((key, value) in predefinedThemes
+                .filter { it.key != THEME_CUSTOM && it.key != THEME_SYSTEM }) {
+                if (curTextColor == getColor(value.textColorId) &&
+                    curBackgroundColor == getColor(value.backgroundColorId) &&
+                    curPrimaryColor == getColor(value.primaryColorId) &&
+                    curAppIconColor == getColor(value.appIconColorId)
+                ) {
+                    themeId = key
+                }
+            }
+        }
+
+        return themeId
+    }
+
+    private fun getThemeText(): String {
+        var label = R.string.custom
+        for ((key, value) in predefinedThemes) {
+            if (key == curSelectedThemeId) {
+                label = value.labelId
+            }
+        }
+        return getString(label)
+    }
+
+    private fun updateAutoThemeFields() {
+        arrayOf(
+            binding.customizationTextColorHolder,
+            binding.customizationBackgroundColorHolder
+        ).forEach {
+            it.beVisibleIf(curSelectedThemeId != THEME_SYSTEM)
+        }
+
+        binding.customizationPrimaryColorHolder.beVisibleIf(
+            beVisible = curSelectedThemeId != THEME_SYSTEM || !isSPlus()
+        )
+    }
+
+    private fun promptSaveDiscard() {
+        lastSavePromptTS = System.currentTimeMillis()
+        ConfirmationAdvancedDialog(
+            activity = this,
+            message = "",
+            messageId = R.string.save_before_closing,
+            positive = R.string.save,
+            negative = R.string.discard
+        ) {
+            if (it) {
+                saveChanges(true)
+            } else {
+                resetColors()
+                finish()
+            }
+        }
+    }
+
+    private fun saveChanges(finishAfterSave: Boolean) {
+        val didAppIconColorChange = curAppIconColor != originalAppIconColor
+        baseConfig.apply {
+            textColor = curTextColor
+            backgroundColor = curBackgroundColor
+            primaryColor = curPrimaryColor
+            accentColor = curAccentColor
+            appIconColor = curAppIconColor
+            fontType = curFontType
+            fontName = curFontFileName
+        }
+
+        if (didAppIconColorChange) {
+            checkAppIconColor()
+        }
+
+        FontHelper.clearCache()
+        baseConfig.isGlobalThemeEnabled = binding.applyToAllSwitch.isChecked
+        baseConfig.isSystemThemeEnabled = curSelectedThemeId == THEME_SYSTEM
+
+        if (isThankYouInstalled()) saveThankYouChanges()
+        hasUnsavedChanges = false
+        if (finishAfterSave) finish() else refreshMenuItems()
+    }
+
+    private fun saveThankYouChanges() {
+        val globalThemeType = when {
+            baseConfig.isGlobalThemeEnabled.not() -> GLOBAL_THEME_DISABLED
+            baseConfig.isSystemThemeEnabled -> GLOBAL_THEME_SYSTEM
+            else -> GLOBAL_THEME_CUSTOM
+        }
+
+        val canFontsBeSynced = isThankYouFontsSupported()
+        updateGlobalConfig(
+            ContentValues().apply {
+                put(COL_THEME_TYPE, globalThemeType)
+                put(COL_TEXT_COLOR, curTextColor)
+                put(COL_BACKGROUND_COLOR, curBackgroundColor)
+                put(COL_PRIMARY_COLOR, curPrimaryColor)
+                put(COL_ACCENT_COLOR, curAccentColor)
+                put(COL_APP_ICON_COLOR, curAppIconColor)
+                if (canFontsBeSynced) {
+                    put(COL_FONT_TYPE, curFontType)
+                    put(COL_FONT_NAME, curFontFileName)
+                }
+            }
+        )
+
+        if (curFontType == FONT_TYPE_CUSTOM && curFontFileName.isNotEmpty() && canFontsBeSynced) {
+            val fontData = FontHelper.getFontData(this, curFontFileName) ?: return
+            val fontUri = FONTS_URI.buildUpon()
+                .appendPath(curFontFileName)
+                .build()
+            try {
+                contentResolver.openOutputStream(fontUri, "w")
+                    ?.use { it.write(fontData) }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun resetColors() {
+        hasUnsavedChanges = false
+        initColorVariables()
+        setupColorsPickers()
+        updateBackgroundColor()
+        refreshMenuItems()
+        updateLabelColors(getCurrentTextColor())
+        updateHeaderColors(getCurrentAccentOrPrimaryColor())
+        updateApplyToAllColors()
+    }
+
+    private fun initColorVariables() {
+        curTextColor = baseConfig.textColor
+        curBackgroundColor = baseConfig.backgroundColor
+        curPrimaryColor = baseConfig.primaryColor
+        curAccentColor = baseConfig.accentColor
+        curAppIconColor = baseConfig.appIconColor
+        curFontType = baseConfig.fontType
+        curFontFileName = baseConfig.fontName
+    }
+
+    private fun setupColorsPickers() {
+        val textColor = getCurrentTextColor()
+        val backgroundColor = getCurrentBackgroundColor()
+        val primaryColor = getCurrentPrimaryColor()
+        binding.customizationTextColor.setFillWithStroke(textColor, backgroundColor)
+        binding.customizationPrimaryColor.setFillWithStroke(primaryColor, backgroundColor)
+        binding.customizationAccentColor.setFillWithStroke(curAccentColor, backgroundColor)
+        binding.customizationBackgroundColor.setFillWithStroke(backgroundColor, backgroundColor)
+        binding.customizationAppIconColor.setFillWithStroke(curAppIconColor, backgroundColor)
+        binding.applyToAllSwitch.setTextColor(primaryColor.getContrastColor())
+
+        binding.customizationTextColorHolder.setOnClickListener { pickTextColor() }
+        binding.customizationBackgroundColorHolder.setOnClickListener { pickBackgroundColor() }
+        binding.customizationPrimaryColorHolder.setOnClickListener { pickPrimaryColor() }
+        binding.customizationAccentColorHolder.setOnClickListener { pickAccentColor() }
+
+        handleAccentColorLayout()
+        binding.applyToAllHolder.setOnClickListener { applyToAll() }
+        binding.customizationAppIconColorHolder.setOnClickListener {
+            if (baseConfig.wasAppIconCustomizationWarningShown) {
+                pickAppIconColor()
+            } else {
+                ConfirmationDialog(
+                    activity = this,
+                    message = "",
+                    messageId = R.string.app_icon_color_warning,
+                    positive = R.string.ok,
+                    negative = 0
+                ) {
+                    baseConfig.wasAppIconCustomizationWarningShown = true
+                    pickAppIconColor()
+                }
+            }
+        }
+
+        setupFontPicker()
+    }
+
+    private fun hasColorChanged(old: Int, new: Int) = abs(old - new) > 1
+
+    private fun colorChanged() {
+        hasUnsavedChanges = true
+        setupColorsPickers()
+        refreshMenuItems()
+    }
+
+    private fun setupFontPicker() {
+        updateFontDisplay()
+        binding.customizationFontHolder.setOnClickListener {
+            fontPickerClicked()
+        }
+    }
+
+    private fun updateFontDisplay() {
+        binding.customizationFont.text = when (curFontType) {
+            FONT_TYPE_MONOSPACE -> getString(R.string.font_monospace)
+            FONT_TYPE_CUSTOM -> curFontFileName.ifEmpty { getString(R.string.select_font_file) }
+            else -> getString(R.string.system_default)
+        }
+    }
+
+    private fun fontPickerClicked() {
+        val items = arrayListOf(
+            RadioItem(FONT_TYPE_SYSTEM_DEFAULT, getString(R.string.system_default)),
+            RadioItem(FONT_TYPE_MONOSPACE, getString(R.string.font_monospace)),
+            RadioItem(FONT_TYPE_CUSTOM, getString(R.string.select_font_file))
+        )
+
+        RadioGroupDialog(this, items, curFontType) { selected ->
+            val selectedType = selected as Int
+            if (selectedType == FONT_TYPE_CUSTOM) {
+                if (
+                    !resources.getBoolean(R.bool.hide_google_relations)
+                    && !isOrWasThankYouInstalled(allowPretend = false)
+                ) {
+                    PurchaseThankYouDialog(this)
+                    return@RadioGroupDialog
+                }
+                openFontFilePicker()
+            } else {
+                curFontType = selectedType
+                curFontFileName = ""
+                fontChanged()
+            }
+        }
+    }
+
+    private fun openFontFilePicker() {
+        try {
+            fontFilePicker.launch(
+                arrayOf(
+                    "font/ttf",
+                    "font/otf",
+                    "application/x-font-ttf",
+                    "application/x-font-otf",
+                    "*/*"
+                )
+            )
+        } catch (_: ActivityNotFoundException) {
+            toast(R.string.system_service_disabled)
+        }
+    }
+
+    private fun handleFontFileSelected(uri: Uri) {
+        try {
+            val fileName = getFilenameFromUri(uri)
+            if (fileName.isEmpty() || !fileName.isFontFile()) {
+                toast(R.string.invalid_font_file)
+                return
+            }
+
+            val fontData = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            if (fontData == null) {
+                toast(R.string.invalid_font_file)
+                return
+            }
+
+            val tempFile = File(cacheDir, fileName)
+            tempFile.writeBytes(fontData)
+            try {
+                Typeface.createFromFile(tempFile)
+            } catch (_: Exception) {
+                tempFile.delete()
+                toast(R.string.invalid_font_file)
+                return
+            }
+            tempFile.delete()
+
+            if (FontHelper.saveFontData(this, fontData, fileName)) {
+                curFontType = FONT_TYPE_CUSTOM
+                curFontFileName = fileName
+                fontChanged()
+            } else {
+                toast(R.string.invalid_font_file)
+            }
+        } catch (_: Exception) {
+            toast(R.string.invalid_font_file)
+        }
+    }
+
+    private fun fontChanged() {
+        hasUnsavedChanges = true
+        updateFontDisplay()
+        applyFontToViewRecursively(
+            view = window.decorView,
+            typeface = FontHelper.getTypeface(this, curFontType, curFontFileName),
+            force = true
+        )
+        refreshMenuItems()
+    }
+
+    private fun setCurrentTextColor(color: Int) {
+        curTextColor = color
+        updateLabelColors(color)
+        updateApplyToAllColors()
+    }
+
+    private fun setCurrentBackgroundColor(color: Int) {
+        curBackgroundColor = color
+        updateBackgroundColor(color)
+        updateApplyToAllColors()
+    }
+
+    private fun setCurrentPrimaryColor(color: Int) {
+        curPrimaryColor = color
+        updateApplyToAllColors()
+        updateHeaderColors(color)
+    }
+
+    private fun handleAccentColorLayout() {
+        binding.customizationAccentColorHolder.beVisibleIf(
+            beVisible = curSelectedThemeId == THEME_WHITE
+                    || isCurrentWhiteTheme()
+                    || curSelectedThemeId == THEME_BLACK_WHITE
+                    || isCurrentBlackAndWhiteTheme()
+        )
+        binding.customizationAccentColorLabel.text = getString(
+            if (curSelectedThemeId == THEME_WHITE || isCurrentWhiteTheme()) {
+                R.string.accent_color_white
+            } else {
+                R.string.accent_color_black_and_white
+            }
+        )
+    }
+
+    private fun isCurrentWhiteTheme(): Boolean {
+        return curTextColor == DARK_GREY
+                && curPrimaryColor == Color.WHITE
+                && curBackgroundColor == Color.WHITE
+    }
+
+    private fun isCurrentBlackAndWhiteTheme(): Boolean {
+        return curTextColor == Color.WHITE
+                && curPrimaryColor == Color.BLACK
+                && curBackgroundColor == Color.BLACK
+    }
+
+    private fun pickTextColor() {
+        ColorPickerDialog(this, curTextColor) { wasPositivePressed, color ->
+            if (wasPositivePressed) {
+                if (hasColorChanged(curTextColor, color)) {
+                    setCurrentTextColor(color)
+                    colorChanged()
+                    updateColorTheme(getCurrentThemeId())
+                }
+            }
+        }
+    }
+
+    private fun pickBackgroundColor() {
+        ColorPickerDialog(this, curBackgroundColor) { wasPositivePressed, color ->
+            if (wasPositivePressed) {
+                if (hasColorChanged(curBackgroundColor, color)) {
+                    setCurrentBackgroundColor(color)
+                    colorChanged()
+                    updateColorTheme(getCurrentThemeId())
+                }
+            }
+        }
+    }
+
+    private fun pickPrimaryColor() {
+        if (!packageName.startsWith("org.fossify.", true) && baseConfig.appRunCount > 50) {
+            finish()
+            return
+        }
+
+        curPrimaryLineColorPicker = LineColorPickerDialog(
+            activity = this,
+            color = curPrimaryColor,
+            isPrimaryColorPicker = true,
+            appBar = binding.appBar
+        ) { wasPositivePressed, color ->
+            curPrimaryLineColorPicker = null
+            if (wasPositivePressed) {
+                if (hasColorChanged(curPrimaryColor, color)) {
+                    setCurrentPrimaryColor(color)
+                    colorChanged()
+                    updateColorTheme(getCurrentThemeId())
+                    setTheme(getThemeId(color))
+                }
+                updateMenuItemColors(binding.customizationToolbar.menu, color)
+                setupTopAppBar(binding.appBar, NavigationIcon.Arrow, color)
+            } else {
+                setTheme(getThemeId(curPrimaryColor))
+                updateMenuItemColors(binding.customizationToolbar.menu, curPrimaryColor)
+                setupTopAppBar(binding.appBar, NavigationIcon.Arrow, curPrimaryColor)
+                updateTopBarColors(binding.appBar, curPrimaryColor)
+            }
+        }
+    }
+
+    private fun pickAccentColor() {
+        ColorPickerDialog(this, curAccentColor) { wasPositivePressed, color ->
+            if (wasPositivePressed) {
+                if (hasColorChanged(curAccentColor, color)) {
+                    curAccentColor = color
+                    colorChanged()
+                    updateApplyToAllColors()
+                    updateHeaderColors(curAccentColor)
+                    updateTopBarColors(binding.appBar, getCurrentTopBarColor())
+                }
+            }
+        }
+    }
+
+    private fun pickAppIconColor() {
+        LineColorPickerDialog(
+            activity = this,
+            color = curAppIconColor,
+            isPrimaryColorPicker = false,
+            primaryColors = R.array.md_app_icon_colors,
+            appIconIDs = getAppIconIDs()
+        ) { wasPositivePressed, color ->
+            if (wasPositivePressed) {
+                if (hasColorChanged(curAppIconColor, color)) {
+                    curAppIconColor = color
+                    colorChanged()
+                    updateColorTheme(getCurrentThemeId())
+                }
+            }
+        }
+    }
+
+    private fun applyToAll() {
+        when {
+            canAccessGlobalConfig() && binding.applyToAllSwitch.isChecked -> {
+                binding.applyToAllSwitch.isChecked = false
+                updateColorTheme(getCurrentThemeId())
+                saveChanges(false)
+            }
+
+            canAccessGlobalConfig() -> {
+                binding.applyToAllSwitch.isChecked = true
+                updateColorTheme(getCurrentThemeId())
+                saveChanges(false)
+                ConfirmationDialog(
+                    activity = this,
+                    message = "",
+                    messageId = R.string.global_theme_success,
+                    positive = R.string.ok,
+                    negative = 0,
+                    callback = {}
+                )
+            }
+
+            else -> {
+                binding.applyToAllSwitch.isChecked = false
+                PurchaseThankYouDialog(this)
+            }
+        }
+    }
+
+    private fun updateLabelColors(textColor: Int = getProperTextColor()) {
+        arrayListOf(
+            binding.customizationThemeLabel,
+            binding.customizationTheme,
+            binding.customizationTextColorLabel,
+            binding.customizationBackgroundColorLabel,
+            binding.customizationPrimaryColorLabel,
+            binding.customizationAccentColorLabel,
+            binding.customizationAppIconColorLabel,
+            binding.customizationFontLabel,
+            binding.customizationFont,
+            binding.applyToAllLabel,
+            binding.applyToAllNote
+        ).forEach {
+            it.setTextColor(textColor)
+        }
+    }
+
+    private fun updateHeaderColors(primaryColor: Int = getProperPrimaryColor()) {
+        arrayListOf(
+            binding.settingsThemeAndColorsLabel,
+            binding.settingsFontLabel,
+            binding.settingsAllFossifyAppsLabel
+        ).forEach {
+            it.setTextColor(primaryColor)
+        }
+    }
+
+    private fun updateApplyToAllColors() {
+        binding.applyToAllSwitch.setColors(
+            textColor = getCurrentTextColor(),
+            accentColor = getCurrentAccentOrPrimaryColor(),
+            backgroundColor = getCurrentBackgroundColor()
+        )
+    }
+
+    private fun getCurrentTextColor() = when (binding.customizationTheme.value) {
+        getMaterialYouString() -> resources.getColor(R.color.you_neutral_text_color)
+        else -> curTextColor
+    }
+
+    private fun getCurrentBackgroundColor() = when (binding.customizationTheme.value) {
+        getMaterialYouString() -> resources.getColor(R.color.you_background_color)
+        else -> curBackgroundColor
+    }
+
+    private fun getCurrentPrimaryColor() = when (binding.customizationTheme.value) {
+        getMaterialYouString() -> resources.getColor(R.color.you_primary_color)
+        else -> curPrimaryColor
+    }
+
+    private fun getCurrentTopBarColor() = when {
+        binding.customizationTheme.value == getMaterialYouString() -> {
+            resources.getColor(R.color.you_status_bar_color)
+        }
+
+        isCurrentWhiteTheme() || isCurrentBlackAndWhiteTheme() -> curAccentColor
+        else -> curPrimaryColor
+    }
+
+    private fun getCurrentAccentOrPrimaryColor() = when {
+        isCurrentWhiteTheme() || isCurrentBlackAndWhiteTheme() -> curAccentColor
+        else -> getCurrentPrimaryColor()
+    }
+
+    private fun getMaterialYouString() = getString(R.string.system_default)
+
+    private fun showOrHideThankYouFeatures() {
+        val showThankYouFeatures = canAccessGlobalConfig()
+                || !resources.getBoolean(R.bool.hide_google_relations)
+        binding.applyToAllNote.beVisibleIf(!canAccessGlobalConfig())
+        binding.applyToAllHolder.beVisibleIf(showThankYouFeatures)
+        binding.applyToAllDivider.root.beVisibleIf(showThankYouFeatures)
+        binding.settingsAllFossifyAppsLabel.beVisibleIf(showThankYouFeatures)
+        binding.applyToAllSwitch.isChecked = baseConfig.isGlobalThemeEnabled
+        updateApplyToAllColors()
+    }
 }
