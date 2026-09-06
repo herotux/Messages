@@ -54,6 +54,9 @@ jobs:
           ! grep -n 'com\.google\.android\.material\.R\.attr\.colorPrimary' \
             app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
 
+      - name: Add Persian font picker
+        run: python3 tools/patch_settings_font_picker.py
+
       - name: Persist Settings normalization
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
