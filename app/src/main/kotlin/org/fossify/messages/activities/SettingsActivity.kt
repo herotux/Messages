@@ -45,6 +45,7 @@ import org.fossify.messages.helpers.FILE_SIZE_NONE
 import org.fossify.messages.helpers.LOCK_SCREEN_NOTHING
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
+import org.fossify.messages.helpers.PersianFontCatalog
 
 /**
  * Standalone Messages settings UI. Presentation is local to Messages and does not
@@ -301,20 +302,57 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun chooseFont() {
-        val labels = arrayOf(t("فونت پیش‌فرض سیستم", "System default font"), t("فونت سفارشی", "Custom font"))
-        val selected = if (config.fontType == FONT_TYPE_CUSTOM) 1 else 0
-        MaterialAlertDialogBuilder(this).setTitle(t("فونت برنامه", "App font")).setSingleChoiceItems(labels, selected) { dialog, which ->
-            if (which == 0) {
-                config.fontType = FONT_TYPE_SYSTEM_DEFAULT
-                config.fontName = ""
-                FontHelper.clearCache()
-                dialog.dismiss()
-                recreate()
-            } else {
+        val builtIns = PersianFontCatalog.fonts
+        val labels = buildList {
+            add(t("فونت پیش‌فرض سیستم", "System default font"))
+            addAll(builtIns.map { it.title })
+            add(t("فونت سفارشی…", "Custom font…"))
+        }.toTypedArray()
+        val selected = when {
+            config.fontType != FONT_TYPE_CUSTOM -> 0
+            builtIns.indexOfFirst { it.fileName == config.fontName } >= 0 -> 1 + builtIns.indexOfFirst { it.fileName == config.fontName }
+            else -> labels.lastIndex
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(t("فونت برنامه", "App font"))
+            .setSingleChoiceItems(labels, selected) { dialog, which ->
+                if (which == 0) {
+                    config.fontType = FONT_TYPE_SYSTEM_DEFAULT
+                    config.fontName = ""
+                    FontHelper.clearCache()
+                    dialog.dismiss()
+                    recreate()
+                    return@setSingleChoiceItems
+                }
+
+                if (which <= builtIns.size) {
+                    val spec = builtIns[which - 1]
+                    dialog.dismiss()
+                    Thread {
+                        val result = PersianFontCatalog.install(this, spec)
+                        runOnUiThread {
+                            if (result.isSuccess) {
+                                config.fontType = FONT_TYPE_CUSTOM
+                                config.fontName = spec.fileName
+                                FontHelper.clearCache()
+                                recreate()
+                            } else {
+                                MaterialAlertDialogBuilder(this)
+                                    .setTitle(t("خطا در دریافت فونت", "Font download failed"))
+                                    .setMessage(t("این فونت فعلاً قابل دریافت نیست. بعداً دوباره تلاش کنید.", "This font could not be downloaded right now. Please try again later."))
+                                    .setPositiveButton(android.R.string.ok, null)
+                                    .show()
+                            }
+                        }
+                    }.start()
+                    return@setSingleChoiceItems
+                }
+
                 dialog.dismiss()
                 pickCustomFont.launch(arrayOf("font/*", "application/octet-stream"))
             }
-        }.show()
+            .show()
     }
 
     private fun resolveFontFileName(uri: Uri): String {
@@ -359,7 +397,13 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun fontSizeLabel() = when (config.fontSize) { 1 -> t("کوچک", "Small"); 2 -> t("متوسط", "Medium"); 3 -> t("بزرگ", "Large"); else -> t("خیلی بزرگ", "Very large") }
-    private fun fontLabel() = if (config.fontType == FONT_TYPE_CUSTOM) t("سفارشی: ${config.fontName}", "Custom: ${config.fontName}") else t("پیش‌فرض سیستم", "System default")
+    private fun fontLabel(): String {
+        if (config.fontType != FONT_TYPE_CUSTOM) return t("پیش‌فرض سیستم", "System default")
+        PersianFontCatalog.fonts.firstOrNull { it.fileName == config.fontName }?.let {
+            return it.title
+        }
+        return t("سفارشی: ${config.fontName}", "Custom: ${config.fontName}")
+    }
     private fun lockScreenLabel() = when (config.lockScreenVisibilitySetting) { LOCK_SCREEN_SENDER -> t("فقط فرستنده", "Sender only"); LOCK_SCREEN_NOTHING -> t("هیچ‌چیز", "Nothing"); else -> t("فرستنده و متن پیام", "Sender and message") }
     private fun mmsLimitLabel() = when (config.mmsFileSizeLimit) { FILE_SIZE_100_KB -> "100 KB"; FILE_SIZE_200_KB -> "200 KB"; FILE_SIZE_300_KB -> "300 KB"; FILE_SIZE_600_KB -> "600 KB"; FILE_SIZE_1_MB -> "1 MB"; FILE_SIZE_2_MB -> "2 MB"; else -> t("بدون محدودیت", "Unlimited") }
 
@@ -398,7 +442,11 @@ class SettingsActivity : SimpleActivity() {
     private fun margins(top: Int = 0, bottom: Int = 0) = LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(top), 0, dp(bottom)) }
 
     private fun applyPersianFont(view: View) {
-        val typeface = ResourcesCompat.getFont(this, R.font.vazirmatn_regular) ?: return
+        val typeface = if (config.fontType == FONT_TYPE_CUSTOM) {
+            FontHelper.getTypeface(this)
+        } else {
+            ResourcesCompat.getFont(this, R.font.vazirmatn_regular) ?: Typeface.DEFAULT
+        }
         if (view is TextView) view.typeface = typeface
         if (view is android.view.ViewGroup) for (i in 0 until view.childCount) applyPersianFont(view.getChildAt(i))
     }
