@@ -9,12 +9,14 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.ContactsContract
 import org.fossify.commons.FossifyApp
+import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.activities.ThreadActivity
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
+import org.fossify.messages.helpers.AppThemeManager
 import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.BankCardsCrashLogger
 import org.fossify.messages.helpers.ConversationFolderManager
@@ -27,6 +29,8 @@ class App : FossifyApp() {
 
     override fun onCreate() {
         super.onCreate()
+        // User-selected theme is authoritative; never fall back to system Light/Dark.
+        baseConfig.isSystemThemeEnabled = false
         BankCardsCrashLogger.install(this)
         TapsellAds.initialize()
         registerActivityLifecycleCallbacks(folderUiLifecycleCallbacks)
@@ -42,6 +46,7 @@ class App : FossifyApp() {
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
 
         override fun onActivityResumed(activity: Activity) {
+            AppThemeManager.apply(activity)
             if (activity is MainActivity) {
                 activity.findViewById<android.view.View>(R.id.folder_tabs)?.visibility =
                     if (ConversationFolderManager.areFoldersVisible(activity)) android.view.View.VISIBLE else android.view.View.GONE
