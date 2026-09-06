@@ -1,0 +1,71 @@
+name: Fix fake-version warning
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-fake-version-warning.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Remove legacy fake-version checks
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("app/src/main/kotlin/org/fossify/commons/activities/BaseSimpleActivity.kt")
+          text = path.read_text()
+
+          text = text.replace('import org.fossify.commons.extensions.random\n', '')
+          text = text.replace('import org.fossify.commons.extensions.showModdedAppWarning\n', '')
+
+          old_on_create = '''        if (!packageName.startsWith("org.fossify.", true)) {
+            if ((0..50).random() == 10 || baseConfig.appRunCount % 100 == 0) {
+                showModdedAppWarning()
+            }
+        }
+'''
+          if old_on_create not in text:
+              raise SystemExit("onCreate fake-version block not found")
+          text = text.replace(old_on_create, '', 1)
+
+          old_customization = '''    fun startCustomizationActivity() {
+        if (!packageName.contains("yfissof".reversed(), true)) {
+            if (baseConfig.appRunCount > 100) {
+                showModdedAppWarning()
+                return
+            }
+        }
+
+        Intent(applicationContext, CustomizationActivity::class.java).apply {
+'''
+          new_customization = '''    fun startCustomizationActivity() {
+        Intent(applicationContext, CustomizationActivity::class.java).apply {
+'''
+          if old_customization not in text:
+              raise SystemExit("startCustomizationActivity fake-version block not found")
+          text = text.replace(old_customization, new_customization, 1)
+
+          path.write_text(text)
+          PY
+
+      - name: Remove this temporary workflow
+        run: rm .github/workflows/fix-fake-version-warning.yml
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/org/fossify/commons/activities/BaseSimpleActivity.kt .github/workflows/fix-fake-version-warning.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "Disable legacy fake-version warning"
+          git push
