@@ -15,7 +15,6 @@ import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.onTextChangeListener
-import org.fossify.commons.extensions.removeBit
 import org.fossify.commons.extensions.showKeyboard
 import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.MEDIUM_ALPHA
@@ -46,7 +45,7 @@ open class MySearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout(
         }
 
         post {
-            binding.topToolbarSearch.setOnFocusChangeListener { v, hasFocus ->
+            binding.topToolbarSearch.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
                     openSearch()
                 }
@@ -106,13 +105,18 @@ open class MySearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout(
         val backgroundColor = context.getProperBackgroundColor()
         val contrastColor = backgroundColor.getContrastColor()
 
-        setBackgroundColor(backgroundColor)
+        // Keep the app bar transparent so a selected background theme can remain visible.
+        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        binding.topToolbar.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         binding.topToolbarSearchIcon.applyColorFilter(contrastColor)
+
+        // The search field follows the background theme instead of being tinted with the
+        // primary/accent color. Keep it translucent so the selected background can show through.
         binding.toolbarContainer.background?.applyColorFilter(
-            color = context.getProperPrimaryColor().adjustAlpha(LOWER_ALPHA)
+            color = backgroundColor.adjustAlpha(LOWER_ALPHA)
         )
         binding.topToolbarSearch.setTextColor(contrastColor)
         binding.topToolbarSearch.setHintTextColor(contrastColor.adjustAlpha(MEDIUM_ALPHA))
-        (context as? BaseSimpleActivity)?.updateTopBarColors(this, backgroundColor)
+        (context as? BaseSimpleActivity)?.updateTopBarColors(this, android.graphics.Color.TRANSPARENT)
     }
 }
