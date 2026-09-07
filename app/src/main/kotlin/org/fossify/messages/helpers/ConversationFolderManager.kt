@@ -43,14 +43,32 @@ object ConversationFolderManager {
             val array = JSONArray(raw)
             MutableList(array.length()) { index ->
                 val item = array.getJSONObject(index)
-                Folder(item.getString("id"), item.getString("name"), item.optBoolean("enabled", true), item.optBoolean("system", false), item.optInt("color", colorForIndex(index)))
+                val id = item.getString("id")
+                val storedName = item.getString("name")
+                Folder(
+                    id,
+                    localizedSystemName(context, id) ?: storedName,
+                    item.optBoolean("enabled", true),
+                    item.optBoolean("system", false),
+                    item.optInt("color", colorForIndex(index))
+                )
             }
-        } catch (_: Exception) { defaultFolders(context) }
+        } catch (_: Exception) {
+            defaultFolders(context)
+        }
     }
 
     fun saveFolders(context: Context, folders: List<Folder>) {
         val array = JSONArray()
-        folders.forEach { folder -> array.put(JSONObject().apply { put("id", folder.id); put("name", folder.name); put("enabled", folder.enabled); put("system", folder.system); put("color", folder.color) }) }
+        folders.forEach { folder ->
+            array.put(JSONObject().apply {
+                put("id", folder.id)
+                put("name", folder.name)
+                put("enabled", folder.enabled)
+                put("system", folder.system)
+                put("color", folder.color)
+            })
+        }
         prefs(context).edit().putString(FOLDERS, array.toString()).apply()
     }
 
@@ -81,7 +99,10 @@ object ConversationFolderManager {
         val excluded = readExcluded(context)
         val currentAuto = ConversationFolderRuleManager.getAutomaticMembership(context, threadId)
         val currentExcluded = getExcludedMembership(context, threadId).toMutableSet()
-        managedFolderIds.forEach { folderId -> if (folderId in currentAuto && folderId !in folderIds) currentExcluded.add(folderId) else if (folderId in folderIds) currentExcluded.remove(folderId) }
+        managedFolderIds.forEach { folderId ->
+            if (folderId in currentAuto && folderId !in folderIds) currentExcluded.add(folderId)
+            else if (folderId in folderIds) currentExcluded.remove(folderId)
+        }
         if (currentExcluded.isEmpty()) excluded.remove(threadId.toString()) else excluded.put(threadId.toString(), JSONArray(currentExcluded.toList()))
         prefs(context).edit().putString(MEMBERS, members.toString()).putString(EXCLUDED, excluded.toString()).apply()
     }
@@ -98,19 +119,43 @@ object ConversationFolderManager {
         val folders = getFolders(context)
         if (folders.none { it.id == folderId && !it.system }) return
         saveFolders(context, folders.filterNot { it.id == folderId })
-        removeMembershipId(context, MEMBERS, folderId); removeMembershipId(context, EXCLUDED, folderId)
+        removeMembershipId(context, MEMBERS, folderId)
+        removeMembershipId(context, EXCLUDED, folderId)
         ConversationFolderRuleManager.removeRulesForFolder(context, folderId)
         if (getSelectedFolderId(context) == folderId) setSelectedFolderId(context, ALL_ID)
     }
 
     private fun removeMembershipId(context: Context, key: String, folderId: String) {
-        val root = readJson(context, key); val updated = JSONObject(); val keys = root.keys()
-        while (keys.hasNext()) { val k = keys.next(); val ids = root.optJSONArray(k) ?: continue; val remaining = buildList { for (i in 0 until ids.length()) if (ids.optString(i) != folderId) add(ids.optString(i)) }; if (remaining.isNotEmpty()) updated.put(k, JSONArray(remaining)) }
+        val root = readJson(context, key)
+        val updated = JSONObject()
+        val keys = root.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            val ids = root.optJSONArray(k) ?: continue
+            val remaining = buildList {
+                for (i in 0 until ids.length()) if (ids.optString(i) != folderId) add(ids.optString(i))
+            }
+            if (remaining.isNotEmpty()) updated.put(k, JSONArray(remaining))
+        }
         prefs(context).edit().putString(key, updated.toString()).apply()
     }
 
-    fun cleanupMembership(context: Context, validThreadIds: Set<Long>) { cleanupJson(context, MEMBERS, validThreadIds); cleanupJson(context, EXCLUDED, validThreadIds) }
-    private fun cleanupJson(context: Context, key: String, validThreadIds: Set<Long>) { val root = readJson(context, key); val updated = JSONObject(); val keys = root.keys(); while (keys.hasNext()) { val k = keys.next(); val id = k.toLongOrNull(); if (id != null && id in validThreadIds) root.optJSONArray(k)?.let { updated.put(k, it) } }; prefs(context).edit().putString(key, updated.toString()).apply() }
+    fun cleanupMembership(context: Context, validThreadIds: Set<Long>) {
+        cleanupJson(context, MEMBERS, validThreadIds)
+        cleanupJson(context, EXCLUDED, validThreadIds)
+    }
+
+    private fun cleanupJson(context: Context, key: String, validThreadIds: Set<Long>) {
+        val root = readJson(context, key)
+        val updated = JSONObject()
+        val keys = root.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            val id = k.toLongOrNull()
+            if (id != null && id in validThreadIds) root.optJSONArray(k)?.let { updated.put(k, it) }
+        }
+        prefs(context).edit().putString(key, updated.toString()).apply()
+    }
 
     private fun defaultFolders(context: Context) = mutableListOf(
         Folder(ALL_ID, context.getString(R.string.folder_all), true, true, 0xff607d8b.toInt()),
@@ -119,8 +164,23 @@ object ConversationFolderManager {
         Folder(PERSONAL_ID, context.getString(R.string.folder_personal), true, true, 0xff1565c0.toInt())
     )
 
+    private fun localizedSystemName(context: Context, id: String): String? = when (id) {
+        ALL_ID -> context.getString(R.string.folder_all)
+        UNREAD_ID -> context.getString(R.string.folder_unread)
+        BANKS_ID -> context.getString(R.string.folder_banks)
+        PERSONAL_ID -> context.getString(R.string.folder_personal)
+        else -> null
+    }
+
     private fun colorForIndex(i: Int) = intArrayOf(0xff607d8b.toInt(), 0xffef6c00.toInt(), 0xff2e7d32.toInt(), 0xff1565c0.toInt(), 0xff8e24aa.toInt(), 0xffc62828.toInt(), 0xff00838f.toInt(), 0xff6d4c41.toInt())[i % 8]
     private fun readMembers(context: Context) = readJson(context, MEMBERS)
     private fun readExcluded(context: Context) = readJson(context, EXCLUDED)
-    private fun readJson(context: Context, key: String): JSONObject { val raw = prefs(context).getString(key, null); return try { if (raw.isNullOrEmpty()) JSONObject() else JSONObject(raw) } catch (_: Exception) { JSONObject() } }
+    private fun readJson(context: Context, key: String): JSONObject {
+        val raw = prefs(context).getString(key, null)
+        return try {
+            if (raw.isNullOrEmpty()) JSONObject() else JSONObject(raw)
+        } catch (_: Exception) {
+            JSONObject()
+        }
+    }
 }
