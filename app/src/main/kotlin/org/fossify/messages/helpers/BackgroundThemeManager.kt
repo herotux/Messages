@@ -1,6 +1,7 @@
 package org.fossify.messages.helpers
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.view.ViewGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -25,6 +26,8 @@ object BackgroundThemeManager {
     private const val EXTRA_THEME_BUILDER = "theme_builder"
     private const val EXTRA_THEME_ID = "theme_id"
 
+    private var lastContext: Context? = null
+
     data class Theme(
         val id: String,
         val drawable: Int,
@@ -40,9 +43,16 @@ object BackgroundThemeManager {
             R.drawable.bg_theme_custom_placeholder,
             "＋ ساخت تم جدید",
             "+ Create new theme"
-        ) + ThemeStoragePreview.themes()
+        ) + (lastContext?.let { context ->
+            ThemeStorage.load(context).map {
+                Theme(it.id, R.drawable.bg_theme_custom_placeholder, it.nameFa, it.nameEn)
+            }
+        } ?: emptyList())
 
-    fun selectedId(activity: Activity): String = ThemeManager.selectedThemeId(activity)
+    fun selectedId(activity: Activity): String {
+        lastContext = activity
+        return ThemeManager.selectedThemeId(activity)
+    }
 
     fun select(activity: Activity, id: String) {
         when {
@@ -100,10 +110,5 @@ object BackgroundThemeManager {
         } else {
             root.setBackgroundColor(theme.colors.background)
         }
-    }
-
-    /** Lightweight adapter used by the existing Appearance carousel. */
-    private object ThemeStoragePreview {
-        fun themes(): List<Theme> = emptyList()
     }
 }
