@@ -19,8 +19,6 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.messages.R
 import org.fossify.messages.adapters.BaseConversationsAdapter
 import org.fossify.messages.helpers.ConversationFolderManager
@@ -30,7 +28,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 open class ConversationFolderTabsView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : HorizontalScrollView(context, attrs) {
-    private val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+    private lateinit var tabs: LinearLayout
     private val classifier = PersonalConversationClassifier(context)
     private var selectedId = ConversationFolderManager.getSelectedFolderId(context)
     private var adapter: BaseConversationsAdapter? = null
@@ -38,10 +36,42 @@ open class ConversationFolderTabsView @JvmOverloads constructor(context: Context
     private var reorderMode = false
     private var bindAttempts = 0
 
-    init { isHorizontalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER; addView(tabs, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48))); syncDirection(); normalizeSelection(); rebuildTabs(); classifier.ensureLoaded { if (selectedId == ConversationFolderManager.PERSONAL_ID) applyFilter() } }
-    override fun onAttachedToWindow() { super.onAttachedToWindow(); syncDirection(); bindAdapterWhenReady(); attachSwipe() }
-    override fun onRtlPropertiesChanged(layoutDirection: Int) { super.onRtlPropertiesChanged(layoutDirection); syncDirection() }
-    private fun syncDirection() { val direction = resources.configuration.layoutDirection; tabs.layoutDirection = direction }
+    init {
+        tabs = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        isHorizontalScrollBarEnabled = false
+        overScrollMode = View.OVER_SCROLL_NEVER
+        addView(tabs, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48)))
+        syncDirection()
+        normalizeSelection()
+        rebuildTabs()
+        classifier.ensureLoaded { if (selectedId == ConversationFolderManager.PERSONAL_ID) applyFilter() }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        syncDirection()
+        bindAdapterWhenReady()
+        attachSwipe()
+    }
+
+    override fun onRtlPropertiesChanged(layoutDirection: Int) {
+        super.onRtlPropertiesChanged(layoutDirection)
+        // Android may invoke this callback from HorizontalScrollView's constructor,
+        // before Kotlin property initialization has created our child view.
+        if (::tabs.isInitialized) {
+            tabs.layoutDirection = layoutDirection
+        }
+    }
+
+    private fun syncDirection() {
+        if (::tabs.isInitialized) {
+            tabs.layoutDirection = resources.configuration.layoutDirection
+        }
+    }
+
     private fun bindAdapterWhenReady() { if (adapter != null || bindAttempts++ >= 50) return; val rv = rootView.findViewById<RecyclerView>(R.id.conversations_list); val a = rv?.adapter as? BaseConversationsAdapter; if (a != null) bindAdapter(a) else postDelayed({ bindAdapterWhenReady() }, 100) }
 
     private fun attachSwipe() {
@@ -114,7 +144,6 @@ open class ConversationFolderTabsView @JvmOverloads constructor(context: Context
     private fun editRule(existing: ConversationFolderRuleManager.Rule?, folders: List<ConversationFolderManager.Folder>, save: (ConversationFolderRuleManager.Rule) -> Unit) { val root = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), 0, dp(20), 0) }; val spinner = Spinner(context).apply { adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, folders.map { it.name }); setSelection(folders.indexOfFirst { it.id == existing?.folderId }.coerceAtLeast(0)) }; root.addView(TextView(context).apply { text = "پوشه مقصد" }); root.addView(spinner); val words = EditText(context).apply { hint = "کلمات کلیدی؛ با ویرگول یا خط جدید"; minLines = 3; setText(existing?.keywords?.joinToString("\n") ?: "") }; root.addView(words); val mode = RadioGroup(context); val one = RadioButton(context).apply { text = "حداقل یکی از موارد" }; val all = RadioButton(context).apply { text = "همه موارد" }; mode.addView(one); mode.addView(all); if (existing?.mode == ConversationFolderRuleManager.MatchMode.ALL) all.isChecked = true else one.isChecked = true; root.addView(mode); AlertDialog.Builder(context).setTitle(if (existing == null) "قانون جدید" else "ویرایش قانون").setView(root).setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ -> val k = words.text.toString().split(Regex("[,،\\n]")).map { it.trim() }.filter { it.isNotEmpty() }.distinct(); if (k.isNotEmpty()) save(ConversationFolderRuleManager.Rule(existing?.id ?: "rule_${System.currentTimeMillis()}", folders[spinner.selectedItemPosition].id, k, if (all.isChecked) ConversationFolderRuleManager.MatchMode.ALL else ConversationFolderRuleManager.MatchMode.ONE, setOf(ConversationFolderRuleManager.MatchField.MESSAGE), existing?.enabled ?: true)) }.show() }
     fun showAssignFoldersDialog(threadIds: List<Long>, onSaved: (() -> Unit)? = null) { val custom = ConversationFolderManager.getFolders(context).filter { !it.system }; if (custom.isEmpty()) { Toast.makeText(context, "ابتدا یک پوشه بسازید", Toast.LENGTH_SHORT).show(); return }; val checked = custom.map { f -> threadIds.all { f.id in ConversationFolderManager.getFolderMembership(context, it) } }.toBooleanArray(); AlertDialog.Builder(context).setTitle("قرار دادن در پوشه‌ها").setMultiChoiceItems(custom.map { it.name }.toTypedArray(), checked) { _, i, v -> checked[i] = v }.setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ -> val selected = checked.mapIndexedNotNull { i, v -> if (v) custom[i].id else null }.toSet(); val managed = custom.map { it.id }.toSet(); threadIds.forEach { ConversationFolderManager.setFolderMembership(context, it, selected, managed) }; refreshForNewConversations(); onSaved?.invoke() }.show() }
     private fun colorPalette() = intArrayOf(0xff607d8b.toInt(), 0xffef6c00.toInt(), 0xff2e7d32.toInt(), 0xff1565c0.toInt(), 0xff8e24aa.toInt(), 0xffc62828.toInt(), 0xff00838f.toInt(), 0xff6d4c41.toInt())
-    private fun withAlpha(c: Int, a: Float) = Color.argb((Color.alpha(c) * a).roundToInt(), Color.red(c), Color.green(c), Color.blue(c))
     private fun dp(v: Int) = (v * resources.displayMetrics.density).roundToInt()
     companion object { private const val ACTION = "__action__"; private const val SWIPE_TAG = 0x53495045 }
 }
