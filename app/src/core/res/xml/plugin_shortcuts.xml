@@ -4,8 +4,8 @@
         android:shortcutId="plugins"
         android:enabled="true"
         android:icon="@android:drawable/ic_menu_manage"
-        android:shortcutShortLabel="Plugins"
-        android:shortcutLongLabel="Messages Plugins">
+        android:shortcutShortLabel="@string/plugin_shortcuts_short_label"
+        android:shortcutLongLabel="@string/plugin_shortcuts_long_label">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="org.fossify.messages"
