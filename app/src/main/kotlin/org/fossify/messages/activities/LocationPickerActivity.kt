@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
 import android.webkit.JavascriptInterface
@@ -16,7 +15,6 @@ import android.widget.Button
 import android.widget.LinearLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import org.fossify.messages.R
 import java.util.Locale
 
 class LocationPickerActivity : SimpleActivity() {
@@ -48,10 +46,12 @@ class LocationPickerActivity : SimpleActivity() {
         loadMap()
     }
 
+    private fun coordinate(value: Double) = String.format(Locale.US, "%.6f", value)
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun loadMap() {
-        val lat = selectedLat.toString(Locale.US)
-        val lon = selectedLon.toString(Locale.US)
+        val lat = coordinate(selectedLat)
+        val lon = coordinate(selectedLon)
         val html = """
             <!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>
             <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'/>
@@ -70,11 +70,8 @@ class LocationPickerActivity : SimpleActivity() {
     }
 
     private fun requestLocationIfNeeded() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            useLastKnownLocation()
-        } else {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), REQUEST_LOCATION)
-        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) useLastKnownLocation()
+        else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), REQUEST_LOCATION)
     }
 
     @SuppressLint("MissingPermission")
@@ -82,36 +79,29 @@ class LocationPickerActivity : SimpleActivity() {
         if (locationReady) return
         val manager = getSystemService(LOCATION_SERVICE) as LocationManager
         val candidates = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-        val best = candidates.mapNotNull { provider -> runCatching { manager.getLastKnownLocation(provider) }.getOrNull() }
-            .maxByOrNull { it.time }
+        val best = candidates.mapNotNull { provider -> runCatching { manager.getLastKnownLocation(provider) }.getOrNull() }.maxByOrNull { it.time }
         if (best != null) {
-            selectedLat = best.latitude
-            selectedLon = best.longitude
-            locationReady = true
-            map.post { map.evaluateJavascript("map.setView([${selectedLat.toString(Locale.US)},${selectedLon.toString(Locale.US)}],16); marker.setLatLng([${selectedLat.toString(Locale.US)},${selectedLon.toString(Locale.US)}]);", null) }
+            selectedLat = best.latitude; selectedLon = best.longitude; locationReady = true
+            map.post { val lat = coordinate(selectedLat); val lon = coordinate(selectedLon); map.evaluateJavascript("map.setView([$lat,$lon],16); marker.setLatLng([$lat,$lon]);", null) }
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_LOCATION && grantResults.any { it == PackageManager.PERMISSION_GRANTED }) useLastKnownLocation()
     }
 
     private fun finishWithLocation() {
+        val lat = coordinate(selectedLat); val lon = coordinate(selectedLon)
         setResult(Activity.RESULT_OK, Intent().apply {
             putExtra(EXTRA_LATITUDE, selectedLat)
             putExtra(EXTRA_LONGITUDE, selectedLon)
-            putExtra(EXTRA_LOCATION_URL, "https://maps.google.com/?q=${selectedLat.toString(Locale.US)},${selectedLon.toString(Locale.US)}")
+            putExtra(EXTRA_LOCATION_URL, "https://maps.google.com/?q=$lat,$lon")
         })
         finish()
     }
 
-    inner class MapBridge {
-        @JavascriptInterface fun pick(lat: Double, lon: Double) {
-            selectedLat = lat
-            selectedLon = lon
-        }
-    }
+    inner class MapBridge { @JavascriptInterface fun pick(lat: Double, lon: Double) { selectedLat = lat; selectedLon = lon } }
 
     companion object {
         const val EXTRA_LATITUDE = "location_latitude"
