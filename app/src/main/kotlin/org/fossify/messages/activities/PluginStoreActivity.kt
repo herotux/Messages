@@ -336,24 +336,68 @@ class PluginStoreActivity : SimpleActivity() {
                 setPadding(0, dp(4), 0, dp(4))
             })
             row.addView(TextView(this).apply {
-                text = if (item.enabled) "وضعیت: در انتظار ارسال" else "وضعیت: ارسال‌شده"
+                text = when {
+                    item.completed -> "وضعیت: ارسال‌شده"
+                    item.enabled -> "وضعیت: در انتظار ارسال"
+                    else -> "وضعیت: غیرفعال"
+                }
                 textSize = 12f
                 setTextColor(color(com.google.android.material.R.attr.colorPrimary))
             })
-            if (item.enabled) {
-                row.addView(Button(this).apply {
-                    text = "لغو زمان‌بندی"
-                    setOnClickListener {
-                        ScheduledSmsPlugin.cancel(this@PluginStoreActivity, item.id)
-                        render()
+
+            if (!item.completed) {
+                val controls = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    layoutDirection = View.LAYOUT_DIRECTION_RTL
+                }
+                controls.addView(MaterialSwitch(this).apply {
+                    text = "فعال"
+                    isChecked = item.enabled
+                    setOnCheckedChangeListener { _, checked ->
+                        runCatching {
+                            ScheduledSmsPlugin.setEnabled(this@PluginStoreActivity, item.id, checked)
+                        }.onSuccess {
+                            render()
+                        }.onFailure {
+                            isChecked = item.enabled
+                            showError(it.message ?: "خطا در تغییر وضعیت پیام")
+                        }
                     }
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+                controls.addView(Button(this).apply {
+                    text = "ویرایش"
+                    isEnabled = item.enabled
+                    setOnClickListener { showScheduledSmsDialog(item) }
+                })
+                controls.addView(Button(this).apply {
+                    text = "حذف"
+                    setOnClickListener { confirmDeleteScheduledSms(item) }
+                })
+                row.addView(controls)
+            } else {
+                row.addView(Button(this).apply {
+                    text = "حذف"
+                    setOnClickListener { confirmDeleteScheduledSms(item) }
                 })
             }
             parent.addView(row)
         }
     }
 
-    private fun showScheduledSmsDialog() {
+    private fun confirmDeleteScheduledSms(item: ScheduledSmsPlugin.Item) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("حذف پیام زمان‌بندی‌شده")
+            .setMessage("این پیام زمان‌بندی‌شده حذف شود؟")
+            .setNegativeButton("لغو", null)
+            .setPositiveButton("حذف") { _, _ ->
+                ScheduledSmsPlugin.cancel(this, item.id)
+                render()
+            }
+            .show()
+    }
+
+    private fun showScheduledSmsDialog(existing: ScheduledSmsPlugin.Item? = null) {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(8), 0, dp(8), 0)
@@ -366,9 +410,15 @@ class PluginStoreActivity : SimpleActivity() {
             textSize = 15f
             layoutDirection = View.LAYOUT_DIRECTION_RTL
         }
+        destination.setText(existing?.destination.orEmpty())
+        body.setText(existing?.body.orEmpty())
+
         val dateButton = Button(this).apply { text = "انتخاب تاریخ" }
         val timeButton = Button(this).apply { text = "انتخاب ساعت" }
-        val selected = Calendar.getInstance().apply { add(Calendar.MINUTE, 5) }
+        val selected = Calendar.getInstance().apply {
+            if (existing == null) add(Calendar.MINUTE, 5)
+            else timeInMillis = existing.triggerAt
+        }
         val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         dateButton.text = "تاریخ: ${dateFormat.format(selected.time)}"
@@ -395,10 +445,10 @@ class PluginStoreActivity : SimpleActivity() {
         box.addView(dateButton)
         box.addView(timeButton)
         com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("زمان‌بندی پیام")
+            .setTitle(if (existing == null) "زمان‌بندی پیام" else "ویرایش پیام زمان‌بندی‌شده")
             .setView(box)
             .setNegativeButton("لغو", null)
-            .setPositiveButton("زمان‌بندی") { _, _ ->
+            .setPositiveButton(if (existing == null) "زمان‌بندی" else "ذخیره تغییرات") { _, _ ->
                 val phone = destination.text.toString().trim()
                 val message = body.text.toString().trim()
                 when {
@@ -406,10 +456,23 @@ class PluginStoreActivity : SimpleActivity() {
                     message.isBlank() -> showError("متن پیام را وارد کنید")
                     selected.timeInMillis <= System.currentTimeMillis() -> showError("زمان انتخاب‌شده باید در آینده باشد")
                     else -> runCatching {
-                        ScheduledSmsPlugin.schedule(this, ScheduledSmsPlugin.Item(System.currentTimeMillis(), phone, message, selected.timeInMillis, true))
+                        val item = ScheduledSmsPlugin.Item(
+                            id = existing?.id ?: System.currentTimeMillis(),
+                            destination = phone,
+                            body = message,
+                            triggerAt = selected.timeInMillis,
+                            enabled = true,
+                            completed = false
+                        )
+                        if (existing == null) ScheduledSmsPlugin.schedule(this, item)
+                        else ScheduledSmsPlugin.update(this, item)
                     }.onSuccess {
                         render()
-                        Toast.makeText(this, "پیام زمان‌بندی شد", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            if (existing == null) "پیام زمان‌بندی شد" else "تغییرات ذخیره شد",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }.onFailure { showError(it.message ?: "خطا در زمان‌بندی پیام") }
                 }
             }
