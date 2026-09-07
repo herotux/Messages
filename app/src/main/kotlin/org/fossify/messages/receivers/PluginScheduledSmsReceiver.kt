@@ -29,9 +29,7 @@ class PluginScheduledSmsReceiver : BroadcastReceiver() {
                 }.onSuccess {
                     ScheduledSmsPlugin.markCompleted(context, id)
                     notify(context, "پیام زمان‌بندی‌شده ارسال شد", item.destination)
-                }.onFailure { error ->
-                    fail(context, id, error.message ?: "خطای ناشناخته")
-                }
+                }.onFailure { error -> fail(context, id, error.message ?: "خطای ناشناخته") }
             } finally {
                 pendingResult.finish()
             }
@@ -53,7 +51,7 @@ class PluginScheduledSmsReceiver : BroadcastReceiver() {
         manager.createNotificationChannel(NotificationChannel(channelId, "Scheduled SMS", NotificationManager.IMPORTANCE_DEFAULT))
         if (android.os.Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         manager.notify((System.currentTimeMillis() and 0x7fffffff).toInt(), NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(org.fossify.messages.R.drawable.ic_notification)
+            .setSmallIcon(org.fossify.messages.R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)
