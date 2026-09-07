@@ -1,23 +1,28 @@
 package org.fossify.messages.activities
 
+import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.appcompat.app.ActionBar
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.helpers.FontHelper
+import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.messages.R
 import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.BackgroundThemeManager
 
 open class SimpleActivity : BaseSimpleActivity() {
     private var appliedFontSize = -1
+    private var chromeObserverInstalled = false
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
         applyLocaleLayoutDirection()
-        BackgroundThemeManager.apply(this)
+        applyVisualTheme()
         applySelectedFontToViewTree(window.decorView)
         appliedFontSize = config.fontSize
     }
@@ -25,11 +30,9 @@ open class SimpleActivity : BaseSimpleActivity() {
     override fun onResume() {
         super.onResume()
         applyLocaleLayoutDirection()
-        BackgroundThemeManager.apply(this)
+        applyVisualTheme()
         applySelectedFontToViewTree(window.decorView)
 
-        // Settings changes must take effect when returning to an existing screen.
-        // Recreate the current screen instead of requiring the user to restart the app.
         if (appliedFontSize != -1 && appliedFontSize != config.fontSize && this !is SettingsActivity) {
             appliedFontSize = config.fontSize
             recreate()
@@ -38,21 +41,81 @@ open class SimpleActivity : BaseSimpleActivity() {
         appliedFontSize = config.fontSize
     }
 
+    private fun applyVisualTheme() {
+        BackgroundThemeManager.apply(this)
+        applyThemeChrome()
+        installThemeChromeObserver()
+    }
+
     /**
-     * Android's automatic RTL mirroring is only reliable when the application
-     * declares RTL support. Keep the actual view tree synchronized with the
-     * current locale as a fallback for this fork as well, so switching between
-     * Persian and English immediately changes both geometry and text direction.
+     * The selected background theme belongs behind the complete screen chrome.
+     * Commons/AppCompat can otherwise paint its legacy primary-color action bar
+     * over the selected background, which is why some screens stayed green.
      */
+    private fun applyThemeChrome() {
+        supportActionBar?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        supportActionBar?.setStackedBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        val primary = getProperPrimaryColor()
+        val tabs = findViewById<View>(R.id.folder_tabs)
+        if (tabs is ViewGroup) {
+            styleFolderTabs(tabs, primary)
+        }
+
+        clearToolbarBackgrounds(window.decorView)
+    }
+
+    private fun clearToolbarBackgrounds(view: View) {
+        val name = view.javaClass.name
+        if (name.contains("Toolbar") || name.contains("AppBarLayout") || name.contains("ActionBarContainer")) {
+            view.background = null
+            view.elevation = 0f
+        }
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                clearToolbarBackgrounds(view.getChildAt(index))
+            }
+        }
+    }
+
+    /**
+     * Folder tabs use the app/theme primary color for emphasis. Their old
+     * implementation painted the selected folder's own color as a solid block,
+     * making tabs ignore the active visual theme. Keep them transparent and use
+     * a subtle elevation as the only visual separation.
+     */
+    private fun styleFolderTabs(view: ViewGroup, primary: Int) {
+        for (index in 0 until view.childCount) {
+            val child = view.getChildAt(index)
+            if (child is TextView) {
+                val tag = child.tag as? String
+                val isAction = tag?.startsWith("__action__") == true
+                child.setBackgroundColor(Color.TRANSPARENT)
+                child.setTextColor(if (isAction) primary else child.currentTextColor.takeIf { it != Color.GRAY } ?: primary)
+                child.elevation = if (!isAction && child.isSelected) dp(3) else 0f
+            }
+            if (child is ViewGroup) styleFolderTabs(child, primary)
+        }
+    }
+
+    private fun installThemeChromeObserver() {
+        if (chromeObserverInstalled) return
+        val content = window.decorView as? ViewGroup ?: return
+        chromeObserverInstalled = true
+        content.viewTreeObserver.addOnGlobalLayoutListener {
+            val tabs = findViewById<View>(R.id.folder_tabs)
+            if (tabs is ViewGroup) styleFolderTabs(tabs, getProperPrimaryColor())
+            clearToolbarBackgrounds(content)
+        }
+    }
+
+    private fun dp(value: Int): Float = value * resources.displayMetrics.density
+
     private fun applyLocaleLayoutDirection() {
         val direction = resources.configuration.layoutDirection
         window.decorView.layoutDirection = direction
     }
 
-    /**
-     * Applies the selected Messages font to every text-based view currently attached
-     * to this activity, so screens do not silently fall back to the system font.
-     */
     private fun applySelectedFontToViewTree(view: View) {
         val typeface = runCatching { FontHelper.getTypeface(this) }.getOrElse { Typeface.DEFAULT }
         applyTypeface(view, typeface)
@@ -68,7 +131,6 @@ open class SimpleActivity : BaseSimpleActivity() {
             }
             view.setTypeface(typeface, currentStyle)
         }
-
         if (view is ViewGroup) {
             for (index in 0 until view.childCount) {
                 applyTypeface(view.getChildAt(index), typeface)
