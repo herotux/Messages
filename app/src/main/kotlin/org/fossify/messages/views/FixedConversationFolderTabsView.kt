@@ -42,16 +42,17 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
 
     private fun syncLayoutDirection() {
         val direction = resources.configuration.layoutDirection
-        layoutDirection = direction
-        (privateField("tabs") as? View)?.let { tabs ->
+        // Do not assign layoutDirection to this view itself here. This class inherits
+        // HorizontalScrollView -> ConversationFolderTabsView, whose RTL callback is
+        // responsible for synchronizing the child tabs. Reassigning our own direction
+        // from this subclass can re-enter onRtlPropertiesChanged unnecessarily.
+        (privateField("tabs") as? LinearLayout)?.let { tabs ->
             tabs.layoutDirection = direction
-            for (i in 0 until (tabs as? LinearLayout)?.childCount.orZero()) {
-                (tabs as LinearLayout).getChildAt(i).layoutDirection = direction
+            for (i in 0 until tabs.childCount) {
+                tabs.getChildAt(i).layoutDirection = direction
             }
         }
     }
-
-    private fun Int?.orZero() = this ?: 0
 
     private fun installPreDrawFix() {
         if (preDrawInstalled) return
