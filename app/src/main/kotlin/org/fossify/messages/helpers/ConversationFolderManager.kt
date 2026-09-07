@@ -1,6 +1,7 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
+import org.fossify.messages.R
 import org.fossify.messages.models.Conversation
 import org.json.JSONArray
 import org.json.JSONObject
@@ -37,14 +38,14 @@ object ConversationFolderManager {
 
     fun getFolders(context: Context): MutableList<Folder> {
         val raw = prefs(context).getString(FOLDERS, null)
-        if (raw.isNullOrEmpty()) return defaultFolders()
+        if (raw.isNullOrEmpty()) return defaultFolders(context)
         return try {
             val array = JSONArray(raw)
             MutableList(array.length()) { index ->
                 val item = array.getJSONObject(index)
                 Folder(item.getString("id"), item.getString("name"), item.optBoolean("enabled", true), item.optBoolean("system", false), item.optInt("color", colorForIndex(index)))
             }
-        } catch (_: Exception) { defaultFolders() }
+        } catch (_: Exception) { defaultFolders(context) }
     }
 
     fun saveFolders(context: Context, folders: List<Folder>) {
@@ -110,7 +111,14 @@ object ConversationFolderManager {
 
     fun cleanupMembership(context: Context, validThreadIds: Set<Long>) { cleanupJson(context, MEMBERS, validThreadIds); cleanupJson(context, EXCLUDED, validThreadIds) }
     private fun cleanupJson(context: Context, key: String, validThreadIds: Set<Long>) { val root = readJson(context, key); val updated = JSONObject(); val keys = root.keys(); while (keys.hasNext()) { val k = keys.next(); val id = k.toLongOrNull(); if (id != null && id in validThreadIds) root.optJSONArray(k)?.let { updated.put(k, it) } }; prefs(context).edit().putString(key, updated.toString()).apply() }
-    private fun defaultFolders() = mutableListOf(Folder(ALL_ID, "همه", true, true, 0xff607d8b.toInt()), Folder(UNREAD_ID, "خوانده‌نشده", true, true, 0xffef6c00.toInt()), Folder(BANKS_ID, "بانک‌ها", true, true, 0xff2e7d32.toInt()), Folder(PERSONAL_ID, "شخصی", true, true, 0xff1565c0.toInt()))
+
+    private fun defaultFolders(context: Context) = mutableListOf(
+        Folder(ALL_ID, context.getString(R.string.folder_all), true, true, 0xff607d8b.toInt()),
+        Folder(UNREAD_ID, context.getString(R.string.folder_unread), true, true, 0xffef6c00.toInt()),
+        Folder(BANKS_ID, context.getString(R.string.folder_banks), true, true, 0xff2e7d32.toInt()),
+        Folder(PERSONAL_ID, context.getString(R.string.folder_personal), true, true, 0xff1565c0.toInt())
+    )
+
     private fun colorForIndex(i: Int) = intArrayOf(0xff607d8b.toInt(), 0xffef6c00.toInt(), 0xff2e7d32.toInt(), 0xff1565c0.toInt(), 0xff8e24aa.toInt(), 0xffc62828.toInt(), 0xff00838f.toInt(), 0xff6d4c41.toInt())[i % 8]
     private fun readMembers(context: Context) = readJson(context, MEMBERS)
     private fun readExcluded(context: Context) = readJson(context, EXCLUDED)
