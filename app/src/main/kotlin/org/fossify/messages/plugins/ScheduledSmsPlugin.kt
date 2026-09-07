@@ -46,12 +46,30 @@ object ScheduledSmsPlugin {
 
     fun schedule(context: Context, item: Item) {
         require(isAvailable(context)) { "Scheduled SMS Pro is not licensed" }
-        require(item.destination.isNotBlank()) { "Destination is required" }
-        require(item.body.isNotBlank()) { "Message body is required" }
-        require(item.triggerAt > System.currentTimeMillis()) { "Scheduled time must be in the future" }
-
+        validate(item)
+        cancelAlarm(context, item.id)
         save(context, item.copy(enabled = true))
         scheduleAlarm(context, item)
+    }
+
+    /** Updates an existing item and replaces its AlarmManager entry. */
+    fun update(context: Context, item: Item) {
+        require(isAvailable(context)) { "Scheduled SMS Pro is not licensed" }
+        validate(item)
+        cancelAlarm(context, item.id)
+        save(context, item.copy(enabled = true))
+        scheduleAlarm(context, item)
+    }
+
+    /** Enables or disables an existing scheduled message without deleting it. */
+    fun setEnabled(context: Context, id: Long, enabled: Boolean) {
+        val item = list(context).firstOrNull { it.id == id } ?: return
+        cancelAlarm(context, id)
+        val updated = item.copy(enabled = enabled)
+        save(context, updated)
+        if (enabled && item.triggerAt > System.currentTimeMillis() && isAvailable(context)) {
+            scheduleAlarm(context, updated)
+        }
     }
 
     /** Recreates AlarmManager entries after a reboot or package replacement. */
@@ -66,17 +84,21 @@ object ScheduledSmsPlugin {
     }
 
     fun cancel(context: Context, id: Long) {
-        context.getSystemService(AlarmManager::class.java)
-            .cancel(pendingIntent(context, id))
+        cancelAlarm(context, id)
         saveAll(context, list(context).filterNot { it.id == id })
     }
 
     fun markCompleted(context: Context, id: Long) {
-        context.getSystemService(AlarmManager::class.java)
-            .cancel(pendingIntent(context, id))
+        cancelAlarm(context, id)
         saveAll(context, list(context).mapNotNull { item ->
             if (item.id == id) item.copy(enabled = false) else item
         })
+    }
+
+    private fun validate(item: Item) {
+        require(item.destination.isNotBlank()) { "Destination is required" }
+        require(item.body.isNotBlank()) { "Message body is required" }
+        require(item.triggerAt > System.currentTimeMillis()) { "Scheduled time must be in the future" }
     }
 
     private fun scheduleAlarm(context: Context, item: Item) {
@@ -85,6 +107,11 @@ object ScheduledSmsPlugin {
             item.triggerAt,
             pendingIntent(context, item.id)
         )
+    }
+
+    private fun cancelAlarm(context: Context, id: Long) {
+        context.getSystemService(AlarmManager::class.java)
+            .cancel(pendingIntent(context, id))
     }
 
     private fun pendingIntent(context: Context, id: Long): PendingIntent {
