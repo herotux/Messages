@@ -27,6 +27,7 @@ import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
 import org.fossify.messages.models.Message
+import org.fossify.messages.plugins.SmsAutomationPlugin
 
 class SmsReceiver : BroadcastReceiver() {
 
@@ -68,6 +69,15 @@ class SmsReceiver : BroadcastReceiver() {
                         return@ensureBackgroundThread
                     }
                 }
+
+                // Premium automation runs on the complete reassembled SMS body, including
+                // multipart messages. It does not extract or transform OTPs.
+                SmsAutomationPlugin.processIncomingSms(
+                    context = appContext,
+                    sender = address,
+                    body = body,
+                    subscriptionId = intent.getIntExtra("subscription", -1)
+                )
 
                 val date = System.currentTimeMillis()
                 val threadId = appContext.getThreadId(address)
