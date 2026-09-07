@@ -80,6 +80,24 @@ object SmsAutomationPlugin {
         }
     }
 
+    private fun saveRules(context: Context, rules: List<Rule>) {
+        val array = JSONArray()
+        rules.forEach { rule ->
+            array.put(
+                JSONObject()
+                    .put("id", rule.id)
+                    .put("name", rule.name)
+                    .put("sender", rule.sender)
+                    .put("containsText", rule.containsText)
+                    .put("destination", rule.destination)
+                    .put("enabled", rule.enabled)
+            )
+        }
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(RULES, array.toString())
+            .apply()
+    }
+
     private fun matches(rule: Rule, sender: String, body: String): Boolean {
         val senderMatches = rule.sender.isBlank() || numbersMatch(rule.sender, sender)
         val textMatches = rule.containsText.isBlank() || body.contains(rule.containsText, ignoreCase = true)
