@@ -70,7 +70,10 @@ object ThemeManager {
         return true
     }
 
-    fun selectBuiltIn(context: Context, id: String): Boolean = select(context, id) && builtInThemes.any { it.id == id }
+    fun selectBuiltIn(context: Context, id: String): Boolean {
+        if (builtInThemes.none { it.id == id }) return false
+        return select(context, id)
+    }
 
     fun findBuiltIn(id: String): ThemeDefinition? = builtInThemes.firstOrNull { it.id == id }
     fun find(context: Context, id: String): ThemeDefinition? = allThemes(context).firstOrNull { it.id == id }
@@ -81,9 +84,9 @@ object ThemeManager {
     }
 
     fun deleteUserTheme(context: Context, id: String): Boolean {
-        val theme = ThemeStorage.load(context).firstOrNull { it.id == id } ?: return false
+        if (ThemeStorage.load(context).none { it.id == id }) return false
         ThemeStorage.save(context, ThemeStorage.load(context).filterNot { it.id == id })
-        if (selectedThemeId(context) == theme.id) select(context, DEFAULT_ID)
+        if (selectedThemeId(context) == id) select(context, DEFAULT_ID)
         return true
     }
 
