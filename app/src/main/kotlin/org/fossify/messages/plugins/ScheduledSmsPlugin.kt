@@ -51,12 +51,18 @@ object ScheduledSmsPlugin {
         require(item.triggerAt > System.currentTimeMillis()) { "Scheduled time must be in the future" }
 
         save(context, item.copy(enabled = true))
-        val alarm = context.getSystemService(AlarmManager::class.java)
-        alarm.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            item.triggerAt,
-            pendingIntent(context, item.id)
-        )
+        scheduleAlarm(context, item)
+    }
+
+    /** Recreates AlarmManager entries after a reboot or package replacement. */
+    fun rescheduleAll(context: Context) {
+        if (!isAvailable(context)) return
+
+        val now = System.currentTimeMillis()
+        list(context)
+            .asSequence()
+            .filter { it.enabled && it.triggerAt > now }
+            .forEach { scheduleAlarm(context, it) }
     }
 
     fun cancel(context: Context, id: Long) {
@@ -71,6 +77,14 @@ object ScheduledSmsPlugin {
         saveAll(context, list(context).mapNotNull { item ->
             if (item.id == id) item.copy(enabled = false) else item
         })
+    }
+
+    private fun scheduleAlarm(context: Context, item: Item) {
+        context.getSystemService(AlarmManager::class.java).setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            item.triggerAt,
+            pendingIntent(context, item.id)
+        )
     }
 
     private fun pendingIntent(context: Context, id: Long): PendingIntent {
