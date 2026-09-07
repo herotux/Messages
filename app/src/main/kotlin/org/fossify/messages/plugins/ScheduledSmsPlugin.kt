@@ -18,7 +18,8 @@ object ScheduledSmsPlugin {
         val destination: String,
         val body: String,
         val triggerAt: Long,
-        val enabled: Boolean = true
+        val enabled: Boolean = true,
+        val completed: Boolean = false
     )
 
     fun isAvailable(context: Context) =
@@ -37,7 +38,8 @@ object ScheduledSmsPlugin {
                         destination = item.optString("destination"),
                         body = item.optString("body"),
                         triggerAt = item.optLong("triggerAt"),
-                        enabled = item.optBoolean("enabled", true)
+                        enabled = item.optBoolean("enabled", true),
+                        completed = item.optBoolean("completed", false)
                     )
                 )
             }
@@ -48,8 +50,9 @@ object ScheduledSmsPlugin {
         require(isAvailable(context)) { "Scheduled SMS Pro is not licensed" }
         validate(item)
         cancelAlarm(context, item.id)
-        save(context, item.copy(enabled = true))
-        scheduleAlarm(context, item)
+        val scheduled = item.copy(enabled = true, completed = false)
+        save(context, scheduled)
+        scheduleAlarm(context, scheduled)
     }
 
     /** Updates an existing item and replaces its AlarmManager entry. */
@@ -57,17 +60,24 @@ object ScheduledSmsPlugin {
         require(isAvailable(context)) { "Scheduled SMS Pro is not licensed" }
         validate(item)
         cancelAlarm(context, item.id)
-        save(context, item.copy(enabled = true))
-        scheduleAlarm(context, item)
+        val updated = item.copy(enabled = true, completed = false)
+        save(context, updated)
+        scheduleAlarm(context, updated)
     }
 
     /** Enables or disables an existing scheduled message without deleting it. */
     fun setEnabled(context: Context, id: Long, enabled: Boolean) {
         val item = list(context).firstOrNull { it.id == id } ?: return
+        if (item.completed) return
+        if (enabled) {
+            require(item.triggerAt > System.currentTimeMillis()) {
+                "Scheduled time must be in the future"
+            }
+        }
         cancelAlarm(context, id)
         val updated = item.copy(enabled = enabled)
         save(context, updated)
-        if (enabled && item.triggerAt > System.currentTimeMillis() && isAvailable(context)) {
+        if (enabled && isAvailable(context)) {
             scheduleAlarm(context, updated)
         }
     }
@@ -79,7 +89,7 @@ object ScheduledSmsPlugin {
         val now = System.currentTimeMillis()
         list(context)
             .asSequence()
-            .filter { it.enabled && it.triggerAt > now }
+            .filter { it.enabled && !it.completed && it.triggerAt > now }
             .forEach { scheduleAlarm(context, it) }
     }
 
@@ -90,8 +100,8 @@ object ScheduledSmsPlugin {
 
     fun markCompleted(context: Context, id: Long) {
         cancelAlarm(context, id)
-        saveAll(context, list(context).mapNotNull { item ->
-            if (item.id == id) item.copy(enabled = false) else item
+        saveAll(context, list(context).map { item ->
+            if (item.id == id) item.copy(enabled = false, completed = true) else item
         })
     }
 
@@ -138,6 +148,7 @@ object ScheduledSmsPlugin {
                     put("body", item.body)
                     put("triggerAt", item.triggerAt)
                     put("enabled", item.enabled)
+                    put("completed", item.completed)
                 }
             )
         }
