@@ -1,5 +1,6 @@
 package org.fossify.messages.activities
 
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -7,8 +8,11 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -75,20 +79,20 @@ open class SimpleActivity : BaseSimpleActivity() {
     private fun applyPaletteToCommonViews(view: View, colors: ThemeManager.ThemeColors) {
         when (view) {
             is FloatingActionButton -> {
-                view.backgroundTintList = android.content.res.ColorStateList.valueOf(colors.fab)
-                view.imageTintList = android.content.res.ColorStateList.valueOf(colors.textPrimary)
+                view.backgroundTintList = ColorStateList.valueOf(colors.fab)
+                view.imageTintList = ColorStateList.valueOf(colors.textPrimary)
             }
             is MaterialCardView -> {
                 view.setCardBackgroundColor(colors.surface)
                 view.strokeColor = colors.divider
             }
             is MaterialButton -> {
-                view.backgroundTintList = android.content.res.ColorStateList.valueOf(colors.primary)
+                view.backgroundTintList = ColorStateList.valueOf(colors.primary)
                 view.setTextColor(colors.textPrimary)
             }
             is TextInputLayout -> {
-                view.setBoxStrokeColorStateList(android.content.res.ColorStateList.valueOf(colors.primary))
-                view.hintTextColor = android.content.res.ColorStateList.valueOf(colors.textSecondary)
+                view.setBoxStrokeColorStateList(ColorStateList.valueOf(colors.primary))
+                view.hintTextColor = ColorStateList.valueOf(colors.textSecondary)
             }
             is EditText -> {
                 view.setTextColor(colors.textPrimary)
@@ -97,7 +101,9 @@ open class SimpleActivity : BaseSimpleActivity() {
             }
         }
 
-        if (view is TextView && view !is EditText && view.id != R.id.folder_tabs) {
+        styleMessageBubble(view, colors)
+
+        if (view is TextView && view !is EditText && view.id != R.id.folder_tabs && view.id != R.id.thread_message_body) {
             val current = view.currentTextColor
             if (current == Color.WHITE || current == Color.BLACK || current == Color.GRAY) {
                 view.setTextColor(colors.textPrimary)
@@ -109,6 +115,36 @@ open class SimpleActivity : BaseSimpleActivity() {
                 applyPaletteToCommonViews(view.getChildAt(index), colors)
             }
         }
+    }
+
+    /**
+     * Applies theme colors to incoming/outgoing message bubbles while preserving
+     * the existing bubble shape and the adapter's selection foreground.
+     */
+    private fun styleMessageBubble(view: View, colors: ThemeManager.ThemeColors) {
+        if (view.id != R.id.thread_message_body || view !is TextView) return
+
+        val wrapper = view.parent as? RelativeLayout ?: return
+        val params = wrapper.layoutParams as? ConstraintLayout.LayoutParams ?: return
+
+        val isOutgoing = params.endToEnd == ConstraintSet.PARENT_ID && params.startToStart != ConstraintSet.PARENT_ID
+        val isIncoming = params.startToStart == ConstraintSet.PARENT_ID && params.endToEnd != ConstraintSet.PARENT_ID
+        if (!isOutgoing && !isIncoming) return
+
+        val bubbleColor = if (isOutgoing) colors.outgoingBubble else colors.incomingBubble
+        val textColor = if (isOutgoing) bubbleColor.contrastColor() else colors.textPrimary
+
+        view.backgroundTintList = ColorStateList.valueOf(bubbleColor)
+        view.setTextColor(textColor)
+        view.setLinkTextColor(colors.accent)
+    }
+
+    private fun Int.contrastColor(): Int {
+        val red = Color.red(this)
+        val green = Color.green(this)
+        val blue = Color.blue(this)
+        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
+        return if (luminance > 0.55) Color.BLACK else Color.WHITE
     }
 
     private fun clearToolbarBackgrounds(view: View) {
