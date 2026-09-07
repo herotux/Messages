@@ -6,5 +6,6 @@
         android:required="false" />
     <application>
         <activity android:name=".activities.BankCardScannerActivity" android:exported="false" />
+        <activity android:name=".activities.PluginStoreActivity" android:exported="false" />
     </application>
 </manifest>
