@@ -30,7 +30,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 open class ConversationFolderTabsView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : HorizontalScrollView(context, attrs) {
-    private val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+    private val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
     private val classifier = PersonalConversationClassifier(context)
     private var selectedId = ConversationFolderManager.getSelectedFolderId(context)
     private var adapter: BaseConversationsAdapter? = null
@@ -38,8 +38,10 @@ open class ConversationFolderTabsView @JvmOverloads constructor(context: Context
     private var reorderMode = false
     private var bindAttempts = 0
 
-    init { isHorizontalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER; addView(tabs, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48))); normalizeSelection(); rebuildTabs(); classifier.ensureLoaded { if (selectedId == ConversationFolderManager.PERSONAL_ID) applyFilter() } }
-    override fun onAttachedToWindow() { super.onAttachedToWindow(); bindAdapterWhenReady(); attachSwipe() }
+    init { isHorizontalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER; addView(tabs, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48))); syncDirection(); normalizeSelection(); rebuildTabs(); classifier.ensureLoaded { if (selectedId == ConversationFolderManager.PERSONAL_ID) applyFilter() } }
+    override fun onAttachedToWindow() { super.onAttachedToWindow(); syncDirection(); bindAdapterWhenReady(); attachSwipe() }
+    override fun onRtlPropertiesChanged(layoutDirection: Int) { super.onRtlPropertiesChanged(layoutDirection); syncDirection() }
+    private fun syncDirection() { val direction = resources.configuration.layoutDirection; layoutDirection = direction; tabs.layoutDirection = direction }
     private fun bindAdapterWhenReady() { if (adapter != null || bindAttempts++ >= 50) return; val rv = rootView.findViewById<RecyclerView>(R.id.conversations_list); val a = rv?.adapter as? BaseConversationsAdapter; if (a != null) bindAdapter(a) else postDelayed({ bindAdapterWhenReady() }, 100) }
 
     private fun attachSwipe() {
@@ -102,7 +104,7 @@ open class ConversationFolderTabsView @JvmOverloads constructor(context: Context
     private fun selectFolder(id: String) { if (folders.none { it.id == id && it.enabled }) return; selectedId = id; ConversationFolderManager.setSelectedFolderId(context, id); updateSelection(); applyFilter(); scrollToSelected() }
     private fun selectRelative(delta: Int) { val visible = folders.filter { it.enabled }; if (visible.size < 2) return; val i = visible.indexOfFirst { it.id == selectedId }.coerceAtLeast(0); val n = (i + delta).let { if (it < 0) visible.lastIndex else if (it > visible.lastIndex) 0 else it }; if (n != i) selectFolder(visible[n].id) }
     private fun normalizeSelection() { val enabled = folders.filter { it.enabled }; if (enabled.isNotEmpty() && enabled.none { it.id == selectedId }) { selectedId = enabled.first().id; ConversationFolderManager.setSelectedFolderId(context, selectedId) } }
-    private fun updateSelection() { val primary = context.getProperPrimaryColor(); for (i in 0 until tabs.childCount) { val t = tabs.getChildAt(i) as TextView; val id = t.tag as? String; val f = folders.firstOrNull { it.id == id }; val selected = id == selectedId; val c = f?.color ?: primary; t.setTextColor(if (selected) c else Color.GRAY); t.typeface = if (selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT; t.setBackgroundColor(if (selected) withAlpha(c, 0.16f) else Color.TRANSPARENT) }; setBackgroundColor(ConversationFolderManager.getSelectedFolder(context)?.color ?: context.getProperBackgroundColor()) }
+    private fun updateSelection() { val primary = context.getProperPrimaryColor(); for (i in 0 until tabs.childCount) { val t = tabs.getChildAt(i) as TextView; val id = t.tag as? String; val f = folders.firstOrNull { it.id == id }; val selected = id == selectedId; val c = f?.color ?: primary; t.setTextColor(if (selected) c else Color.GRAY); t.typeface = if (selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT; t.setBackgroundColor(if (selected) c and 0x18ffffff else Color.TRANSPARENT) }; setBackgroundColor(ConversationFolderManager.getSelectedFolder(context)?.color ?: context.getProperBackgroundColor()) }
     private fun applyFilter() { val a = adapter ?: return; when (selectedId) { ConversationFolderManager.ALL_ID -> a.clearConversationFilter(); ConversationFolderManager.UNREAD_ID -> a.filterConversations { !it.read }; ConversationFolderManager.BANKS_ID -> a.filterConversations { a.isBankConversation(it) }; ConversationFolderManager.PERSONAL_ID -> a.filterConversations { classifier.isPersonal(it, a.isBankConversation(it)) }; else -> a.filterConversations { selectedId in ConversationFolderManager.getFolderMembership(context, it.threadId) } } }
     private fun scrollToSelected() { post { tabs.findViewWithTag<View>(selectedId)?.let { smoothScrollTo((it.left - width / 3).coerceAtLeast(0), 0) } } }
 
