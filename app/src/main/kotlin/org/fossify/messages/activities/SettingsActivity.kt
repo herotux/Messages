@@ -26,7 +26,6 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
-import com.google.android.material.slider.Slider
 import org.fossify.commons.dialogs.SecurityDialog
 import org.fossify.commons.helpers.FONT_TYPE_CUSTOM
 import org.fossify.commons.helpers.FONT_TYPE_SYSTEM_DEFAULT
@@ -202,7 +201,6 @@ class SettingsActivity : SimpleActivity() {
         backgroundThemes(root)
         row(root, t("فونت برنامه", "App font"), fontLabel()) { chooseFont() }
         row(root, t("اندازه متن", "Text size"), fontSizeLabel()) { chooseFontSize() }
-        slider(root, t("اندازه متن گفتگو", "Conversation text size"), config.fontSize.toFloat().coerceIn(1f, 4f)) { config.fontSize = it.toInt() }
         toggle(root, t("شمارنده کاراکتر", "Character counter"), t("نمایش تعداد کاراکتر هنگام نوشتن", "Show character count while typing"), config.showCharacterCounter) { config.showCharacterCounter = it }
         toggle(root, t("نویسه‌های ساده", "Simple characters"), t("استفاده از نویسه‌های ساده‌تر", "Use simpler characters"), config.useSimpleCharacters) { config.useSimpleCharacters = it }
     }
@@ -399,9 +397,7 @@ class SettingsActivity : SimpleActivity() {
     private fun fontSizeLabel() = when (config.fontSize) { 1 -> t("کوچک", "Small"); 2 -> t("متوسط", "Medium"); 3 -> t("بزرگ", "Large"); else -> t("خیلی بزرگ", "Very large") }
     private fun fontLabel(): String {
         if (config.fontType != FONT_TYPE_CUSTOM) return t("پیش‌فرض سیستم", "System default")
-        PersianFontCatalog.fonts.firstOrNull { it.fileName == config.fontName }?.let {
-            return it.title
-        }
+        PersianFontCatalog.fonts.firstOrNull { it.fileName == config.fontName }?.let { return it.title }
         return t("سفارشی: ${config.fontName}", "Custom: ${config.fontName}")
     }
     private fun lockScreenLabel() = when (config.lockScreenVisibilitySetting) { LOCK_SCREEN_SENDER -> t("فقط فرستنده", "Sender only"); LOCK_SCREEN_NOTHING -> t("هیچ‌چیز", "Nothing"); else -> t("فرستنده و متن پیام", "Sender and message") }
@@ -422,14 +418,6 @@ class SettingsActivity : SimpleActivity() {
         line.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
         line.addView(MaterialSwitch(this).apply { isChecked = checked; setOnCheckedChangeListener { _, value -> changed(value) } }, LinearLayout.LayoutParams(dp(64), -2))
         card.addView(line); root.addView(card, margins(0, 8))
-    }
-
-    private fun slider(root: LinearLayout, title: String, value: Float, changed: (Float) -> Unit) {
-        val card = MaterialCardView(this).apply { radius = dp(16).toFloat(); cardElevation = 0f; setCardBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant)) }
-        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(8)) }
-        content.addView(label(title, 16f, true))
-        content.addView(Slider(this).apply { valueFrom = 1f; valueTo = 4f; stepSize = 1f; this.value = value; addOnChangeListener { _, v, _ -> changed(v) } })
-        card.addView(content); root.addView(card, margins(0, 8))
     }
 
     private fun section(root: LinearLayout, title: String) = root.addView(label(title, 13f, true, color(androidx.appcompat.R.attr.colorPrimary)), margins(4, 10))
