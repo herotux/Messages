@@ -4,30 +4,30 @@ import android.content.Context
 
 object PluginLicenseStore {
     private const val PREFS = "messages_plugin_licenses"
-    private const val SMS_AUTOMATION = "sms_automation"
-    private const val EXPIRES_AT = "sms_automation_expires_at"
+    private const val ENABLED = "enabled_"
+    private const val EXPIRES = "expires_"
 
-    fun isSmsAutomationLicensed(context: Context): Boolean {
+    fun isLicensed(context: Context, pluginId: String): Boolean {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        return prefs.getBoolean(SMS_AUTOMATION, false) &&
-            prefs.getLong(EXPIRES_AT, 0L) > System.currentTimeMillis()
+        return prefs.getBoolean(ENABLED + pluginId, false) && prefs.getLong(EXPIRES + pluginId, 0L) > System.currentTimeMillis()
     }
 
-    /** Local trial hook. Production billing should replace this with a signed server entitlement. */
-    fun activateSmsAutomationTrial(context: Context, days: Int = 7) {
+    fun activateTrial(context: Context, pluginId: String, days: Int = 7) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putBoolean(SMS_AUTOMATION, true)
-            .putLong(EXPIRES_AT, System.currentTimeMillis() + days * 24L * 60L * 60L * 1000L)
+            .putBoolean(ENABLED + pluginId, true)
+            .putLong(EXPIRES + pluginId, System.currentTimeMillis() + days.coerceAtLeast(1) * 24L * 60L * 60L * 1000L)
             .apply()
     }
 
-    fun revokeSmsAutomation(context: Context) {
+    fun revoke(context: Context, pluginId: String) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putBoolean(SMS_AUTOMATION, false)
-            .remove(EXPIRES_AT)
-            .apply()
+            .putBoolean(ENABLED + pluginId, false).remove(EXPIRES + pluginId).apply()
     }
 
-    fun smsAutomationExpiry(context: Context): Long =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(EXPIRES_AT, 0L)
+    fun expiry(context: Context, pluginId: String): Long = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(EXPIRES + pluginId, 0L)
+
+    fun isSmsAutomationLicensed(context: Context) = isLicensed(context, PluginRegistry.SMS_AUTOMATION)
+    fun activateSmsAutomationTrial(context: Context, days: Int = 7) = activateTrial(context, PluginRegistry.SMS_AUTOMATION, days)
+    fun revokeSmsAutomation(context: Context) = revoke(context, PluginRegistry.SMS_AUTOMATION)
+    fun smsAutomationExpiry(context: Context) = expiry(context, PluginRegistry.SMS_AUTOMATION)
 }
