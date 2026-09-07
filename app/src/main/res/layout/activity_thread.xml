@@ -148,7 +148,6 @@
             app:fabSize="mini"
             app:layout_constraintBottom_toBottomOf="@id/thread_messages_fastscroller"
             app:layout_constraintEnd_toEndOf="@id/thread_messages_fastscroller"
-            app:layout_constraintTop_toTopOf="@id/thread_messages_fastscroller"
             tools:ignore="ContentDescription" />
 
         <include
