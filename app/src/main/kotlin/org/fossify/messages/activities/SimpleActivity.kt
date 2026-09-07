@@ -7,13 +7,12 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.appcompat.app.ActionBar
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.helpers.FontHelper
-import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.messages.R
 import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.BackgroundThemeManager
+import org.fossify.messages.helpers.ThemeManager
 
 open class SimpleActivity : BaseSimpleActivity() {
     private var appliedFontSize = -1
@@ -47,19 +46,19 @@ open class SimpleActivity : BaseSimpleActivity() {
         installThemeChromeObserver()
     }
 
-    /**
-     * The selected background theme belongs behind the complete screen chrome.
-     * Commons/AppCompat can otherwise paint its legacy primary-color action bar
-     * over the selected background, which is why some screens stayed green.
-     */
+    /** Applies the active ThemeManager palette to system/app chrome. */
     private fun applyThemeChrome() {
+        val colors = ThemeManager.colors(this)
+
         supportActionBar?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         supportActionBar?.setStackedBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        val primary = getProperPrimaryColor()
+        window.statusBarColor = colors.toolbar
+        window.navigationBarColor = colors.background
+
         val tabs = findViewById<View>(R.id.folder_tabs)
         if (tabs is ViewGroup) {
-            styleFolderTabs(tabs, primary)
+            styleFolderTabs(tabs, colors)
         }
 
         clearToolbarBackgrounds(window.decorView)
@@ -78,23 +77,18 @@ open class SimpleActivity : BaseSimpleActivity() {
         }
     }
 
-    /**
-     * Folder tabs use the app/theme primary color for emphasis. Their old
-     * implementation painted the selected folder's own color as a solid block,
-     * making tabs ignore the active visual theme. Keep them transparent and use
-     * a subtle elevation as the only visual separation.
-     */
-    private fun styleFolderTabs(view: ViewGroup, primary: Int) {
+    /** Keeps folder tabs tied to the active theme instead of legacy folder colors. */
+    private fun styleFolderTabs(view: ViewGroup, colors: ThemeManager.ThemeColors) {
         for (index in 0 until view.childCount) {
             val child = view.getChildAt(index)
             if (child is TextView) {
                 val tag = child.tag as? String
                 val isAction = tag?.startsWith("__action__") == true
                 child.setBackgroundColor(Color.TRANSPARENT)
-                child.setTextColor(if (isAction) primary else child.currentTextColor.takeIf { it != Color.GRAY } ?: primary)
+                child.setTextColor(if (isAction) colors.accent else colors.primary)
                 child.elevation = if (!isAction && child.isSelected) dp(3) else 0f
             }
-            if (child is ViewGroup) styleFolderTabs(child, primary)
+            if (child is ViewGroup) styleFolderTabs(child, colors)
         }
     }
 
@@ -103,8 +97,9 @@ open class SimpleActivity : BaseSimpleActivity() {
         val content = window.decorView as? ViewGroup ?: return
         chromeObserverInstalled = true
         content.viewTreeObserver.addOnGlobalLayoutListener {
+            val colors = ThemeManager.colors(this)
             val tabs = findViewById<View>(R.id.folder_tabs)
-            if (tabs is ViewGroup) styleFolderTabs(tabs, getProperPrimaryColor())
+            if (tabs is ViewGroup) styleFolderTabs(tabs, colors)
             clearToolbarBackgrounds(content)
         }
     }
