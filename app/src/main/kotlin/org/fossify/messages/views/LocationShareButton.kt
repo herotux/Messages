@@ -44,12 +44,22 @@ class LocationShareButton(context: Context) : LinearLayout(context) {
             text = "نشانگر را جابه‌جا کنید یا روی نقشه ضربه بزنید، سپس «افزودن موقعیت» را بزنید."
             setPadding(dp(12), dp(8), dp(12), dp(8))
         })
-        val dialog = AlertDialog.Builder(activity).setTitle("📍 اشتراک موقعیت").setView(root).setNegativeButton("لغو", null).create()
-        val positive = Button(activity).apply { text = "افزودن موقعیت"; isAllCaps = false }
+        val dialog = AlertDialog.Builder(activity)
+            .setTitle("📍 اشتراک موقعیت")
+            .setView(root)
+            .setNegativeButton("لغو", null)
+            .create()
+        val positive = Button(activity).apply {
+            text = "افزودن موقعیت"
+            isAllCaps = false
+        }
         root.addView(positive)
         positive.setOnClickListener {
             val input = activity.findViewById<EditText>(R.id.thread_type_message) ?: return@setOnClickListener
-            input.setText("موقعیت مکانی: https://maps.google.com/?q=${lat.toString(Locale.US)},${lon.toString(Locale.US)}")
+            val locationText = "موقعیت مکانی: https://maps.google.com/?q=${lat.toString(Locale.US)},${lon.toString(Locale.US)}"
+            val current = input.text?.toString().orEmpty().trimEnd()
+            val combined = if (current.isBlank()) locationText else "$current\n\n$locationText"
+            input.setText(combined)
             input.setSelection(input.length())
             dialog.dismiss()
         }
@@ -75,7 +85,10 @@ class LocationShareButton(context: Context) : LinearLayout(context) {
         map.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 if (url.startsWith("app://pick")) {
-                    Regex("lat=([-0-9.]+)&lon=([-0-9.]+)").find(url)?.let { m -> lat=m.groupValues[1].toDouble(); lon=m.groupValues[2].toDouble() }
+                    Regex("lat=([-0-9.]+)&lon=([-0-9.]+)").find(url)?.let { m ->
+                        lat = m.groupValues[1].toDouble()
+                        lon = m.groupValues[2].toDouble()
+                    }
                     return true
                 }
                 return false
