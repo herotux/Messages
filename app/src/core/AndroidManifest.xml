@@ -6,5 +6,6 @@
         <activity android:name=".activities.BankCardScannerActivity" android:exported="false" />
         <activity android:name=".activities.PluginStoreActivity" android:exported="false" />
         <receiver android:name=".receivers.PluginScheduledSmsReceiver" android:exported="false" />
+        <meta-data android:name="android.app.shortcuts" android:resource="@xml/plugin_shortcuts" />
     </application>
 </manifest>
