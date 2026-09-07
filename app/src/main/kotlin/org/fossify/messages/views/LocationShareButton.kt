@@ -1,0 +1,110 @@
+package org.fossify.messages.views
+
+import android.Manifest
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.location.LocationManager
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import org.fossify.messages.R
+import java.util.Locale
+
+class LocationShareButton(context: Context) : LinearLayout(context) {
+    private val activity = context as? Activity
+    private var lat = 35.6892
+    private var lon = 51.3890
+
+    init {
+        orientation = VERTICAL
+        gravity = android.view.Gravity.CENTER
+        setPadding(dp(8), dp(8), dp(8), dp(8))
+        setBackgroundResource(android.R.drawable.list_selector_background)
+        isClickable = true
+        addView(TextView(context).apply { text = "📍"; textSize = 28f })
+        addView(TextView(context).apply { text = "موقعیت"; textSize = 12f })
+        setOnClickListener { openPicker() }
+    }
+
+    private fun openPicker() {
+        val activity = activity ?: return
+        val root = LinearLayout(activity).apply { orientation = VERTICAL }
+        val map = WebView(activity).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            webViewClient = WebViewClient()
+            webChromeClient = WebChromeClient()
+            layoutParams = LinearLayout.LayoutParams(-1, dp(420))
+        }
+        val info = TextView(activity).apply {
+            text = "نشانگر را جابه‌جا کنید یا روی نقشه ضربه بزنید، سپس «افزودن موقعیت» را بزنید."
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
+        root.addView(map)
+        root.addView(info)
+        val dialog = AlertDialog.Builder(activity).setTitle("📍 اشتراک موقعیت").setView(root).setNegativeButton("لغو", null).create()
+        val positive = Button(activity).apply { text = "افزودن موقعیت"; isAllCaps = false }
+        root.addView(positive)
+        positive.setOnClickListener {
+            val input = activity.findViewById<EditText>(R.id.thread_type_message) ?: return@setOnClickListener
+            input.setText("موقعیت مکانی: https://maps.google.com/?q=${lat.toString(Locale.US)},${lon.toString(Locale.US)}")
+            input.setSelection(input.length())
+            dialog.dismiss()
+        }
+        loadMap(map)
+        requestLocation(activity, map)
+        dialog.show()
+    }
+
+    private fun loadMap(map: WebView) {
+        val html = """
+            <html><head><meta name='viewport' content='width=device-width,initial-scale=1'>
+            <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'>
+            <style>html,body,#map{height:100%;margin:0}.leaflet-control-attribution{font-size:10px}</style></head>
+            <body><div id='map'></div><script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+            <script>
+              let map=L.map('map').setView([${lat.toString(Locale.US)},${lon.toString(Locale.US)}],15);
+              L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+              let marker=L.marker([${lat.toString(Locale.US)},${lon.toString(Locale.US)}],{draggable:true}).addTo(map);
+              function pick(p){window.location.href='app://pick?lat='+p.lat+'&lon='+p.lng;}
+              marker.on('dragend',e=>pick(marker.getLatLng()));
+              map.on('click',e=>{marker.setLatLng(e.latlng);pick(e.latlng);});
+            </script></body></html>
+        """.trimIndent()
+        map.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                if (url.startsWith("app://pick")) {
+                    Regex("lat=([-0-9.]+)&lon=([-0-9.]+)").find(url)?.let { m -> lat=m.groupValues[1].toDouble(); lon=m.groupValues[2].toDouble() }
+                    return true
+                }
+                return false
+            }
+        }
+        map.loadDataWithBaseURL("https://tile.openstreetmap.org/", html, "text/html", "UTF-8", null)
+    }
+
+    private fun requestLocation(activity: Activity, map: WebView) {
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), REQUEST_LOCATION)
+            return
+        }
+        val lm = activity.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val best = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER).mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
+        if (best != null) {
+            lat=best.latitude; lon=best.longitude
+            map.evaluateJavascript("map.setView([$lat,$lon],16); marker.setLatLng([$lat,$lon]);", null)
+        }
+    }
+
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    companion object { private const val REQUEST_LOCATION = 4202 }
+}
