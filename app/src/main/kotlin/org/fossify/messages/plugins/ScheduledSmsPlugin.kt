@@ -4,14 +4,14 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import org.fossify.messages.receivers.ScheduledMessageReceiver
+import org.fossify.messages.receivers.PluginScheduledSmsReceiver
 import org.json.JSONArray
 import org.json.JSONObject
 
 object ScheduledSmsPlugin {
     private const val PREFS = "plugin_scheduled_sms"
     private const val KEY = "items"
-    private const val EXTRA_ID = "plugin_scheduled_sms_id"
+    private const val EXTRA_ID = "scheduled_plugin_id"
     data class Item(val id: Long, val destination: String, val body: String, val triggerAt: Long, val enabled: Boolean = true)
 
     fun isAvailable(context: Context) = PluginLicenseStore.isLicensed(context, PluginRegistry.SCHEDULED_SMS_PRO)
@@ -30,7 +30,7 @@ object ScheduledSmsPlugin {
         context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context, id))
         saveAll(context, list(context).filterNot { it.id == id })
     }
-    private fun pendingIntent(context: Context, id: Long) = PendingIntent.getBroadcast(context, id.hashCode(), Intent(context, ScheduledMessageReceiver::class.java).setAction("org.fossify.messages.PLUGIN_SCHEDULED_SMS").putExtra(EXTRA_ID, id), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    private fun pendingIntent(context: Context, id: Long) = PendingIntent.getBroadcast(context, id.hashCode(), Intent(context, PluginScheduledSmsReceiver::class.java).putExtra(EXTRA_ID, id), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     private fun save(context: Context, item: Item) = saveAll(context, list(context).filterNot { it.id == item.id } + item)
     private fun saveAll(context: Context, values: List<Item>) { val a = JSONArray(); values.forEach { a.put(JSONObject().apply { put("id", it.id); put("destination", it.destination); put("body", it.body); put("triggerAt", it.triggerAt); put("enabled", it.enabled) }) }; context.getSharedPreferences(PREFS, 0).edit().putString(KEY, a.toString()).apply() }
     internal const val EXTRA_ID_KEY = EXTRA_ID
