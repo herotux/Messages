@@ -16,6 +16,7 @@ open class SimpleActivity : BaseSimpleActivity() {
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
+        applyLocaleLayoutDirection()
         BackgroundThemeManager.apply(this)
         applySelectedFontToViewTree(window.decorView)
         appliedFontSize = config.fontSize
@@ -23,6 +24,7 @@ open class SimpleActivity : BaseSimpleActivity() {
 
     override fun onResume() {
         super.onResume()
+        applyLocaleLayoutDirection()
         BackgroundThemeManager.apply(this)
         applySelectedFontToViewTree(window.decorView)
 
@@ -34,6 +36,17 @@ open class SimpleActivity : BaseSimpleActivity() {
             return
         }
         appliedFontSize = config.fontSize
+    }
+
+    /**
+     * Android's automatic RTL mirroring is only reliable when the application
+     * declares RTL support. Keep the actual view tree synchronized with the
+     * current locale as a fallback for this fork as well, so switching between
+     * Persian and English immediately changes both geometry and text direction.
+     */
+    private fun applyLocaleLayoutDirection() {
+        val direction = resources.configuration.layoutDirection
+        window.decorView.layoutDirection = direction
     }
 
     /**
