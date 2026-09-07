@@ -15,7 +15,6 @@
             android:id="@+id/thread_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:menu="@menu/menu_thread"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 
@@ -78,7 +77,7 @@
                 android:id="@+id/add_contact_or_number"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/normal_icon_size"
-                android:layout_below="@+id/message_divider_one"
+                android:layout_below="@id/message_divider_one"
                 android:layout_marginStart="@dimen/activity_margin"
                 android:layout_marginEnd="@dimen/activity_margin"
                 android:layout_toStartOf="@+id/confirm_inserted_number"
@@ -149,6 +148,7 @@
             app:fabSize="mini"
             app:layout_constraintBottom_toBottomOf="@id/thread_messages_fastscroller"
             app:layout_constraintEnd_toEndOf="@id/thread_messages_fastscroller"
+            app:layout_constraintTop_toTopOf="@id/thread_messages_fastscroller"
             tools:ignore="ContentDescription" />
 
         <include
