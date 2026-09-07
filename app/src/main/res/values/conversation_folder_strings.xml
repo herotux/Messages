@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_all">All</string>
+    <string name="folder_unread">Unread</string>
+    <string name="folder_banks">Banks</string>
+    <string name="folder_personal">Personal</string>
+</resources>
