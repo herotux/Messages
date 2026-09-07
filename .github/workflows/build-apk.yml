@@ -15,8 +15,6 @@ on:
 permissions:
   contents: read
 
-# Keep the three tests and the three release variants independent so one slow
-# Gradle task does not block every other task on the same runner.
 jobs:
   unit-tests:
     name: Unit tests (${{ matrix.variant }})
@@ -38,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -48,7 +46,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run ${{ matrix.variant }} unit tests
-        run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon
+        run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon --max-workers=2
 
       - name: Upload ${{ matrix.variant }} test reports
         if: always()
@@ -69,23 +67,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses > /dev/null || true
-
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
       - name: Run lint
-        run: ./gradlew lint --stacktrace --no-daemon
+        run: ./gradlew lint --stacktrace --no-daemon --max-workers=2
 
       - name: Upload lint report
         if: always()
@@ -102,9 +94,10 @@ jobs:
       - unit-tests
       - lint
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include:
           - variant: Core
@@ -136,7 +129,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -150,17 +143,11 @@ jobs:
           chmod 600 "$SIGNING_STORE_FILE"
           test -s "$SIGNING_STORE_FILE"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses > /dev/null || true
-
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
       - name: Build ${{ matrix.variant }} release APK
-        run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon
+        run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon --max-workers=2
 
       - name: Collect APK
         run: |
