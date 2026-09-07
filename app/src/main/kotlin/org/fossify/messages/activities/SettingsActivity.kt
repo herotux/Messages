@@ -61,6 +61,7 @@ class SettingsActivity : SimpleActivity() {
         private const val BANKS = "banks"
         private const val PRIVACY = "privacy"
         private const val ABOUT = "about"
+        private const val PLUGINS = "plugins"
     }
 
     private val pickCustomFont = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -146,6 +147,7 @@ class SettingsActivity : SimpleActivity() {
         category(root, "گفتگوها", "آرشیو و سطل بازیافت", CONVERSATIONS, android.R.drawable.ic_menu_sort_by_size, "Conversations", "Archive and recycle bin")
         category(root, "بانک و تراکنش", "کارت‌ها و تشخیص بانک", BANKS, android.R.drawable.ic_menu_save, "Banking", "Cards and bank detection")
         category(root, "حریم خصوصی و امنیت", "قفل برنامه و مجوزها", PRIVACY, android.R.drawable.ic_lock_lock, "Privacy & security", "App lock and permissions")
+        category(root, "پلاگین‌ها", "اتوماسیون، قالب‌ها، پشتیبان‌گیری و پیام زمان‌بندی‌شده", PLUGINS, android.R.drawable.ic_menu_manage, "Plugins", "Automation, templates, backup and scheduled SMS")
         category(root, "درباره برنامه", "اطلاعات نسخه و پروژه", ABOUT, android.R.drawable.ic_menu_info_details, "About", "Version and project information")
     }
 
@@ -156,7 +158,13 @@ class SettingsActivity : SimpleActivity() {
             strokeWidth = dp(1)
             strokeColor = color(com.google.android.material.R.attr.colorOutlineVariant)
             setCardBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant))
-            setOnClickListener { startActivity(Intent(this@SettingsActivity, SettingsActivity::class.java).putExtra(EXTRA_PAGE, page)) }
+            setOnClickListener {
+                if (page == PLUGINS) {
+                    startActivity(Intent(this@SettingsActivity, PluginStoreActivity::class.java))
+                } else {
+                    startActivity(Intent(this@SettingsActivity, SettingsActivity::class.java).putExtra(EXTRA_PAGE, page))
+                }
+            }
         }
         val line = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
