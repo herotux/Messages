@@ -30,163 +30,39 @@ import org.fossify.messages.models.Message
 import org.fossify.messages.plugins.SmsAutomationPlugin
 
 class SmsReceiver : BroadcastReceiver() {
-
     override fun onReceive(context: Context, intent: Intent) {
-        val pending = goAsync()
-        val appContext = context.applicationContext
+        val pending = goAsync(); val appContext = context.applicationContext
         DebugLog.write(appContext, "RECEIVER_STARTED action=${intent.action}")
-
         ensureBackgroundThread {
             try {
                 val parts = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-                DebugLog.write(appContext, "SMS_PARTS count=${parts.size}")
                 if (parts.isEmpty()) return@ensureBackgroundThread
-
-                val address = parts.last().originatingAddress.orEmpty()
-                DebugLog.write(appContext, "ADDRESS=$address")
-                if (address.isBlank()) return@ensureBackgroundThread
-                val subject = parts.last().pseudoSubject.orEmpty()
-                val status = parts.last().status
+                val address = parts.last().originatingAddress.orEmpty(); if (address.isBlank()) return@ensureBackgroundThread
+                val subject = parts.last().pseudoSubject.orEmpty(); val status = parts.last().status
                 val body = buildString { parts.forEach { append(it.messageBody.orEmpty()) } }
-                DebugLog.write(appContext, "BODY_LENGTH=${body.length}")
-
-                if (isMessageFilteredOut(appContext, body)) {
-                    DebugLog.write(appContext, "FILTERED_OUT")
-                    return@ensureBackgroundThread
-                }
-                if (appContext.isNumberBlocked(address)) {
-                    DebugLog.write(appContext, "NUMBER_BLOCKED")
-                    return@ensureBackgroundThread
-                }
+                if (isMessageFilteredOut(appContext, body) || appContext.isNumberBlocked(address)) return@ensureBackgroundThread
                 if (appContext.baseConfig.blockUnknownNumbers) {
-                    DebugLog.write(appContext, "CHECKING_UNKNOWN_NUMBER")
-                    val privateCursor =
-                        appContext.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
-                    val result = SimpleContactsHelper(appContext).existsSync(address, privateCursor)
-                    DebugLog.write(appContext, "CONTACT_LOOKUP=$result")
-                    if (result == ContactLookupResult.NotFound) {
-                        DebugLog.write(appContext, "UNKNOWN_NUMBER_REJECTED")
-                        return@ensureBackgroundThread
-                    }
+                    val cursor = appContext.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
+                    if (SimpleContactsHelper(appContext).existsSync(address, cursor) == ContactLookupResult.NotFound) return@ensureBackgroundThread
                 }
-
-                // Premium automation runs on the complete reassembled SMS body, including
-                // multipart messages. It does not extract or transform OTPs.
-                SmsAutomationPlugin.processIncomingSms(
-                    context = appContext,
-                    sender = address,
-                    body = body,
-                    subscriptionId = intent.getIntExtra("subscription", -1)
-                )
-
-                val date = System.currentTimeMillis()
-                val threadId = appContext.getThreadId(address)
-                val subscriptionId = intent.getIntExtra("subscription", -1)
-                DebugLog.write(appContext, "BEFORE_HANDLE threadId=$threadId")
-
-                handleMessageSync(
-                    context = appContext,
-                    address = address,
-                    subject = subject,
-                    body = body,
-                    date = date,
-                    threadId = threadId,
-                    subscriptionId = subscriptionId,
-                    status = status
-                )
-                DebugLog.write(appContext, "AFTER_HANDLE")
-            } catch (e: Exception) {
-                DebugLog.write(appContext, "RECEIVER_EXCEPTION ${e.javaClass.name}: ${e.message}")
-            } finally {
-                pending.finish()
-                DebugLog.write(appContext, "RECEIVER_FINISHED")
-            }
+                val date = System.currentTimeMillis(); val threadId = appContext.getThreadId(address); val subscriptionId = intent.getIntExtra("subscription", -1)
+                handleMessageSync(appContext, address, subject, body, date, threadId, subscriptionId, status)
+                SmsAutomationPlugin.processIncomingSms(appContext, address, body, subscriptionId)
+            } catch (e: Exception) { DebugLog.write(appContext, "RECEIVER_EXCEPTION ${e.javaClass.name}: ${e.message}") }
+            finally { pending.finish(); DebugLog.write(appContext, "RECEIVER_FINISHED") }
         }
     }
 
-    private fun handleMessageSync(
-        context: Context,
-        address: String,
-        subject: String,
-        body: String,
-        date: Long,
-        read: Int = 0,
-        threadId: Long,
-        type: Int = Telephony.Sms.MESSAGE_TYPE_INBOX,
-        subscriptionId: Int,
-        status: Int
-    ) {
-        DebugLog.write(context, "HANDLE_START")
-        val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
-        val bitmap = context.getNotificationBitmap(photoUri)
-
-        val newMessageId = context.insertNewSMS(
-            address = address,
-            subject = subject,
-            body = body,
-            date = date,
-            read = read,
-            threadId = threadId,
-            type = type,
-            subscriptionId = subscriptionId
-        )
-        DebugLog.write(context, "INSERT_NEW_SMS id=$newMessageId")
-
-        context.getConversations(threadId).firstOrNull()?.let { conv ->
-            runCatching { context.insertOrUpdateConversation(conv) }
-        }
-
-        val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
-            context.getNameFromAddress(address, it)
-        }
-
-        val participant = SimpleContact(
-            rawId = 0,
-            contactId = 0,
-            name = senderName,
-            photoUri = photoUri,
-            phoneNumbers = arrayListOf(PhoneNumber(value = address, type = 0, label = "", normalizedNumber = address)),
-            birthdays = ArrayList(),
-            anniversaries = ArrayList()
-        )
-
-        val message = Message(
-            id = newMessageId,
-            body = body,
-            type = type,
-            status = status,
-            participants = arrayListOf(participant),
-            date = (date / 1000).toInt(),
-            read = false,
-            threadId = threadId,
-            isMMS = false,
-            attachment = null,
-            senderPhoneNumber = address,
-            senderName = senderName,
-            senderPhotoUri = photoUri,
-            subscriptionId = subscriptionId
-        )
-
-        DebugLog.write(context, "BEFORE_ROOM_INSERT id=$newMessageId threadId=$threadId")
+    private fun handleMessageSync(context: Context, address: String, subject: String, body: String, date: Long, threadId: Long, subscriptionId: Int, status: Int) {
+        val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address); val bitmap = context.getNotificationBitmap(photoUri)
+        val newMessageId = context.insertNewSMS(address = address, subject = subject, body = body, date = date, read = 0, threadId = threadId, type = Telephony.Sms.MESSAGE_TYPE_INBOX, subscriptionId = subscriptionId)
+        context.getConversations(threadId).firstOrNull()?.let { runCatching { context.insertOrUpdateConversation(it) } }
+        val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use { context.getNameFromAddress(address, it) }
+        val participant = SimpleContact(rawId = 0, contactId = 0, name = senderName, photoUri = photoUri, phoneNumbers = arrayListOf(PhoneNumber(value = address, type = 0, label = "", normalizedNumber = address)), birthdays = ArrayList(), anniversaries = ArrayList())
+        val message = Message(id = newMessageId, body = body, type = Telephony.Sms.MESSAGE_TYPE_INBOX, status = status, participants = arrayListOf(participant), date = (date / 1000).toInt(), read = false, threadId = threadId, isMMS = false, attachment = null, senderPhoneNumber = address, senderName = senderName, senderPhotoUri = photoUri, subscriptionId = subscriptionId)
         context.messagesDB.insertOrUpdate(message)
-        DebugLog.write(context, "AFTER_ROOM_INSERT id=$newMessageId")
-
-        if (context.shouldUnarchive()) {
-            context.updateConversationArchivedStatus(threadId, false)
-        }
-
-        refreshMessages()
-        refreshConversations()
-        DebugLog.write(context, "REFRESH_EVENTS_SENT")
-        context.showReceivedMessageNotification(
-            messageId = newMessageId,
-            isMms = false,
-            address = address,
-            senderName = senderName,
-            body = body,
-            threadId = threadId,
-            bitmap = bitmap
-        )
-        DebugLog.write(context, "HANDLE_FINISHED")
+        if (context.shouldUnarchive()) context.updateConversationArchivedStatus(threadId, false)
+        refreshMessages(); refreshConversations()
+        context.showReceivedMessageNotification(messageId = newMessageId, isMms = false, address = address, senderName = senderName, body = body, threadId = threadId, bitmap = bitmap)
     }
 }
