@@ -11,6 +11,9 @@ import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -20,26 +23,27 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 
-/**
- * Detects shared coordinates/map links in an SMS and renders a lightweight
- * location card. No AI and no device-location permission are required.
- */
 class SmsLocationPreviewView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
-
     private val card = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(dp(12), dp(10), dp(12), dp(10))
-        setBackgroundColor(Color.TRANSPARENT)
+        setPadding(dp(8), dp(8), dp(8), dp(8))
         visibility = View.GONE
     }
     private val title = TextView(context).apply {
-        text = "📍 پیش‌نمایش موقعیت"
+        text = "📍 موقعیت مکانی"
         textSize = 15f
         setTextColor(resolveTextColor())
+    }
+    private val map = WebView(context).apply {
+        settings.javaScriptEnabled = true
+        settings.domStorageEnabled = true
+        webViewClient = WebViewClient()
+        webChromeClient = WebChromeClient()
+        layoutParams = LinearLayout.LayoutParams(-1, dp(180))
     }
     private val details = TextView(context).apply {
         textSize = 12f
@@ -54,6 +58,7 @@ class SmsLocationPreviewView @JvmOverloads constructor(
     init {
         addView(card, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         card.addView(title)
+        card.addView(map)
         card.addView(details)
         card.addView(actions)
         visibility = View.GONE
@@ -82,23 +87,30 @@ class SmsLocationPreviewView @JvmOverloads constructor(
             actions.removeAllViews()
             return
         }
-
         visibility = View.VISIBLE
         card.visibility = View.VISIBLE
-        details.text = if (location.label.isNotBlank()) {
-            "${location.label}\n${formatCoordinate(location.latitude)}, ${formatCoordinate(location.longitude)}"
-        } else {
-            "${formatCoordinate(location.latitude)}, ${formatCoordinate(location.longitude)}"
-        }
-
+        details.text = "${formatCoordinate(location.latitude)}, ${formatCoordinate(location.longitude)}"
+        loadMap(location)
         actions.removeAllViews()
         actions.addView(actionButton("🗺️ مسیریابی") { openNavigation(location) })
-        if (isSnappInstalled()) {
-            actions.addView(actionButton("🚕 باز کردن اسنپ") { openSnapp(location) })
-        }
+        if (isSnappInstalled()) actions.addView(actionButton("🚕 باز کردن اسنپ") { openSnapp() })
     }
 
-    private fun actionButton(text: String, onClick: () -> Unit): Button = Button(context).apply {
+    private fun loadMap(location: Location) {
+        val lat = location.latitude.toString(Locale.US)
+        val lon = location.longitude.toString(Locale.US)
+        val html = """
+            <html><head><meta name='viewport' content='width=device-width,initial-scale=1'>
+            <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'>
+            <style>html,body,#map{height:100%;margin:0}.leaflet-control-attribution{font-size:9px}</style></head>
+            <body><div id='map'></div><script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+            <script>let m=L.map('map',{zoomControl:false}).setView([$lat,$lon],16);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(m);L.marker([$lat,$lon]).addTo(m);</script>
+            </body></html>
+        """.trimIndent()
+        map.loadDataWithBaseURL("https://tile.openstreetmap.org/", html, "text/html", "UTF-8", null)
+    }
+
+    private fun actionButton(text: String, onClick: () -> Unit) = Button(context).apply {
         this.text = text
         isAllCaps = false
         minHeight = dp(40)
@@ -107,71 +119,46 @@ class SmsLocationPreviewView @JvmOverloads constructor(
 
     private fun openNavigation(location: Location) {
         val geo = Uri.parse("geo:${location.latitude},${location.longitude}?q=${location.latitude},${location.longitude}")
-        try {
-            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW, geo), "انتخاب مسیریاب"))
-        } catch (_: ActivityNotFoundException) {
-            val web = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}")
-            context.startActivity(Intent(Intent.ACTION_VIEW, web))
-        }
+        try { context.startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW, geo), "انتخاب مسیریاب")) }
+        catch (_: ActivityNotFoundException) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}"))) }
     }
 
-    private fun openSnapp(location: Location) {
-        // Snapp's passenger app does not expose a stable public deep-link
-        // contract for pre-filling a ride destination. Launch it explicitly;
-        // the user completes/ confirms the trip inside Snapp.
-        val launch = context.packageManager.getLaunchIntentForPackage(SNAPP_PACKAGE) ?: return
-        context.startActivity(launch)
+    private fun openSnapp() {
+        context.packageManager.getLaunchIntentForPackage(SNAPP_PACKAGE)?.let(context::startActivity)
     }
 
-    private fun isSnappInstalled(): Boolean = try {
-        context.packageManager.getPackageInfo(SNAPP_PACKAGE, 0)
-        true
-    } catch (_: Exception) {
-        false
-    }
+    private fun isSnappInstalled() = runCatching { context.packageManager.getPackageInfo(SNAPP_PACKAGE, 0); true }.getOrDefault(false)
 
     private fun parseLocation(text: String): Location? {
         val normalized = normalizeDigits(text)
         val coordinate = COORDINATE_REGEX.find(normalized)
         if (coordinate != null) {
-            val first = coordinate.groupValues[1].toDoubleOrNull()
-            val second = coordinate.groupValues[2].toDoubleOrNull()
-            if (first != null && second != null) {
-                val pair = when {
-                    first in -90.0..90.0 && second in -180.0..180.0 -> first to second
-                    second in -90.0..90.0 && first in -180.0..180.0 -> second to first
-                    else -> null
+            val a = coordinate.groupValues[1].toDoubleOrNull()
+            val b = coordinate.groupValues[2].toDoubleOrNull()
+            if (a != null && b != null) {
+                when {
+                    a in -90.0..90.0 && b in -180.0..180.0 -> return Location(a, b)
+                    b in -90.0..90.0 && a in -180.0..180.0 -> return Location(b, a)
                 }
-                if (pair != null) return Location(pair.first, pair.second, "")
             }
         }
-
-        val query = Regex("[?&](?:q|query|destination)=([^&#]+)", RegexOption.IGNORE_CASE)
-            .find(normalized)?.groupValues?.getOrNull(1)
+        val query = Regex("[?&](?:q|query|destination)=([^&#]+)", RegexOption.IGNORE_CASE).find(normalized)?.groupValues?.getOrNull(1)
         if (query != null) {
             val decoded = runCatching { URLDecoder.decode(query, StandardCharsets.UTF_8.name()) }.getOrDefault(query)
             val nested = COORDINATE_REGEX.find(decoded)
-            if (nested != null) {
-                val lat = nested.groupValues[1].toDoubleOrNull()
-                val lon = nested.groupValues[2].toDoubleOrNull()
-                if (lat != null && lon != null && lat in -90.0..90.0 && lon in -180.0..180.0) {
-                    return Location(lat, lon, decoded)
-                }
-            }
+            val a = nested?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+            val b = nested?.groupValues?.getOrNull(2)?.toDoubleOrNull()
+            if (a != null && b != null && a in -90.0..90.0 && b in -180.0..180.0) return Location(a, b)
         }
         return null
     }
 
-    private fun normalizeDigits(value: String): String = buildString(value.length) {
-        value.forEach { c ->
-            append(
-                when (c) {
-                    in '۰'..'۹' -> ('0'.code + (c.code - '۰'.code)).toChar()
-                    in '٠'..'٩' -> ('0'.code + (c.code - '٠'.code)).toChar()
-                    else -> c
-                }
-            )
-        }
+    private fun normalizeDigits(value: String) = buildString(value.length) {
+        value.forEach { c -> append(when (c) {
+            in '۰'..'۹' -> ('0'.code + c.code - '۰'.code).toChar()
+            in '٠'..'٩' -> ('0'.code + c.code - '٠'.code).toChar()
+            else -> c
+        }) }
     }
 
     private fun resolveTextColor(): Int {
@@ -181,10 +168,9 @@ class SmsLocationPreviewView @JvmOverloads constructor(
         } else Color.DKGRAY
     }
 
-    private fun formatCoordinate(value: Double): String = String.format(Locale.US, "%.6f", value)
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
-    private data class Location(val latitude: Double, val longitude: Double, val label: String)
+    private fun formatCoordinate(value: Double) = String.format(Locale.US, "%.6f", value)
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+    private data class Location(val latitude: Double, val longitude: Double)
 
     companion object {
         private const val SNAPP_PACKAGE = "cab.snapp.passenger"
