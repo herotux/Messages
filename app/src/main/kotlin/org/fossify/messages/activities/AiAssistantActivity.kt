@@ -64,12 +64,13 @@ class AiAssistantActivity : SimpleActivity() {
         content.addView(Button(this).apply {
             text = "✨ تولید پاسخ"
             setOnClickListener {
-                val text = prompt.text.toString().trim()
-                if (text.isBlank()) { prompt.error = "درخواست را وارد کنید"; return@setOnClickListener }
+                val promptText = prompt.text.toString().trim()
+                if (promptText.isBlank()) { prompt.error = "درخواست را وارد کنید"; return@setOnClickListener }
                 isEnabled = false
                 text = "⏳ در حال دریافت پاسخ..."
-                AiAssistantPlugin.generate(this@AiAssistantActivity, text) { response ->
+                AiAssistantPlugin.generate(this@AiAssistantActivity, promptText) { response ->
                     isEnabled = true
+                    text = "✨ تولید پاسخ"
                     response.onSuccess { result.setText(it) }.onFailure { result.setText("خطا: ${it.message ?: "خطای ناشناخته"}") }
                 }
             }
