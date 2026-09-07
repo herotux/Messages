@@ -6,7 +6,14 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.TextView
+import androidx.appcompat.widget.Toolbar
+import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.textfield.TextInputLayout
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.helpers.FontHelper
 import org.fossify.messages.R
@@ -46,7 +53,7 @@ open class SimpleActivity : BaseSimpleActivity() {
         installThemeChromeObserver()
     }
 
-    /** Applies the active ThemeManager palette to system/app chrome. */
+    /** Applies the active ThemeManager palette to system/app chrome and common surfaces. */
     private fun applyThemeChrome() {
         val colors = ThemeManager.colors(this)
 
@@ -61,14 +68,59 @@ open class SimpleActivity : BaseSimpleActivity() {
             styleFolderTabs(tabs, colors)
         }
 
+        applyPaletteToCommonViews(window.decorView, colors)
         clearToolbarBackgrounds(window.decorView)
     }
 
+    private fun applyPaletteToCommonViews(view: View, colors: ThemeManager.ThemeColors) {
+        when (view) {
+            is FloatingActionButton -> {
+                view.backgroundTintList = android.content.res.ColorStateList.valueOf(colors.fab)
+                view.imageTintList = android.content.res.ColorStateList.valueOf(colors.textPrimary)
+            }
+            is MaterialCardView -> {
+                view.setCardBackgroundColor(colors.surface)
+                view.strokeColor = colors.divider
+            }
+            is MaterialButton -> {
+                view.backgroundTintList = android.content.res.ColorStateList.valueOf(colors.primary)
+                view.setTextColor(colors.textPrimary)
+            }
+            is TextInputLayout -> {
+                view.setBoxStrokeColorStateList(android.content.res.ColorStateList.valueOf(colors.primary))
+                view.hintTextColor = android.content.res.ColorStateList.valueOf(colors.textSecondary)
+            }
+            is EditText -> {
+                view.setTextColor(colors.textPrimary)
+                view.setHintTextColor(colors.textSecondary)
+                view.highlightColor = colors.accent
+            }
+        }
+
+        if (view is TextView && view !is EditText && view.id != R.id.folder_tabs) {
+            val current = view.currentTextColor
+            if (current == Color.WHITE || current == Color.BLACK || current == Color.GRAY) {
+                view.setTextColor(colors.textPrimary)
+            }
+        }
+
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                applyPaletteToCommonViews(view.getChildAt(index), colors)
+            }
+        }
+    }
+
     private fun clearToolbarBackgrounds(view: View) {
-        val name = view.javaClass.name
-        if (name.contains("Toolbar") || name.contains("AppBarLayout") || name.contains("ActionBarContainer")) {
+        if (view is Toolbar || view is AppBarLayout) {
             view.background = null
             view.elevation = 0f
+        } else {
+            val name = view.javaClass.name
+            if (name.contains("ActionBarContainer")) {
+                view.background = null
+                view.elevation = 0f
+            }
         }
         if (view is ViewGroup) {
             for (index in 0 until view.childCount) {
@@ -100,6 +152,7 @@ open class SimpleActivity : BaseSimpleActivity() {
             val colors = ThemeManager.colors(this)
             val tabs = findViewById<View>(R.id.folder_tabs)
             if (tabs is ViewGroup) styleFolderTabs(tabs, colors)
+            applyPaletteToCommonViews(content, colors)
             clearToolbarBackgrounds(content)
         }
     }
