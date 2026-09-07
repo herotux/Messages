@@ -41,7 +41,7 @@ open class ConversationFolderTabsView @JvmOverloads constructor(context: Context
     init { isHorizontalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER; addView(tabs, LayoutParams(LayoutParams.WRAP_CONTENT, dp(48))); syncDirection(); normalizeSelection(); rebuildTabs(); classifier.ensureLoaded { if (selectedId == ConversationFolderManager.PERSONAL_ID) applyFilter() } }
     override fun onAttachedToWindow() { super.onAttachedToWindow(); syncDirection(); bindAdapterWhenReady(); attachSwipe() }
     override fun onRtlPropertiesChanged(layoutDirection: Int) { super.onRtlPropertiesChanged(layoutDirection); syncDirection() }
-    private fun syncDirection() { val direction = resources.configuration.layoutDirection; layoutDirection = direction; tabs.layoutDirection = direction }
+    private fun syncDirection() { val direction = resources.configuration.layoutDirection; tabs.layoutDirection = direction }
     private fun bindAdapterWhenReady() { if (adapter != null || bindAttempts++ >= 50) return; val rv = rootView.findViewById<RecyclerView>(R.id.conversations_list); val a = rv?.adapter as? BaseConversationsAdapter; if (a != null) bindAdapter(a) else postDelayed({ bindAdapterWhenReady() }, 100) }
 
     private fun attachSwipe() {
