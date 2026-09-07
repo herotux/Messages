@@ -213,13 +213,15 @@ class PluginStoreActivity : SimpleActivity() {
         val destination = field("شماره گیرنده")
         val body = EditText(this).apply { hint = "متن پیام"; minLines = 4; gravity = Gravity.TOP; textSize = 15f; layoutDirection = View.LAYOUT_DIRECTION_RTL }
         destination.setText(existing?.destination.orEmpty()); body.setText(existing?.body.orEmpty())
+        val templateButton = Button(this).apply { text = "📋 انتخاب قالب" }
+        templateButton.setOnClickListener { showScheduledTemplatePicker(body) }
         val dateButton = Button(this).apply { text = "انتخاب تاریخ" }; val timeButton = Button(this).apply { text = "انتخاب ساعت" }
         val selected = Calendar.getInstance().apply { if (existing == null) add(Calendar.MINUTE, 5) else timeInMillis = existing.triggerAt }
         val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()); val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         dateButton.text = "تاریخ: ${dateFormat.format(selected.time)}"; timeButton.text = "ساعت: ${timeFormat.format(selected.time)}"
         dateButton.setOnClickListener { DatePickerDialog(this, { _, year, month, day -> selected.set(Calendar.YEAR, year); selected.set(Calendar.MONTH, month); selected.set(Calendar.DAY_OF_MONTH, day); dateButton.text = "تاریخ: ${dateFormat.format(selected.time)}" }, selected.get(Calendar.YEAR), selected.get(Calendar.MONTH), selected.get(Calendar.DAY_OF_MONTH)).show() }
         timeButton.setOnClickListener { TimePickerDialog(this, { _, hour, minute -> selected.set(Calendar.HOUR_OF_DAY, hour); selected.set(Calendar.MINUTE, minute); selected.set(Calendar.SECOND, 0); selected.set(Calendar.MILLISECOND, 0); timeButton.text = "ساعت: ${timeFormat.format(selected.time)}" }, selected.get(Calendar.HOUR_OF_DAY), selected.get(Calendar.MINUTE), true).show() }
-        box.addView(destination); box.addView(body); box.addView(dateButton); box.addView(timeButton)
+        box.addView(destination); box.addView(templateButton); box.addView(body); box.addView(dateButton); box.addView(timeButton)
         com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle(if (existing == null) "زمان‌بندی پیام" else "ویرایش پیام زمان‌بندی‌شده").setView(box).setNegativeButton("لغو", null).setPositiveButton(if (existing == null) "زمان‌بندی" else "ذخیره تغییرات") { _, _ ->
             val phone = destination.text.toString().trim(); val message = body.text.toString().trim()
             when {
@@ -232,6 +234,22 @@ class PluginStoreActivity : SimpleActivity() {
                 }.onSuccess { render(); Toast.makeText(this, if (existing == null) "پیام زمان‌بندی شد" else "تغییرات ذخیره شد", Toast.LENGTH_SHORT).show() }.onFailure { showError(it.message ?: "خطا در زمان‌بندی پیام") }
             }
         }.show()
+    }
+
+    private fun showScheduledTemplatePicker(body: EditText) {
+        val templates = SmsTemplatesPlugin.list(this).sortedBy { it.name.lowercase(Locale.getDefault()) }
+        if (templates.isEmpty()) {
+            showError("قالبی وجود ندارد؛ ابتدا یک قالب بسازید")
+            return
+        }
+        val labels = templates.map { template ->
+            if (template.category.isBlank()) template.name.ifBlank { "بدون نام" }
+            else "${template.name.ifBlank { "بدون نام" }} — ${template.category}"
+        }.toTypedArray()
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("انتخاب قالب")
+            .setItems(labels) { _, which -> body.setText(templates[which].body); body.setSelection(body.text.length) }
+            .show()
     }
 
     private fun showError(message: String) { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
