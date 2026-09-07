@@ -8,6 +8,7 @@ import android.net.Uri
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -20,12 +21,8 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 
 /**
- * Detects shared coordinates/map links in an SMS and renders a lightweight,
- * offline-safe location card. No AI and no device location permission are used.
- *
- * The actual navigation is delegated to apps installed by the user through
- * ACTION_VIEW. Snapp is opened only after an explicit tap; the app never books
- * or charges a ride automatically.
+ * Detects shared coordinates/map links in an SMS and renders a lightweight
+ * location card. No AI and no device-location permission are required.
  */
 class SmsLocationPreviewView @JvmOverloads constructor(
     context: Context,
@@ -40,7 +37,7 @@ class SmsLocationPreviewView @JvmOverloads constructor(
         visibility = View.GONE
     }
     private val title = TextView(context).apply {
-        text = "📍 موقعیت مکانی"
+        text = "📍 پیش‌نمایش موقعیت"
         textSize = 15f
         setTextColor(resolveTextColor())
     }
@@ -53,7 +50,6 @@ class SmsLocationPreviewView @JvmOverloads constructor(
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.START
     }
-    private var location: Location? = null
 
     init {
         addView(card, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
@@ -69,8 +65,7 @@ class SmsLocationPreviewView @JvmOverloads constructor(
     }
 
     private fun attachToMessageBody() {
-        val parent = parent ?: return
-        val body = parent.findViewById<TextView>(R.id.thread_message_body) ?: return
+        val body = (parent as? View)?.findViewById<TextView>(R.id.thread_message_body) ?: return
         update(body.text?.toString().orEmpty())
         body.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -80,9 +75,8 @@ class SmsLocationPreviewView @JvmOverloads constructor(
     }
 
     private fun update(text: String) {
-        val parsed = parseLocation(text)
-        location = parsed
-        if (parsed == null) {
+        val location = parseLocation(text)
+        if (location == null) {
             visibility = View.GONE
             card.visibility = View.GONE
             actions.removeAllViews()
@@ -91,20 +85,16 @@ class SmsLocationPreviewView @JvmOverloads constructor(
 
         visibility = View.VISIBLE
         card.visibility = View.VISIBLE
-        details.text = if (parsed.label.isNotBlank()) {
-            "${parsed.label}\n${formatCoordinate(parsed.latitude)}, ${formatCoordinate(parsed.longitude)}"
+        details.text = if (location.label.isNotBlank()) {
+            "${location.label}\n${formatCoordinate(location.latitude)}, ${formatCoordinate(location.longitude)}"
         } else {
-            "${formatCoordinate(parsed.latitude)}, ${formatCoordinate(parsed.longitude)}"
+            "${formatCoordinate(location.latitude)}, ${formatCoordinate(location.longitude)}"
         }
 
         actions.removeAllViews()
-        actions.addView(actionButton("🗺️ مسیریابی") {
-            openNavigation(parsed)
-        })
+        actions.addView(actionButton("🗺️ مسیریابی") { openNavigation(location) })
         if (isSnappInstalled()) {
-            actions.addView(actionButton("🚕 باز کردن اسنپ") {
-                openSnapp(parsed)
-            })
+            actions.addView(actionButton("🚕 باز کردن اسنپ") { openSnapp(location) })
         }
     }
 
@@ -117,9 +107,8 @@ class SmsLocationPreviewView @JvmOverloads constructor(
 
     private fun openNavigation(location: Location) {
         val geo = Uri.parse("geo:${location.latitude},${location.longitude}?q=${location.latitude},${location.longitude}")
-        val intent = Intent(Intent.ACTION_VIEW, geo)
         try {
-            context.startActivity(Intent.createChooser(intent, "انتخاب مسیریاب"))
+            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW, geo), "انتخاب مسیریاب"))
         } catch (_: ActivityNotFoundException) {
             val web = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}")
             context.startActivity(Intent(Intent.ACTION_VIEW, web))
@@ -127,12 +116,10 @@ class SmsLocationPreviewView @JvmOverloads constructor(
     }
 
     private fun openSnapp(location: Location) {
-        // Snapp does not expose a stable, public passenger deep-link contract
-        // for pre-filling a ride destination. We therefore only launch the
-        // installed passenger app; the user confirms the trip there.
+        // Snapp's passenger app does not expose a stable public deep-link
+        // contract for pre-filling a ride destination. Launch it explicitly;
+        // the user completes/ confirms the trip inside Snapp.
         val launch = context.packageManager.getLaunchIntentForPackage(SNAPP_PACKAGE) ?: return
-        launch.putExtra("destination_latitude", location.latitude)
-        launch.putExtra("destination_longitude", location.longitude)
         context.startActivity(launch)
     }
 
@@ -150,15 +137,17 @@ class SmsLocationPreviewView @JvmOverloads constructor(
             val first = coordinate.groupValues[1].toDoubleOrNull()
             val second = coordinate.groupValues[2].toDoubleOrNull()
             if (first != null && second != null) {
-                val latLon = if (first in -90.0..90.0 && second in -180.0..180.0) first to second else null
-                val lonLat = if (second in -90.0..90.0 && first in -180.0..180.0) second to first else null
-                val pair = latLon ?: lonLat
+                val pair = when {
+                    first in -90.0..90.0 && second in -180.0..180.0 -> first to second
+                    second in -90.0..90.0 && first in -180.0..180.0 -> second to first
+                    else -> null
+                }
                 if (pair != null) return Location(pair.first, pair.second, "")
             }
         }
 
-        val query = Regex("[?&](?:q|query|destination)=([^&#]+)", RegexOption.IGNORE_CASE).find(normalized)
-            ?.groupValues?.getOrNull(1)
+        val query = Regex("[?&](?:q|query|destination)=([^&#]+)", RegexOption.IGNORE_CASE)
+            .find(normalized)?.groupValues?.getOrNull(1)
         if (query != null) {
             val decoded = runCatching { URLDecoder.decode(query, StandardCharsets.UTF_8.name()) }.getOrDefault(query)
             val nested = COORDINATE_REGEX.find(decoded)
@@ -186,9 +175,9 @@ class SmsLocationPreviewView @JvmOverloads constructor(
     }
 
     private fun resolveTextColor(): Int {
-        val typed = android.util.TypedValue()
+        val typed = TypedValue()
         return if (context.theme.resolveAttribute(android.R.attr.textColorPrimary, typed, true)) {
-            android.content.res.Resources.getSystem().getColor(typed.resourceId)
+            if (typed.resourceId != 0) context.getColor(typed.resourceId) else typed.data
         } else Color.DKGRAY
     }
 
