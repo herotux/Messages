@@ -1,12 +1,8 @@
 package org.fossify.messages.views
 
-import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
-import android.content.pm.PackageManager
-import android.graphics.Color
-import android.location.LocationManager
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -14,8 +10,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import org.fossify.messages.R
 import java.util.Locale
 
@@ -45,12 +39,11 @@ class LocationShareButton(context: Context) : LinearLayout(context) {
             webChromeClient = WebChromeClient()
             layoutParams = LinearLayout.LayoutParams(-1, dp(420))
         }
-        val info = TextView(activity).apply {
+        root.addView(map)
+        root.addView(TextView(activity).apply {
             text = "نشانگر را جابه‌جا کنید یا روی نقشه ضربه بزنید، سپس «افزودن موقعیت» را بزنید."
             setPadding(dp(12), dp(8), dp(12), dp(8))
-        }
-        root.addView(map)
-        root.addView(info)
+        })
         val dialog = AlertDialog.Builder(activity).setTitle("📍 اشتراک موقعیت").setView(root).setNegativeButton("لغو", null).create()
         val positive = Button(activity).apply { text = "افزودن موقعیت"; isAllCaps = false }
         root.addView(positive)
@@ -60,9 +53,8 @@ class LocationShareButton(context: Context) : LinearLayout(context) {
             input.setSelection(input.length())
             dialog.dismiss()
         }
-        loadMap(map)
-        requestLocation(activity, map)
         dialog.show()
+        loadMap(map)
     }
 
     private fun loadMap(map: WebView) {
@@ -92,19 +84,5 @@ class LocationShareButton(context: Context) : LinearLayout(context) {
         map.loadDataWithBaseURL("https://tile.openstreetmap.org/", html, "text/html", "UTF-8", null)
     }
 
-    private fun requestLocation(activity: Activity, map: WebView) {
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), REQUEST_LOCATION)
-            return
-        }
-        val lm = activity.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val best = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER).mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
-        if (best != null) {
-            lat=best.latitude; lon=best.longitude
-            map.evaluateJavascript("map.setView([$lat,$lon],16); marker.setLatLng([$lat,$lon]);", null)
-        }
-    }
-
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
-    companion object { private const val REQUEST_LOCATION = 4202 }
 }
