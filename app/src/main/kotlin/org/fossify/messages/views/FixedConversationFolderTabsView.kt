@@ -3,6 +3,7 @@ package org.fossify.messages.views
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -28,19 +29,35 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        // ConversationFolderTabsView historically forced the internal row to RTL.
-        // That is correct for Persian/Arabic, but reverses tabs for LTR locales.
-        val direction = resources.configuration.layoutDirection
-        layoutDirection = direction
-        (privateField("tabs") as? View)?.layoutDirection = direction
+        syncLayoutDirection()
         installPreDrawFix()
         post { sync(true) }
     }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        syncLayoutDirection()
+        post { sync(true) }
+    }
+
+    private fun syncLayoutDirection() {
+        val direction = resources.configuration.layoutDirection
+        layoutDirection = direction
+        (privateField("tabs") as? View)?.let { tabs ->
+            tabs.layoutDirection = direction
+            for (i in 0 until (tabs as? LinearLayout)?.childCount.orZero()) {
+                (tabs as LinearLayout).getChildAt(i).layoutDirection = direction
+            }
+        }
+    }
+
+    private fun Int?.orZero() = this ?: 0
 
     private fun installPreDrawFix() {
         if (preDrawInstalled) return
         preDrawInstalled = true
         viewTreeObserver.addOnPreDrawListener {
+            syncLayoutDirection()
             setBackgroundColor(context.getProperBackgroundColor())
             styleTabs(ConversationFolderManager.getSelectedFolderId(context))
             true
@@ -48,6 +65,7 @@ class FixedConversationFolderTabsView @JvmOverloads constructor(
     }
 
     override fun dispatchDraw(canvas: android.graphics.Canvas) {
+        syncLayoutDirection()
         setBackgroundColor(context.getProperBackgroundColor())
         sync()
         super.dispatchDraw(canvas)
