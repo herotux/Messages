@@ -3,7 +3,6 @@ package org.fossify.messages.helpers
 import android.content.Context
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.messages.extensions.messagesDB
-import org.fossify.messages.interfaces.AnnotationLabelsDao
 import org.fossify.messages.models.AnnotationLabel
 import org.fossify.messages.models.ConversationLabel
 import org.fossify.messages.models.ConversationNote
@@ -11,7 +10,7 @@ import org.fossify.messages.models.MessageLabel
 import org.fossify.messages.models.MessageNote
 
 object MessageAnnotationStore {
-    private fun dao(context: Context): AnnotationLabelsDao = context.messagesDB.AnnotationLabelsDao()
+    private fun dao(context: Context) = context.messagesDB.AnnotationLabelsDao()
 
     fun getMessageLabels(context: Context, messageId: Long): List<AnnotationLabel> = dao(context).getMessageLabels(messageId)
     fun getMessageNote(context: Context, messageId: Long): MessageNote? = dao(context).getMessageNote(messageId)
@@ -62,7 +61,7 @@ object MessageAnnotationStore {
         if (value.isEmpty()) dao(context).deleteConversationNote(threadId) else {
             val now = System.currentTimeMillis()
             val old = dao(context).getConversationNote(threadId)
-            dao(context).upsertConversationNote(ConversationNote(threadId, value, old?.createdAt ?: now, now))
+            dao(context).upsertConversationNote(ConversationNote(threadId, value, old?.createdAt ?: now))
         }
     }
 }
