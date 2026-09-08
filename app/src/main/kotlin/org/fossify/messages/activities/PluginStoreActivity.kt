@@ -9,13 +9,11 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -27,7 +25,6 @@ import org.fossify.messages.plugins.ScheduledSmsPlugin
 import org.fossify.messages.plugins.SmsAutomationPlugin
 import org.fossify.messages.plugins.SmsBackupProPlugin
 import org.fossify.messages.plugins.SmsTemplatesPlugin
-import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -71,9 +68,9 @@ class PluginStoreActivity : SimpleActivity() {
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
-        ThemeManager.applyBackground(this)
         PluginRegistry.all.forEach { addPlugin(it) }
         applyTheme(root)
+        ThemeManager.applyBackground(this)
     }
 
     private fun addPlugin(plugin: PluginRegistry.Plugin) {
@@ -193,6 +190,7 @@ class PluginStoreActivity : SimpleActivity() {
         }
         val dialog = builder.show()
         applyTheme(dialog.window?.decorView)
+        styleDialogButtons(dialog)
     }
 
     private fun addAi(parent: LinearLayout) {
@@ -347,9 +345,8 @@ class PluginStoreActivity : SimpleActivity() {
             is TextView -> {
                 view.setTextColor(if (view.textSize <= dp(13).toFloat()) colors.textSecondary else colors.textPrimary)
             }
-            is ViewGroup -> view.setBackgroundColor(Color.TRANSPARENT)
         }
-        if (view is ViewGroup) {
+        if (view is android.view.ViewGroup) {
             for (i in 0 until view.childCount) applyTheme(view.getChildAt(i))
         }
     }
