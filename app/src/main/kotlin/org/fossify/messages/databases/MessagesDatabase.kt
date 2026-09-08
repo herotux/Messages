@@ -9,18 +9,24 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import org.fossify.messages.helpers.Converters
+import org.fossify.messages.interfaces.AnnotationLabelsDao
 import org.fossify.messages.interfaces.AttachmentsDao
 import org.fossify.messages.interfaces.BankAccountsDao
 import org.fossify.messages.interfaces.ConversationsDao
 import org.fossify.messages.interfaces.DraftsDao
 import org.fossify.messages.interfaces.MessageAttachmentsDao
 import org.fossify.messages.interfaces.MessagesDao
+import org.fossify.messages.models.AnnotationLabel
 import org.fossify.messages.models.Attachment
 import org.fossify.messages.models.BankAccount
 import org.fossify.messages.models.Conversation
+import org.fossify.messages.models.ConversationLabel
+import org.fossify.messages.models.ConversationNote
 import org.fossify.messages.models.Draft
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.MessageAttachment
+import org.fossify.messages.models.MessageLabel
+import org.fossify.messages.models.MessageNote
 import org.fossify.messages.models.RecycleBinMessage
 
 @Database(
@@ -31,9 +37,14 @@ import org.fossify.messages.models.RecycleBinMessage
         Message::class,
         RecycleBinMessage::class,
         Draft::class,
-        BankAccount::class
+        BankAccount::class,
+        AnnotationLabel::class,
+        MessageLabel::class,
+        MessageNote::class,
+        ConversationLabel::class,
+        ConversationNote::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -44,6 +55,7 @@ abstract class MessagesDatabase : RoomDatabase() {
     abstract fun MessagesDao(): MessagesDao
     abstract fun DraftsDao(): DraftsDao
     abstract fun BankAccountsDao(): BankAccountsDao
+    abstract fun AnnotationLabelsDao(): AnnotationLabelsDao
 
     companion object {
         private var db: MessagesDatabase? = null
@@ -65,6 +77,7 @@ abstract class MessagesDatabase : RoomDatabase() {
                             .addMigrations(MIGRATION_9_10)
                             .addMigrations(MIGRATION_10_11)
                             .addMigrations(MIGRATION_11_12)
+                            .addMigrations(MIGRATION_12_13)
                             .build()
                     }
                 }
@@ -92,5 +105,19 @@ abstract class MessagesDatabase : RoomDatabase() {
         private val MIGRATION_9_10 = object : Migration(9, 10) { override fun migrate(db: SupportSQLiteDatabase) { db.execSQL("ALTER TABLE conversations ADD COLUMN unread_count INTEGER NOT NULL DEFAULT 0") } }
         private val MIGRATION_10_11 = object : Migration(10, 11) { override fun migrate(db: SupportSQLiteDatabase) { db.execSQL("CREATE INDEX IF NOT EXISTS `index_messages_thread_id_date` ON `messages` (`thread_id`, `date`)") } }
         private val MIGRATION_11_12 = object : Migration(11, 12) { override fun migrate(db: SupportSQLiteDatabase) { db.execSQL("CREATE TABLE IF NOT EXISTS `bank_accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `bankId` TEXT NOT NULL, `cardNumber` TEXT NOT NULL, `holderName` TEXT NOT NULL, `iban` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)") } }
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.apply {
+                    execSQL("CREATE TABLE IF NOT EXISTS `annotation_labels` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL)")
+                    execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_annotation_labels_name` ON `annotation_labels` (`name`)")
+                    execSQL("CREATE TABLE IF NOT EXISTS `message_labels` (`messageId` INTEGER NOT NULL, `labelId` INTEGER NOT NULL, PRIMARY KEY(`messageId`, `labelId`))")
+                    execSQL("CREATE INDEX IF NOT EXISTS `index_message_labels_labelId` ON `message_labels` (`labelId`)")
+                    execSQL("CREATE TABLE IF NOT EXISTS `message_notes` (`messageId` INTEGER NOT NULL, `text` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`messageId`))")
+                    execSQL("CREATE TABLE IF NOT EXISTS `conversation_labels` (`threadId` INTEGER NOT NULL, `labelId` INTEGER NOT NULL, PRIMARY KEY(`threadId`, `labelId`))")
+                    execSQL("CREATE INDEX IF NOT EXISTS `index_conversation_labels_labelId` ON `conversation_labels` (`labelId`)")
+                    execSQL("CREATE TABLE IF NOT EXISTS `conversation_notes` (`thread_id` INTEGER NOT NULL, `text` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`thread_id`))")
+                }
+            }
+        }
     }
 }

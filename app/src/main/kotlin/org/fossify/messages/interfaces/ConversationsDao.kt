@@ -33,13 +33,8 @@ interface ConversationsDao {
     @Query("SELECT * FROM conversations WHERE read = 0")
     fun getUnreadConversations(): List<Conversation>
 
-    /**
-     * Search only conversation-owned fields here. Message text/sender search is
-     * already performed by MessagesDao.getMessagesWithText(). Keeping the
-     * message subquery here caused every conversation search to scan messages a
-     * second time and also produced duplicate work/results.
-     */
-    @Query("SELECT * FROM conversations WHERE title LIKE :text OR phone_number LIKE :text")
+    /** Search conversation-owned fields plus labels and private notes. */
+    @Query("SELECT DISTINCT conversations.* FROM conversations LEFT JOIN conversation_labels cl ON conversations.thread_id = cl.thread_id LEFT JOIN annotation_labels l ON l.id = cl.label_id LEFT JOIN conversation_notes n ON conversations.thread_id = n.thread_id WHERE conversations.title LIKE :text OR conversations.phone_number LIKE :text OR l.name LIKE REPLACE(:text, '#', '') OR n.text LIKE REPLACE(REPLACE(:text, 'note:', ''), '#', '')")
     fun getConversationsWithText(text: String): List<Conversation>
 
     @Query("UPDATE conversations SET read = 1 WHERE thread_id = :threadId")
