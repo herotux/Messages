@@ -130,14 +130,16 @@ jobs:
           chmod 600 "$SIGNING_STORE_FILE"
           test -s "$SIGNING_STORE_FILE"
 
-      # ubuntu-latest already provides the Android SDK. Avoid
-      # android-actions/setup-android here because it installs extra tooling
-      # such as the emulator and SDK tools before the actual build.
-      - name: Verify Android SDK
+      # ubuntu-latest provides the Android SDK. Avoid setup-android here so
+      # the release job does not install unnecessary emulator/SDK tooling.
+      - name: Prepare Android SDK
+        shell: bash
         run: |
+          set -euo pipefail
+
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
-          echo "ANDROID_SDK_ROOT=$SDK_ROOT"
           test -n "$SDK_ROOT"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT"
 
           SDKMANAGER=""
           for candidate in \
@@ -151,17 +153,17 @@ jobs:
           done
 
           if [ -z "$SDKMANAGER" ]; then
-            SDKMANAGER="$(find "$SDK_ROOT" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
           fi
 
           test -n "$SDKMANAGER"
           test -x "$SDKMANAGER"
-          SDKMANAGER_DIR="$(dirname "$SDKMANAGER")"
-          echo "sdkmanager=$SDKMANAGER"
-          echo "$SDKMANAGER_DIR" >> "$GITHUB_PATH"
-          "$SDKMANAGER" --version
 
-          "$SDKMANAGER" --list_installed | grep -E 'platforms;android-36|build-tools;36\.0\.0' || true
+          SDKMANAGER_DIR="$(dirname "$SDKMANAGER")"
+          echo "Using sdkmanager: $SDKMANAGER"
+          echo "$SDKMANAGER_DIR" >> "$GITHUB_PATH"
+
+          "$SDKMANAGER" --version
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
 
