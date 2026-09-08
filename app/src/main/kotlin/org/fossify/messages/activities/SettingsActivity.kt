@@ -2,6 +2,7 @@ package org.fossify.messages.activities
 
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
@@ -45,11 +46,9 @@ import org.fossify.messages.helpers.LOCK_SCREEN_NOTHING
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
 import org.fossify.messages.helpers.PersianFontCatalog
+import org.fossify.messages.helpers.ThemeManager
 
-/**
- * Standalone Messages settings UI. Presentation is local to Messages and does not
- * depend on Commons settings layouts or text rendering.
- */
+/** Standalone Messages settings UI. */
 class SettingsActivity : SimpleActivity() {
     companion object {
         private const val EXTRA_PAGE = "settings_page"
@@ -151,43 +150,25 @@ class SettingsActivity : SimpleActivity() {
 
     private fun category(root: LinearLayout, fa: String, faSummary: String, page: String, icon: Int, en: String, enSummary: String) {
         val card = MaterialCardView(this).apply {
-            radius = dp(20).toFloat()
-            cardElevation = 0f
-            strokeWidth = dp(1)
+            radius = dp(20).toFloat(); cardElevation = 0f; strokeWidth = dp(1)
             strokeColor = color(com.google.android.material.R.attr.colorOutlineVariant)
             setCardBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant))
             setOnClickListener { startActivity(Intent(this@SettingsActivity, SettingsActivity::class.java).putExtra(EXTRA_PAGE, page)) }
         }
-        val line = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutDirection = if (english()) View.LAYOUT_DIRECTION_LTR else View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-        }
-        line.addView(AppCompatImageView(this).apply {
-            setImageResource(icon)
-            imageTintList = ColorStateList.valueOf(color(androidx.appcompat.R.attr.colorPrimary))
-            setPadding(dp(8), dp(8), dp(8), dp(8))
-        }, LinearLayout.LayoutParams(dp(48), dp(48)))
+        val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; layoutDirection = if (english()) View.LAYOUT_DIRECTION_LTR else View.LAYOUT_DIRECTION_RTL; setPadding(dp(14), dp(12), dp(14), dp(12)) }
+        line.addView(AppCompatImageView(this).apply { setImageResource(icon); imageTintList = ColorStateList.valueOf(color(androidx.appcompat.R.attr.colorPrimary)); setPadding(dp(8), dp(8), dp(8), dp(8)) }, LinearLayout.LayoutParams(dp(48), dp(48)))
         val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(8), 0) }
-        texts.addView(label(t(fa, en), 17f, true))
-        texts.addView(label(t(faSummary, enSummary), 13f, false, color(com.google.android.material.R.attr.colorOnSurfaceVariant)))
+        texts.addView(label(t(fa, en), 17f, true)); texts.addView(label(t(faSummary, enSummary), 13f, false, color(com.google.android.material.R.attr.colorOnSurfaceVariant)))
         line.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
         line.addView(TextView(this).apply { text = if (english()) "›" else "‹"; textSize = 28f; gravity = Gravity.CENTER; setTextColor(color(com.google.android.material.R.attr.colorOnSurfaceVariant)) }, LinearLayout.LayoutParams(dp(28), dp(44)))
-        card.addView(line)
-        root.addView(card, margins(0, 10))
+        card.addView(line); root.addView(card, margins(0, 10))
     }
 
     private fun general(root: LinearLayout) {
         section(root, t("عمومی", "General"))
         row(root, t("زبان برنامه", "App language"), if (english()) "English" else "فارسی") { chooseLanguage() }
-        if (Build.VERSION.SDK_INT >= 33) row(root, t("زبان سیستم Android", "Android system language"), resources.configuration.locales[0].displayLanguage) {
-            runCatching { startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS).setData(Uri.parse("package:$packageName"))) }
-        }
-        toggle(root, t("تقویم شمسی", "Persian calendar"), t("نمایش تاریخ‌ها با تقویم جلالی", "Display dates using the Jalali calendar"), config.usePersianCalendar) {
-            config.usePersianCalendar = it
-            recreate()
-        }
+        if (Build.VERSION.SDK_INT >= 33) row(root, t("زبان سیستم Android", "Android system language"), resources.configuration.locales[0].displayLanguage) { runCatching { startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS).setData(Uri.parse("package:$packageName"))) } }
+        toggle(root, t("تقویم شمسی", "Persian calendar"), t("نمایش تاریخ‌ها با تقویم جلالی", "Display dates using the Jalali calendar"), config.usePersianCalendar) { config.usePersianCalendar = it; recreate() }
         row(root, t("تاریخ و ساعت", "Date & time"), t("استفاده از تنظیمات سیستم", "Use system settings")) { startActivity(Intent(Settings.ACTION_DATE_SETTINGS)) }
     }
 
@@ -198,48 +179,76 @@ class SettingsActivity : SimpleActivity() {
             getSharedPreferences("messages_settings_ui", MODE_PRIVATE).edit().putBoolean("dark_mode", it).apply()
             AppCompatDelegate.setDefaultNightMode(if (it) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
         }
-        backgroundThemes(root)
+        themeLibrary(root)
         row(root, t("فونت برنامه", "App font"), fontLabel()) { chooseFont() }
         row(root, t("اندازه متن", "Text size"), fontSizeLabel()) { chooseFontSize() }
         toggle(root, t("شمارنده کاراکتر", "Character counter"), t("نمایش تعداد کاراکتر هنگام نوشتن", "Show character count while typing"), config.showCharacterCounter) { config.showCharacterCounter = it }
         toggle(root, t("نویسه‌های ساده", "Simple characters"), t("استفاده از نویسه‌های ساده‌تر", "Use simpler characters"), config.useSimpleCharacters) { config.useSimpleCharacters = it }
     }
 
-    private fun backgroundThemes(root: LinearLayout) {
-        section(root, t("پس‌زمینه‌های آماده", "Ready-made backgrounds"))
-        val selected = BackgroundThemeManager.selectedId(this)
-        val scroller = HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            overScrollMode = View.OVER_SCROLL_NEVER
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
+    private fun themeLibrary(root: LinearLayout) {
+        section(root, t("کتابخانه تم", "Theme library"))
+        row(root, t("＋ ساخت تم جدید", "+ Create new theme"), t("ساخت تم با رنگ‌ها و پیش‌نمایش زنده", "Create a theme with colors and live preview")) {
+            startActivity(Intent(this, ThemeBuilderActivity::class.java))
         }
-        val strip = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, dp(6)) }
-        BackgroundThemeManager.themes.filter { it.id != BackgroundThemeManager.NONE }.forEach { theme ->
+        val selectedId = ThemeManager.selectedThemeId(this)
+        val themes = ThemeManager.allThemes(this)
+        val scroller = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER; layoutDirection = View.LAYOUT_DIRECTION_LTR }
+        val strip = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, dp(8)) }
+        themes.forEach { theme ->
+            val selected = theme.id == selectedId
             val card = MaterialCardView(this).apply {
-                radius = dp(18).toFloat()
-                cardElevation = if (theme.id == selected) dp(5).toFloat() else 0f
-                strokeWidth = if (theme.id == selected) dp(3) else dp(1)
-                strokeColor = color(androidx.appcompat.R.attr.colorPrimary)
-                setCardBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant))
-                setOnClickListener {
-                    BackgroundThemeManager.select(this@SettingsActivity, theme.id)
-                    render(APPEARANCE)
-                }
+                radius = dp(18).toFloat(); cardElevation = if (selected) dp(5).toFloat() else 0f
+                strokeWidth = if (selected) dp(3) else dp(1); strokeColor = if (selected) theme.colors.accent else color(com.google.android.material.R.attr.colorOutlineVariant)
+                setCardBackgroundColor(theme.colors.surface)
+                setOnClickListener { ThemeManager.select(this@SettingsActivity, theme.id); render(APPEARANCE) }
+                setOnLongClickListener { showThemeActions(theme); true }
             }
-            val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(5), dp(5), dp(5), dp(7)) }
-            box.addView(ImageView(this).apply {
-                setImageResource(theme.drawable)
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                contentDescription = if (english()) theme.titleEn else theme.titleFa
-            }, LinearLayout.LayoutParams(dp(132), dp(76)))
-            box.addView(label(if (english()) theme.titleEn else theme.titleFa, 13f, true).apply { gravity = Gravity.CENTER; setPadding(0, dp(5), 0, 0) })
+            val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(6), dp(6), dp(6), dp(8)) }
+            val preview = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), dp(10), dp(10), dp(8)); setBackgroundColor(theme.colors.background) }
+            preview.addView(TextView(this).apply { text = "Aa  ${theme.nameFa}"; textSize = 14f; setTextColor(theme.colors.textPrimary); typeface = Typeface.DEFAULT_BOLD })
+            preview.addView(TextView(this).apply { text = "دریافتی"; textSize = 12f; setTextColor(theme.colors.textPrimary); backgroundTintList = ColorStateList.valueOf(theme.colors.incomingBubble); setPadding(dp(7), dp(5), dp(7), dp(5)) }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+            preview.addView(TextView(this).apply { text = "ارسالی"; textSize = 12f; setTextColor(if (isLight(theme.colors.outgoingBubble)) Color.BLACK else Color.WHITE); backgroundTintList = ColorStateList.valueOf(theme.colors.outgoingBubble); setPadding(dp(7), dp(5), dp(7), dp(5)); gravity = Gravity.END }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
+            box.addView(preview, LinearLayout.LayoutParams(dp(150), dp(112)))
+            box.addView(label(if (english()) theme.nameEn else theme.nameFa, 13f, true).apply { gravity = Gravity.CENTER; setPadding(0, dp(6), 0, 0) })
             card.addView(box)
-            val lp = LinearLayout.LayoutParams(dp(144), dp(118)); lp.setMargins(dp(5), 0, dp(5), 0)
-            strip.addView(card, lp)
+            strip.addView(card, LinearLayout.LayoutParams(dp(164), dp(148)).apply { setMargins(dp(5), 0, dp(5), 0) })
         }
-        scroller.addView(strip, LinearLayout.LayoutParams(-2, -2))
-        root.addView(scroller, margins(0, 8))
+        scroller.addView(strip, LinearLayout.LayoutParams(-2, -2)); root.addView(scroller, margins(0, 8))
+        row(root, t("پس‌زمینه‌های آماده", "Ready-made backgrounds"), t("مدیریت پس‌زمینه‌های تصویری قدیمی", "Manage legacy image backgrounds")) { showLegacyBackgrounds() }
     }
+
+    private fun showThemeActions(theme: ThemeManager.ThemeDefinition) {
+        val canManage = theme.source == ThemeManager.ThemeSource.USER
+        if (!canManage) return
+        val items = arrayOf(t("ویرایش", "Edit"), t("تکثیر", "Duplicate"), t("حذف", "Delete"))
+        MaterialAlertDialogBuilder(this).setTitle(if (english()) theme.nameEn else theme.nameFa).setItems(items) { _, which ->
+            when (which) {
+                0 -> startActivity(Intent(this, ThemeBuilderActivity::class.java).putExtra("theme_id", theme.id))
+                1 -> duplicateTheme(theme)
+                2 -> confirmDeleteTheme(theme)
+            }
+        }.show()
+    }
+
+    private fun duplicateTheme(theme: ThemeManager.ThemeDefinition) {
+        val copy = theme.copy(id = "user_" + java.util.UUID.randomUUID().toString(), nameFa = theme.nameFa + " (کپی)", nameEn = theme.nameEn + " (Copy)")
+        ThemeManager.saveUserTheme(this, copy); ThemeManager.select(this, copy.id); render(APPEARANCE)
+    }
+
+    private fun confirmDeleteTheme(theme: ThemeManager.ThemeDefinition) {
+        MaterialAlertDialogBuilder(this).setTitle(t("حذف تم؟", "Delete theme?")).setMessage(t("تم «${theme.nameFa}» حذف شود؟", "Delete “${theme.nameEn}”?"))
+            .setNegativeButton(t("لغو", "Cancel"), null).setPositiveButton(t("حذف", "Delete")) { _, _ -> ThemeManager.deleteUserTheme(this, theme.id); render(APPEARANCE) }.show()
+    }
+
+    private fun showLegacyBackgrounds() {
+        val themes = BackgroundThemeManager.themes.filter { it.id != BackgroundThemeManager.NONE }
+        val labels = themes.map { if (english()) it.titleEn else it.titleFa }.toTypedArray()
+        val selected = themes.indexOfFirst { it.id == BackgroundThemeManager.selectedId(this) }.coerceAtLeast(0)
+        MaterialAlertDialogBuilder(this).setTitle(t("پس‌زمینه‌های آماده", "Ready-made backgrounds")).setSingleChoiceItems(labels, selected) { dialog, which -> BackgroundThemeManager.select(this, themes[which].id); dialog.dismiss(); render(APPEARANCE) }.show()
+    }
+
+    private fun isLight(color: Int): Boolean = (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255.0 > 0.55
 
     private fun messages(root: LinearLayout) {
         section(root, t("پیام‌ها", "Messages"))
@@ -268,10 +277,7 @@ class SettingsActivity : SimpleActivity() {
     private fun banks(root: LinearLayout) {
         section(root, t("بانک و تراکنش", "Banking"))
         row(root, t("حساب‌ها و کارت‌های بانکی", "Bank accounts & cards"), t("افزودن، ویرایش و حذف کارت‌ها", "Add, edit and delete cards")) { startActivity(Intent(this, BankCardsActivity::class.java)) }
-        row(root, t("تشخیص بانک", "Bank detection"), t("بانک‌های پشتیبانی‌شده", "Supported banks")) {
-            val names = org.fossify.messages.helpers.IranianBankRegistry.allBanks().map { if (english()) it.englishName else it.persianName }.toTypedArray()
-            MaterialAlertDialogBuilder(this).setTitle(t("بانک‌های پشتیبانی‌شده", "Supported banks")).setItems(names, null).show()
-        }
+        row(root, t("تشخیص بانک", "Bank detection"), t("بانک‌های پشتیبانی‌شده", "Supported banks")) { val names = org.fossify.messages.helpers.IranianBankRegistry.allBanks().map { if (english()) it.englishName else it.persianName }.toTypedArray(); MaterialAlertDialogBuilder(this).setTitle(t("بانک‌های پشتیبانی‌شده", "Supported banks")).setItems(names, null).show() }
     }
 
     private fun privacy(root: LinearLayout) {
@@ -288,69 +294,19 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun chooseLanguage() {
-        val labels = arrayOf("فارسی", "English")
-        val selected = if (config.useEnglish) 1 else 0
-        MaterialAlertDialogBuilder(this).setTitle(t("زبان برنامه", "App language")).setSingleChoiceItems(labels, selected) { dialog, which ->
-            val english = which == 1
-            config.useEnglish = english
-            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(if (english) "en" else "fa"))
-            dialog.dismiss()
-            recreate()
-        }.show()
+        val labels = arrayOf("فارسی", "English"); val selected = if (config.useEnglish) 1 else 0
+        MaterialAlertDialogBuilder(this).setTitle(t("زبان برنامه", "App language")).setSingleChoiceItems(labels, selected) { dialog, which -> config.useEnglish = which == 1; AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(if (config.useEnglish) "en" else "fa")); dialog.dismiss(); recreate() }.show()
     }
 
     private fun chooseFont() {
         val builtIns = PersianFontCatalog.fonts
-        val labels = buildList {
-            add(t("فونت پیش‌فرض سیستم", "System default font"))
-            addAll(builtIns.map { it.title })
-            add(t("فونت سفارشی…", "Custom font…"))
-        }.toTypedArray()
-        val selected = when {
-            config.fontType != FONT_TYPE_CUSTOM -> 0
-            builtIns.indexOfFirst { it.fileName == config.fontName } >= 0 -> 1 + builtIns.indexOfFirst { it.fileName == config.fontName }
-            else -> labels.lastIndex
-        }
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle(t("فونت برنامه", "App font"))
-            .setSingleChoiceItems(labels, selected) { dialog, which ->
-                if (which == 0) {
-                    config.fontType = FONT_TYPE_SYSTEM_DEFAULT
-                    config.fontName = ""
-                    FontHelper.clearCache()
-                    dialog.dismiss()
-                    recreate()
-                    return@setSingleChoiceItems
-                }
-
-                if (which <= builtIns.size) {
-                    val spec = builtIns[which - 1]
-                    dialog.dismiss()
-                    Thread {
-                        val result = PersianFontCatalog.install(this, spec)
-                        runOnUiThread {
-                            if (result.isSuccess) {
-                                config.fontType = FONT_TYPE_CUSTOM
-                                config.fontName = spec.fileName
-                                FontHelper.clearCache()
-                                recreate()
-                            } else {
-                                MaterialAlertDialogBuilder(this)
-                                    .setTitle(t("خطا در دریافت فونت", "Font download failed"))
-                                    .setMessage(t("این فونت فعلاً قابل دریافت نیست. بعداً دوباره تلاش کنید.", "This font could not be downloaded right now. Please try again later."))
-                                    .setPositiveButton(android.R.string.ok, null)
-                                    .show()
-                            }
-                        }
-                    }.start()
-                    return@setSingleChoiceItems
-                }
-
-                dialog.dismiss()
-                pickCustomFont.launch(arrayOf("font/*", "application/octet-stream"))
-            }
-            .show()
+        val labels = buildList { add(t("فونت پیش‌فرض سیستم", "System default")); addAll(builtIns.map { it.title }); add(t("فونت سفارشی…", "Custom font…")) }.toTypedArray()
+        val selected = when { config.fontType != FONT_TYPE_CUSTOM -> 0; builtIns.indexOfFirst { it.fileName == config.fontName } >= 0 -> 1 + builtIns.indexOfFirst { it.fileName == config.fontName }; else -> labels.lastIndex }
+        MaterialAlertDialogBuilder(this).setTitle(t("فونت برنامه", "App font")).setSingleChoiceItems(labels, selected) { dialog, which ->
+            if (which == 0) { config.fontType = FONT_TYPE_SYSTEM_DEFAULT; config.fontName = ""; FontHelper.clearCache(); dialog.dismiss(); recreate(); return@setSingleChoiceItems }
+            if (which <= builtIns.size) { val spec = builtIns[which - 1]; dialog.dismiss(); Thread { val result = PersianFontCatalog.install(this, spec); runOnUiThread { if (result.isSuccess) { config.fontType = FONT_TYPE_CUSTOM; config.fontName = spec.fileName; FontHelper.clearCache(); recreate() } else MaterialAlertDialogBuilder(this).setTitle(t("خطا در دریافت فونت", "Font download failed")).setMessage(t("این فونت فعلاً قابل دریافت نیست. بعداً دوباره تلاش کنید.", "This font could not be downloaded right now. Please try again later.")).setPositiveButton(android.R.string.ok, null).show() } }.start(); return@setSingleChoiceItems }
+            dialog.dismiss(); pickCustomFont.launch(arrayOf("font/*", "application/octet-stream"))
+        }.show()
     }
 
     private fun resolveFontFileName(uri: Uri): String {
@@ -361,63 +317,40 @@ class SettingsActivity : SimpleActivity() {
 
     private fun openAppLock() {
         val tab = if (config.isAppPasswordProtectionOn) config.appProtectionType else SHOW_ALL_TABS
-        SecurityDialog(activity = this, requiredHash = config.appPasswordHash, showTabIndex = tab) { hash, type, success ->
-            if (!success) return@SecurityDialog
-            val wasEnabled = config.isAppPasswordProtectionOn
-            config.isAppPasswordProtectionOn = !wasEnabled
-            config.appPasswordHash = if (wasEnabled) "" else hash
-            config.appProtectionType = type
-            render(PRIVACY)
-        }
+        SecurityDialog(activity = this, requiredHash = config.appPasswordHash, showTabIndex = tab) { hash, type, success -> if (success) { val wasEnabled = config.isAppPasswordProtectionOn; config.isAppPasswordProtectionOn = !wasEnabled; config.appPasswordHash = if (wasEnabled) "" else hash; config.appProtectionType = type; render(PRIVACY) } }
     }
 
     private fun chooseFontSize() {
-        val values = arrayOf(t("کوچک", "Small"), t("متوسط", "Medium"), t("بزرگ", "Large"), t("خیلی بزرگ", "Very large"))
-        val selected = (config.fontSize - 1).coerceIn(0, 3)
+        val values = arrayOf(t("کوچک", "Small"), t("متوسط", "Medium"), t("بزرگ", "Large"), t("خیلی بزرگ", "Very large")); val selected = (config.fontSize - 1).coerceIn(0, 3)
         MaterialAlertDialogBuilder(this).setTitle(t("اندازه متن", "Text size")).setSingleChoiceItems(values, selected) { dialog, which -> config.fontSize = which + 1; dialog.dismiss(); render(APPEARANCE) }.show()
     }
 
     private fun chooseLockScreen() {
-        val values = arrayOf(t("فرستنده و متن پیام", "Sender and message"), t("فقط فرستنده", "Sender only"), t("هیچ‌چیز", "Nothing"))
-        val selected = when (config.lockScreenVisibilitySetting) { LOCK_SCREEN_SENDER -> 1; LOCK_SCREEN_NOTHING -> 2; else -> 0 }
-        MaterialAlertDialogBuilder(this).setTitle(t("نمایش روی صفحه قفل", "Lock-screen display")).setSingleChoiceItems(values, selected) { dialog, which ->
-            config.lockScreenVisibilitySetting = when (which) { 1 -> LOCK_SCREEN_SENDER; 2 -> LOCK_SCREEN_NOTHING; else -> LOCK_SCREEN_SENDER_MESSAGE }
-            dialog.dismiss()
-            render(NOTIFICATIONS)
-        }.show()
+        val values = arrayOf(t("فرستنده و متن پیام", "Sender and message"), t("فقط فرستنده", "Sender only"), t("هیچ‌چیز", "Nothing")); val selected = when (config.lockScreenVisibilitySetting) { LOCK_SCREEN_SENDER -> 1; LOCK_SCREEN_NOTHING -> 2; else -> 0 }
+        MaterialAlertDialogBuilder(this).setTitle(t("نمایش روی صفحه قفل", "Lock-screen display")).setSingleChoiceItems(values, selected) { dialog, which -> config.lockScreenVisibilitySetting = when (which) { 1 -> LOCK_SCREEN_SENDER; 2 -> LOCK_SCREEN_NOTHING; else -> LOCK_SCREEN_SENDER_MESSAGE }; dialog.dismiss(); render(NOTIFICATIONS) }.show()
     }
 
     private fun chooseMmsLimit() {
-        val labels = arrayOf("بدون محدودیت", "2 MB", "1 MB", "600 KB", "300 KB", "200 KB", "100 KB")
-        val values = arrayOf(FILE_SIZE_NONE, FILE_SIZE_2_MB, FILE_SIZE_1_MB, FILE_SIZE_600_KB, FILE_SIZE_300_KB, FILE_SIZE_200_KB, FILE_SIZE_100_KB)
-        val selected = values.indexOf(config.mmsFileSizeLimit).coerceAtLeast(0)
+        val labels = arrayOf("بدون محدودیت", "2 MB", "1 MB", "600 KB", "300 KB", "200 KB", "100 KB"); val values = arrayOf(FILE_SIZE_NONE, FILE_SIZE_2_MB, FILE_SIZE_1_MB, FILE_SIZE_600_KB, FILE_SIZE_300_KB, FILE_SIZE_200_KB, FILE_SIZE_100_KB); val selected = values.indexOf(config.mmsFileSizeLimit).coerceAtLeast(0)
         MaterialAlertDialogBuilder(this).setTitle(t("محدودیت حجم MMS", "MMS size limit")).setSingleChoiceItems(labels, selected) { dialog, which -> config.mmsFileSizeLimit = values[which]; dialog.dismiss(); render(MESSAGES) }.show()
     }
 
     private fun fontSizeLabel() = when (config.fontSize) { 1 -> t("کوچک", "Small"); 2 -> t("متوسط", "Medium"); 3 -> t("بزرگ", "Large"); else -> t("خیلی بزرگ", "Very large") }
-    private fun fontLabel(): String {
-        if (config.fontType != FONT_TYPE_CUSTOM) return t("پیش‌فرض سیستم", "System default")
-        PersianFontCatalog.fonts.firstOrNull { it.fileName == config.fontName }?.let { return it.title }
-        return t("سفارشی: ${config.fontName}", "Custom: ${config.fontName}")
-    }
+    private fun fontLabel(): String { if (config.fontType != FONT_TYPE_CUSTOM) return t("پیش‌فرض سیستم", "System default"); PersianFontCatalog.fonts.firstOrNull { it.fileName == config.fontName }?.let { return it.title }; return t("سفارشی: ${config.fontName}", "Custom: ${config.fontName}") }
     private fun lockScreenLabel() = when (config.lockScreenVisibilitySetting) { LOCK_SCREEN_SENDER -> t("فقط فرستنده", "Sender only"); LOCK_SCREEN_NOTHING -> t("هیچ‌چیز", "Nothing"); else -> t("فرستنده و متن پیام", "Sender and message") }
     private fun mmsLimitLabel() = when (config.mmsFileSizeLimit) { FILE_SIZE_100_KB -> "100 KB"; FILE_SIZE_200_KB -> "200 KB"; FILE_SIZE_300_KB -> "300 KB"; FILE_SIZE_600_KB -> "600 KB"; FILE_SIZE_1_MB -> "1 MB"; FILE_SIZE_2_MB -> "2 MB"; else -> t("بدون محدودیت", "Unlimited") }
 
     private fun row(root: LinearLayout, title: String, summary: String, action: () -> Unit) {
         val card = MaterialCardView(this).apply { radius = dp(16).toFloat(); cardElevation = 0f; setCardBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant)); setOnClickListener { action() } }
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(14)) }
-        content.addView(label(title, 16f, true)); content.addView(label(summary, 13f, false, color(com.google.android.material.R.attr.colorOnSurfaceVariant)))
-        card.addView(content); root.addView(card, margins(0, 8))
+        content.addView(label(title, 16f, true)); content.addView(label(summary, 13f, false, color(com.google.android.material.R.attr.colorOnSurfaceVariant))); card.addView(content); root.addView(card, margins(0, 8))
     }
 
     private fun toggle(root: LinearLayout, title: String, summary: String, checked: Boolean, changed: (Boolean) -> Unit) {
         val card = MaterialCardView(this).apply { radius = dp(16).toFloat(); cardElevation = 0f; setCardBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant)) }
         val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(12), dp(8), dp(10), dp(8)) }
-        val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        texts.addView(label(title, 16f, true)); texts.addView(label(summary, 12f, false, color(com.google.android.material.R.attr.colorOnSurfaceVariant)))
-        line.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
-        line.addView(MaterialSwitch(this).apply { isChecked = checked; setOnCheckedChangeListener { _, value -> changed(value) } }, LinearLayout.LayoutParams(dp(64), -2))
-        card.addView(line); root.addView(card, margins(0, 8))
+        val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }; texts.addView(label(title, 16f, true)); texts.addView(label(summary, 12f, false, color(com.google.android.material.R.attr.colorOnSurfaceVariant)))
+        line.addView(texts, LinearLayout.LayoutParams(0, -2, 1f)); line.addView(MaterialSwitch(this).apply { isChecked = checked; setOnCheckedChangeListener { _, value -> changed(value) } }, LinearLayout.LayoutParams(dp(64), -2)); card.addView(line); root.addView(card, margins(0, 8))
     }
 
     private fun section(root: LinearLayout, title: String) = root.addView(label(title, 13f, true, color(androidx.appcompat.R.attr.colorPrimary)), margins(4, 10))
@@ -430,11 +363,7 @@ class SettingsActivity : SimpleActivity() {
     private fun margins(top: Int = 0, bottom: Int = 0) = LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(top), 0, dp(bottom)) }
 
     private fun applyPersianFont(view: View) {
-        val typeface = if (config.fontType == FONT_TYPE_CUSTOM) {
-            FontHelper.getTypeface(this)
-        } else {
-            ResourcesCompat.getFont(this, R.font.vazirmatn_regular) ?: Typeface.DEFAULT
-        }
+        val typeface = if (config.fontType == FONT_TYPE_CUSTOM) FontHelper.getTypeface(this) else ResourcesCompat.getFont(this, R.font.vazirmatn_regular) ?: Typeface.DEFAULT
         if (view is TextView) view.typeface = typeface
         if (view is android.view.ViewGroup) for (i in 0 until view.childCount) applyPersianFont(view.getChildAt(i))
     }
