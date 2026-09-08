@@ -1,5 +1,6 @@
 package org.fossify.messages.models
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 
@@ -9,6 +10,6 @@ import androidx.room.Index
     indices = [Index("label_id")]
 )
 data class MessageLabel(
-    val messageId: Long,
-    val labelId: Long,
+    @ColumnInfo(name = "message_id") val messageId: Long,
+    @ColumnInfo(name = "label_id") val labelId: Long,
 )
