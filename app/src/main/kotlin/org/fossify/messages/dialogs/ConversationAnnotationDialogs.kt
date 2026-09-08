@@ -5,9 +5,9 @@ import android.text.InputType
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
-import org.fossify.messages.activities.BaseSimpleActivity
 import org.fossify.messages.helpers.MessageAnnotationStore
 import org.fossify.messages.models.Conversation
 
