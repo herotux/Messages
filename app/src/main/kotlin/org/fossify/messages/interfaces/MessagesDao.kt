@@ -56,8 +56,8 @@ interface MessagesDao {
     @Query("SELECT COUNT(*) FROM recycle_bin_messages")
     fun getArchivedCount(): Int
 
-    /** Search message text and the real sender identity. */
-    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND (body LIKE :text OR sender_phone_number LIKE :text OR sender_name LIKE :text)")
+    /** Search message text, sender identity, labels and private notes. */
+    @Query("SELECT messages.* FROM messages LEFT OUTER JOIN recycle_bin_messages ON messages.id = recycle_bin_messages.id WHERE recycle_bin_messages.id IS NULL AND (body LIKE :text OR sender_phone_number LIKE :text OR sender_name LIKE :text OR EXISTS (SELECT 1 FROM message_labels ml INNER JOIN annotation_labels l ON l.id = ml.labelId WHERE ml.messageId = messages.id AND l.name LIKE REPLACE(:text, '#', '')) OR EXISTS (SELECT 1 FROM message_notes n WHERE n.messageId = messages.id AND n.text LIKE REPLACE(REPLACE(:text, 'note:', ''), '#', ''))) ORDER BY messages.date DESC")
     fun getMessagesWithText(text: String): List<Message>
 
     @Query("UPDATE messages SET read = 1 WHERE id = :id")
