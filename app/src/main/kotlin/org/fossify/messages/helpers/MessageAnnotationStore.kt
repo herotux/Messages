@@ -61,7 +61,7 @@ object MessageAnnotationStore {
         if (value.isEmpty()) dao(context).deleteConversationNote(threadId) else {
             val now = System.currentTimeMillis()
             val old = dao(context).getConversationNote(threadId)
-            dao(context).upsertConversationNote(ConversationNote(threadId, value, old?.createdAt ?: now))
+            dao(context).upsertConversationNote(ConversationNote(threadId, value, old?.createdAt ?: now, now))
         }
     }
 }
