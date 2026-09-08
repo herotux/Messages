@@ -60,6 +60,8 @@ class SettingsActivity : SimpleActivity() {
         private const val BANKS = "banks"
         private const val PRIVACY = "privacy"
         private const val ABOUT = "about"
+        private const val EXTRA_THEME_BUILDER = "theme_builder"
+        private const val EXTRA_THEME_ID = "theme_id"
     }
 
     private val pickCustomFont = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -189,7 +191,7 @@ class SettingsActivity : SimpleActivity() {
     private fun themeLibrary(root: LinearLayout) {
         section(root, t("کتابخانه تم", "Theme library"))
         row(root, t("＋ ساخت تم جدید", "+ Create new theme"), t("ساخت تم با رنگ‌ها و پیش‌نمایش زنده", "Create a theme with colors and live preview")) {
-            startActivity(Intent(this, ThemeBuilderActivity::class.java))
+            startActivity(Intent(this, HerotuxAboutActivity::class.java).putExtra(EXTRA_THEME_BUILDER, true))
         }
         val selectedId = ThemeManager.selectedThemeId(this)
         val themes = ThemeManager.allThemes(this)
@@ -224,7 +226,7 @@ class SettingsActivity : SimpleActivity() {
         val items = arrayOf(t("ویرایش", "Edit"), t("تکثیر", "Duplicate"), t("حذف", "Delete"))
         MaterialAlertDialogBuilder(this).setTitle(if (english()) theme.nameEn else theme.nameFa).setItems(items) { _, which ->
             when (which) {
-                0 -> startActivity(Intent(this, ThemeBuilderActivity::class.java).putExtra("theme_id", theme.id))
+                0 -> startActivity(Intent(this, HerotuxAboutActivity::class.java).putExtra(EXTRA_THEME_BUILDER, true).putExtra(EXTRA_THEME_ID, theme.id))
                 1 -> duplicateTheme(theme)
                 2 -> confirmDeleteTheme(theme)
             }
