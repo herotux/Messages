@@ -4,10 +4,12 @@ import android.app.Activity
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -17,6 +19,7 @@ import android.widget.Toast
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import org.fossify.messages.helpers.ThemeManager
 import org.fossify.messages.plugins.AiAssistantPlugin
 import org.fossify.messages.plugins.PluginLicenseStore
 import org.fossify.messages.plugins.PluginRegistry
@@ -33,7 +36,17 @@ import java.util.Locale
 class PluginStoreActivity : SimpleActivity() {
     private lateinit var content: LinearLayout
 
-    override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); render() }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        render()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        render()
+    }
+
+    private fun theme() = ThemeManager.colors(this)
 
     private fun render() {
         val root = LinearLayout(this).apply {
@@ -58,16 +71,20 @@ class PluginStoreActivity : SimpleActivity() {
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
+        ThemeManager.applyBackground(this)
         PluginRegistry.all.forEach { addPlugin(it) }
+        applyTheme(root)
     }
 
     private fun addPlugin(plugin: PluginRegistry.Plugin) {
         val licensed = PluginLicenseStore.isLicensed(this, plugin.id)
+        val colors = theme()
         val card = MaterialCardView(this).apply {
             radius = dp(20).toFloat()
             cardElevation = dp(1).toFloat()
             strokeWidth = dp(1)
-            strokeColor = color(com.google.android.material.R.attr.colorOutlineVariant)
+            strokeColor = colors.divider
+            setCardBackgroundColor(colors.surface)
             isClickable = true
             isFocusable = true
             setOnClickListener { showPluginDetails(plugin) }
@@ -161,6 +178,7 @@ class PluginStoreActivity : SimpleActivity() {
             textSize = 13f
             setPadding(0, dp(4), 0, dp(8))
         })
+        applyTheme(root)
         val builder = MaterialAlertDialogBuilder(this)
             .setTitle("جزئیات افزونه")
             .setView(root)
@@ -173,7 +191,8 @@ class PluginStoreActivity : SimpleActivity() {
                 render()
             }
         }
-        builder.show()
+        val dialog = builder.show()
+        applyTheme(dialog.window?.decorView)
     }
 
     private fun addAi(parent: LinearLayout) {
@@ -208,10 +227,12 @@ class PluginStoreActivity : SimpleActivity() {
         var action = existing?.action ?: SmsAutomationPlugin.Action.MARK_READ
         box.addView(name); box.addView(sender); box.addView(contains)
         box.addView(Button(this).apply { text = "عملیات: ${actionLabel(action)}"; isAllCaps = false; setOnClickListener { val values = SmsAutomationPlugin.Action.values(); MaterialAlertDialogBuilder(this@PluginStoreActivity).setTitle("انتخاب عملیات").setSingleChoiceItems(values.map { actionLabel(it) }.toTypedArray(), values.indexOf(action)) { d, which -> action = values[which]; text = "عملیات: ${actionLabel(action)}"; d.dismiss() }.show() } })
-        MaterialAlertDialogBuilder(this).setTitle(if (existing == null) "قانون جدید" else "ویرایش قانون").setView(box).setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ ->
+        val dialog = MaterialAlertDialogBuilder(this).setTitle(if (existing == null) "قانون جدید" else "ویرایش قانون").setView(box).setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ ->
             val rule = SmsAutomationPlugin.Rule(existing?.id ?: System.currentTimeMillis(), name.text.toString().trim(), sender.text.toString().trim(), contains.text.toString().trim(), action, existing?.enabled ?: true)
             if (rule.name.isBlank() && rule.sender.isBlank() && rule.containsText.isBlank()) showError("حداقل یکی از نام، فرستنده یا شرط متن را وارد کنید") else { SmsAutomationPlugin.addRule(this, rule); SmsAutomationPlugin.setEnabled(this, true); render() }
-        }.show()
+        }.create()
+        dialog.setOnShowListener { applyTheme(dialog.window?.decorView); styleDialogButtons(dialog) }
+        dialog.show()
     }
 
     private fun addTemplates(parent: LinearLayout) {
@@ -234,10 +255,12 @@ class PluginStoreActivity : SimpleActivity() {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
         val name = field("نام قالب"); val category = field("دسته‌بندی (اختیاری)"); val body = EditText(this).apply { hint = "متن پیام؛ مثلا سلام {name}"; minLines = 4; gravity = Gravity.TOP }
         name.setText(existing?.name.orEmpty()); category.setText(existing?.category.orEmpty()); body.setText(existing?.body.orEmpty()); box.addView(name); box.addView(category); box.addView(body)
-        MaterialAlertDialogBuilder(this).setTitle(if (existing == null) "قالب جدید" else "ویرایش قالب").setView(box).setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ ->
+        val dialog = MaterialAlertDialogBuilder(this).setTitle(if (existing == null) "قالب جدید" else "ویرایش قالب").setView(box).setNegativeButton("لغو", null).setPositiveButton("ذخیره") { _, _ ->
             val item = SmsTemplatesPlugin.Template(existing?.id ?: System.currentTimeMillis(), name.text.toString().trim(), body.text.toString(), category.text.toString().trim())
             when { item.name.isBlank() -> showError("نام قالب را وارد کنید"); item.body.isBlank() -> showError("متن قالب را وارد کنید"); else -> { SmsTemplatesPlugin.save(this, item); render() } }
-        }.show()
+        }.create()
+        dialog.setOnShowListener { applyTheme(dialog.window?.decorView); styleDialogButtons(dialog) }
+        dialog.show()
     }
 
     private fun addBackup(parent: LinearLayout) {
@@ -280,19 +303,63 @@ class PluginStoreActivity : SimpleActivity() {
         dateButton.setOnClickListener { DatePickerDialog(this, { _, y, m, d -> selected.set(y, m, d); dateButton.text = "تاریخ: ${dateFormat.format(selected.time)}" }, selected.get(Calendar.YEAR), selected.get(Calendar.MONTH), selected.get(Calendar.DAY_OF_MONTH)).show() }
         timeButton.setOnClickListener { TimePickerDialog(this, { _, h, m -> selected.set(Calendar.HOUR_OF_DAY, h); selected.set(Calendar.MINUTE, m); selected.set(Calendar.SECOND, 0); selected.set(Calendar.MILLISECOND, 0); timeButton.text = "ساعت: ${timeFormat.format(selected.time)}" }, selected.get(Calendar.HOUR_OF_DAY), selected.get(Calendar.MINUTE), true).show() }
         box.addView(dateButton); box.addView(timeButton)
-        MaterialAlertDialogBuilder(this).setTitle(if (existing == null) "زمان‌بندی پیام" else "ویرایش پیام زمان‌بندی‌شده").setView(box).setNegativeButton("لغو", null).setPositiveButton(if (existing == null) "زمان‌بندی" else "ذخیره") { _, _ ->
+        val dialog = MaterialAlertDialogBuilder(this).setTitle(if (existing == null) "زمان‌بندی پیام" else "ویرایش پیام زمان‌بندی‌شده").setView(box).setNegativeButton("لغو", null).setPositiveButton(if (existing == null) "زمان‌بندی" else "ذخیره") { _, _ ->
             val phone = destination.text.toString().trim(); val message = body.text.toString().trim()
             when { phone.isBlank() -> showError("شماره گیرنده را وارد کنید"); message.isBlank() -> showError("متن پیام را وارد کنید"); selected.timeInMillis <= System.currentTimeMillis() -> showError("زمان انتخاب‌شده باید در آینده باشد"); else -> runCatching {
                 val item = ScheduledSmsPlugin.Item(existing?.id ?: System.currentTimeMillis(), phone, message, selected.timeInMillis, true, false)
                 if (existing == null) ScheduledSmsPlugin.schedule(this, item) else ScheduledSmsPlugin.update(this, item)
             }.onSuccess { render(); Toast.makeText(this, "ذخیره شد", Toast.LENGTH_SHORT).show() }.onFailure { showError(it.message ?: "خطا در زمان‌بندی") } }
-        }.show()
+        }.create()
+        dialog.setOnShowListener { applyTheme(dialog.window?.decorView); styleDialogButtons(dialog) }
+        dialog.show()
     }
 
     private fun showScheduledTemplatePicker(body: EditText) {
         val templates = SmsTemplatesPlugin.list(this).sortedBy { it.name.lowercase(Locale.getDefault()) }
         if (templates.isEmpty()) { showError("قالبی وجود ندارد؛ ابتدا یک قالب بسازید"); return }
-        MaterialAlertDialogBuilder(this).setTitle("انتخاب قالب").setItems(templates.map { if (it.category.isBlank()) it.name else "${it.name} — ${it.category}" }.toTypedArray()) { _, which -> body.setText(templates[which].body); body.setSelection(body.text.length) }.show()
+        val dialog = MaterialAlertDialogBuilder(this).setTitle("انتخاب قالب").setItems(templates.map { if (it.category.isBlank()) it.name else "${it.name} — ${it.category}" }.toTypedArray()) { _, which -> body.setText(templates[which].body); body.setSelection(body.text.length) }.create()
+        dialog.setOnShowListener { applyTheme(dialog.window?.decorView); styleDialogButtons(dialog) }
+        dialog.show()
+    }
+
+    private fun applyTheme(view: View?) {
+        if (view == null) return
+        val colors = theme()
+        when (view) {
+            is MaterialCardView -> {
+                view.setCardBackgroundColor(colors.surface)
+                view.strokeColor = colors.divider
+            }
+            is MaterialSwitch -> {
+                view.setTextColor(colors.textPrimary)
+                view.thumbTintList = ColorStateList.valueOf(colors.primary)
+                view.trackTintList = ColorStateList.valueOf(colors.accent)
+            }
+            is Button -> {
+                view.setTextColor(colors.textPrimary)
+                view.backgroundTintList = ColorStateList.valueOf(colors.primary)
+            }
+            is EditText -> {
+                view.setTextColor(colors.textPrimary)
+                view.setHintTextColor(colors.textSecondary)
+                view.backgroundTintList = ColorStateList.valueOf(colors.accent)
+            }
+            is TextView -> {
+                view.setTextColor(if (view.textSize <= dp(13).toFloat()) colors.textSecondary else colors.textPrimary)
+            }
+            is ViewGroup -> view.setBackgroundColor(Color.TRANSPARENT)
+        }
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) applyTheme(view.getChildAt(i))
+        }
+    }
+
+    private fun styleDialogButtons(dialog: android.app.Dialog) {
+        val colors = theme()
+        dialog.findViewById<TextView>(android.R.id.message)?.setTextColor(colors.textPrimary)
+        dialog.findViewById<Button>(android.R.id.button1)?.apply { setTextColor(colors.primary); backgroundTintList = null }
+        dialog.findViewById<Button>(android.R.id.button2)?.apply { setTextColor(colors.primary); backgroundTintList = null }
+        dialog.findViewById<Button>(android.R.id.button3)?.apply { setTextColor(colors.primary); backgroundTintList = null }
     }
 
     private fun showError(message: String) { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
@@ -302,5 +369,4 @@ class PluginStoreActivity : SimpleActivity() {
     private fun field(hint: String) = EditText(this).apply { this.hint = hint; textSize = 15f; setSingleLine(true); layoutDirection = View.LAYOUT_DIRECTION_LTR; textDirection = View.TEXT_DIRECTION_LTR; setPadding(dp(8), dp(8), dp(8), dp(8)) }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     private fun margins(left: Int, top: Int, right: Int = left, bottom: Int = top) = LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(left), dp(top), dp(right), dp(bottom)) }
-    private fun color(attr: Int): Int { val typed = obtainStyledAttributes(intArrayOf(attr)); val value = typed.getColor(0, Color.WHITE); typed.recycle(); return value }
 }
