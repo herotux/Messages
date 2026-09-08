@@ -6,19 +6,13 @@ import org.fossify.messages.models.ConversationLabel
 import org.fossify.messages.models.ConversationNote
 import org.fossify.messages.models.MessageLabel
 import org.fossify.messages.models.MessageNote
-import org.fossify.messages.extensions.messagesDB
 
 object MessageAnnotationStore {
     private fun dao(activity: SimpleActivity) = activity.messagesDB.AnnotationLabelsDao()
-
     fun getMessageLabels(activity: SimpleActivity, messageId: Long): List<AnnotationLabel> = dao(activity).getMessageLabels(messageId)
-
     fun getMessageNote(activity: SimpleActivity, messageId: Long): MessageNote? = dao(activity).getMessageNote(messageId)
-
     fun getConversationLabels(activity: SimpleActivity, threadId: Long): List<AnnotationLabel> = dao(activity).getConversationLabels(threadId)
-
     fun getConversationNote(activity: SimpleActivity, threadId: Long): ConversationNote? = dao(activity).getConversationNote(threadId)
-
     fun getLabels(activity: SimpleActivity): List<AnnotationLabel> = dao(activity).getLabels()
 
     fun ensureLabel(activity: SimpleActivity, name: String, color: Int): AnnotationLabel {
@@ -43,8 +37,7 @@ object MessageAnnotationStore {
 
     fun setMessageNote(activity: SimpleActivity, messageId: Long, text: String) {
         val value = text.trim()
-        if (value.isEmpty()) dao(activity).deleteMessageNote(messageId)
-        else {
+        if (value.isEmpty()) dao(activity).deleteMessageNote(messageId) else {
             val now = System.currentTimeMillis()
             val old = dao(activity).getMessageNote(messageId)
             dao(activity).upsertMessageNote(MessageNote(messageId, value, old?.createdAt ?: now, now))
@@ -53,6 +46,7 @@ object MessageAnnotationStore {
 
     fun setConversationLabels(activity: SimpleActivity, threadId: Long, names: List<String>) {
         val db = dao(activity)
+        db.removeAllConversationLabels(threadId)
         names.map { it.trim().removePrefix("#") }.filter { it.isNotEmpty() }.distinctBy { it.lowercase() }.forEach { name ->
             val label = ensureLabel(activity, name, activity.getProperPrimaryColor())
             db.addConversationLabel(ConversationLabel(threadId, label.id))
@@ -61,8 +55,7 @@ object MessageAnnotationStore {
 
     fun setConversationNote(activity: SimpleActivity, threadId: Long, text: String) {
         val value = text.trim()
-        if (value.isEmpty()) dao(activity).deleteConversationNote(threadId)
-        else {
+        if (value.isEmpty()) dao(activity).deleteConversationNote(threadId) else {
             val now = System.currentTimeMillis()
             val old = dao(activity).getConversationNote(threadId)
             dao(activity).upsertConversationNote(ConversationNote(threadId, value, old?.createdAt ?: now, now))
