@@ -7,17 +7,16 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
-import org.fossify.messages.activities.SimpleActivity
+import org.fossify.messages.activities.BaseSimpleActivity
 import org.fossify.messages.helpers.MessageAnnotationStore
 import org.fossify.messages.models.Conversation
 
 object ConversationAnnotationDialogs {
-    fun editLabels(activity: SimpleActivity, conversation: Conversation, onSaved: () -> Unit) {
+    fun editLabels(activity: BaseSimpleActivity, conversation: Conversation, onSaved: () -> Unit) {
         val input = EditText(activity).apply {
             hint = activity.getString(R.string.annotation_labels_hint)
             inputType = InputType.TYPE_CLASS_TEXT
             setSingleLine(false)
-            setText(MessageAnnotationStore.getConversationLabels(activity, conversation.threadId).joinToString(", ") { it.name })
         }
         val container = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -31,28 +30,32 @@ object ConversationAnnotationDialogs {
                 setPadding(0, p / 2, 0, 0)
             })
         }
-        AlertDialog.Builder(activity)
-            .setTitle(R.string.annotation_add_label)
-            .setView(container)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                val names = input.text.toString().split(',', '\n', '،')
-                ensureBackgroundThread {
-                    MessageAnnotationStore.setConversationLabels(activity, conversation.threadId, names)
-                    activity.runOnUiThread(onSaved)
-                }
+        ensureBackgroundThread {
+            val labels = MessageAnnotationStore.getConversationLabels(activity, conversation.threadId)
+            activity.runOnUiThread {
+                input.setText(labels.joinToString(", ") { it.name })
+                AlertDialog.Builder(activity)
+                    .setTitle(R.string.annotation_add_label)
+                    .setView(container)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        val names = input.text.toString().split(',', '\n', '،')
+                        ensureBackgroundThread {
+                            MessageAnnotationStore.setConversationLabels(activity, conversation.threadId, names)
+                            activity.runOnUiThread(onSaved)
+                        }
+                    }
+                    .show()
             }
-            .show()
+        }
     }
 
-    fun editNote(activity: SimpleActivity, conversation: Conversation, onSaved: () -> Unit) {
+    fun editNote(activity: BaseSimpleActivity, conversation: Conversation, onSaved: () -> Unit) {
         val input = EditText(activity).apply {
             hint = activity.getString(R.string.annotation_note_hint)
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
             minLines = 4
             maxLines = 8
-            setText(MessageAnnotationStore.getConversationNote(activity, conversation.threadId)?.text.orEmpty())
-            setSelection(text.length)
         }
         val container = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -60,20 +63,30 @@ object ConversationAnnotationDialogs {
             setPadding(p, 0, p, 0)
             addView(input, LinearLayout.LayoutParams(-1, -2))
         }
-        AlertDialog.Builder(activity)
-            .setTitle(R.string.annotation_add_note)
-            .setView(container)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.save, null)
-            .create().apply {
-                setOnShowListener {
-                    getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                        ensureBackgroundThread {
-                            MessageAnnotationStore.setConversationNote(activity, conversation.threadId, input.text.toString())
-                            activity.runOnUiThread { dismiss(); onSaved() }
+        ensureBackgroundThread {
+            val existing = MessageAnnotationStore.getConversationNote(activity, conversation.threadId)?.text.orEmpty()
+            activity.runOnUiThread {
+                input.setText(existing)
+                input.setSelection(input.text.length)
+                AlertDialog.Builder(activity)
+                    .setTitle(R.string.annotation_add_note)
+                    .setView(container)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.save, null)
+                    .create().apply {
+                        setOnShowListener {
+                            getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                                ensureBackgroundThread {
+                                    MessageAnnotationStore.setConversationNote(activity, conversation.threadId, input.text.toString())
+                                    activity.runOnUiThread {
+                                        dismiss()
+                                        onSaved()
+                                    }
+                                }
+                            }
                         }
-                    }
-                }
-            }.show()
+                    }.show()
+            }
+        }
     }
 }
