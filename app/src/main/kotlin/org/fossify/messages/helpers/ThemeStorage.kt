@@ -1,6 +1,7 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
+import android.graphics.Color
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -12,14 +13,16 @@ object ThemeStorage {
     fun load(context: Context): List<ThemeManager.ThemeDefinition> {
         val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_USER_THEMES, null) ?: return emptyList()
+
         return runCatching {
             val array = JSONArray(raw)
-            buildList {
-                for (i in 0 until array.length()) {
-                    val item = array.getJSONObject(i)
-                    add(fromJson(item))
-                }
+            val result = LinkedHashMap<String, ThemeManager.ThemeDefinition>()
+            for (i in 0 until array.length()) {
+                val theme = runCatching { fromJson(array.getJSONObject(i)) }.getOrNull() ?: continue
+                if (theme.id.isBlank()) continue
+                result.putIfAbsent(theme.id, theme)
             }
+            result.values.toList()
         }.getOrDefault(emptyList())
     }
 
@@ -53,18 +56,18 @@ object ThemeStorage {
 
     private fun fromJson(item: JSONObject): ThemeManager.ThemeDefinition {
         val colors = ThemeManager.ThemeColors(
-            primary = android.graphics.Color.parseColor(item.getString("primary")),
-            accent = android.graphics.Color.parseColor(item.getString("accent")),
-            background = android.graphics.Color.parseColor(item.getString("background")),
-            surface = android.graphics.Color.parseColor(item.getString("surface")),
-            textPrimary = android.graphics.Color.parseColor(item.getString("textPrimary")),
-            textSecondary = android.graphics.Color.parseColor(item.getString("textSecondary")),
-            incomingBubble = android.graphics.Color.parseColor(item.getString("incomingBubble")),
-            outgoingBubble = android.graphics.Color.parseColor(item.getString("outgoingBubble")),
-            toolbar = android.graphics.Color.parseColor(item.getString("toolbar")),
-            tab = android.graphics.Color.parseColor(item.getString("tab")),
-            fab = android.graphics.Color.parseColor(item.getString("fab")),
-            divider = android.graphics.Color.parseColor(item.optString("divider", "#33808080"))
+            primary = Color.parseColor(item.getString("primary")),
+            accent = Color.parseColor(item.getString("accent")),
+            background = Color.parseColor(item.getString("background")),
+            surface = Color.parseColor(item.getString("surface")),
+            textPrimary = Color.parseColor(item.getString("textPrimary")),
+            textSecondary = Color.parseColor(item.getString("textSecondary")),
+            incomingBubble = Color.parseColor(item.getString("incomingBubble")),
+            outgoingBubble = Color.parseColor(item.getString("outgoingBubble")),
+            toolbar = Color.parseColor(item.getString("toolbar")),
+            tab = Color.parseColor(item.getString("tab")),
+            fab = Color.parseColor(item.getString("fab")),
+            divider = Color.parseColor(item.optString("divider", "#33808080"))
         )
         return ThemeManager.ThemeDefinition(
             id = item.getString("id"),
@@ -72,7 +75,7 @@ object ThemeStorage {
             nameEn = item.optString("nameEn", item.optString("nameFa", "Custom")),
             source = ThemeManager.ThemeSource.USER,
             colors = colors,
-            version = item.optInt("version", 1)
+            version = item.optInt("version", 1).coerceAtLeast(1)
         )
     }
 
