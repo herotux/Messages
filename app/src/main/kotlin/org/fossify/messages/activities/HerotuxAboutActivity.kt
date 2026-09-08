@@ -93,7 +93,7 @@ class HerotuxAboutActivity : SimpleActivity() {
             }
         }
         content.addView(save, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0, dp(16), 0, 0) })
-        setContentView(root); if (!org.fossify.messages.extensions.config.useEnglish) applyPersianFont(root); refresh()
+        setContentView(root); refresh()
     }
 
     private fun chooseThemeColor(field: ThemeField, swatch: View, changed: () -> Unit) {
