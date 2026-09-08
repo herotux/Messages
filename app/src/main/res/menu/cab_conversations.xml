@@ -15,6 +15,8 @@
     <item android:id="@+id/cab_copy_number" android:showAsAction="never" android:title="@string/copy_number_to_clipboard" app:showAsAction="never" />
     <item android:id="@+id/cab_rename_conversation" android:showAsAction="never" android:title="@string/rename_conversation" app:showAsAction="never" />
     <item android:id="@+id/cab_conversation_details" android:showAsAction="never" android:title="@string/conversation_details" app:showAsAction="never" />
+    <item android:id="@+id/cab_add_label" android:showAsAction="never" android:title="@string/annotation_add_label" app:showAsAction="never" />
+    <item android:id="@+id/cab_add_note" android:showAsAction="never" android:title="@string/annotation_add_note" app:showAsAction="never" />
     <item android:id="@+id/cab_assign_folders" android:showAsAction="never" android:title="مدیریت پوشه‌ها" app:showAsAction="never" />
     <item android:id="@+id/cab_block_number" android:showAsAction="never" android:title="@string/block_number" app:showAsAction="never" />
 </menu>
