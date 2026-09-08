@@ -38,6 +38,7 @@ import org.fossify.messages.helpers.IranianBankLogoResolver
 import org.fossify.messages.helpers.IranianBankRegistry
 import org.fossify.messages.helpers.IranianBankSenderProfiles
 import org.fossify.messages.helpers.IranianSenderIconResolver
+import org.fossify.messages.helpers.MessageAnnotationStore
 import org.fossify.messages.helpers.PersianDateHelper
 import org.fossify.messages.models.Conversation
 import kotlin.math.roundToInt
@@ -73,31 +74,15 @@ abstract class BaseConversationsAdapter(
         })
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    fun updateFontSize() { fontSize = activity.getTextSize(); notifyDataSetChanged() }
-
-    fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) {
-        saveRecyclerViewState()
-        allConversations = newConversations.toList()
-        bankCache.clear()
-        runCatching { ConversationFolderRuleManager.applyAutomaticRules(activity, allConversations) }
-        submitVisibleList(commitCallback)
-    }
-
+    @SuppressLint("NotifyDataSetChanged") fun updateFontSize() { fontSize = activity.getTextSize(); notifyDataSetChanged() }
+    fun updateConversations(newConversations: ArrayList<Conversation>, commitCallback: (() -> Unit)? = null) { saveRecyclerViewState(); allConversations = newConversations.toList(); bankCache.clear(); runCatching { ConversationFolderRuleManager.applyAutomaticRules(activity, allConversations) }; submitVisibleList(commitCallback) }
     fun refreshFolderRules() { runCatching { ConversationFolderRuleManager.applyAutomaticRules(activity, allConversations) }; submitVisibleList() }
     private fun submitVisibleList(commitCallback: (() -> Unit)? = null) { val visibleConversations = activeConversationFilter?.let { predicate -> allConversations.filter(predicate) } ?: allConversations; submitList(visibleConversations, commitCallback) }
     fun filterConversations(predicate: (Conversation) -> Boolean) { saveRecyclerViewState(); activeConversationFilter = predicate; submitList(allConversations.filter(predicate)) }
     fun clearConversationFilter() { saveRecyclerViewState(); activeConversationFilter = null; submitList(allConversations) }
     fun isBankConversation(conversation: Conversation): Boolean = getBankForConversation(conversation) != null
 
-    @SuppressLint("NotifyDataSetChanged")
-    fun updateDrafts() {
-        ensureBackgroundThread {
-            val newDrafts = HashMap<Long, String>(); fetchDrafts(newDrafts)
-            activity.runOnUiThread { if (drafts.hashCode() != newDrafts.hashCode()) { drafts = newDrafts; notifyDataSetChanged() } }
-        }
-    }
-
+    @SuppressLint("NotifyDataSetChanged") fun updateDrafts() { ensureBackgroundThread { val newDrafts = HashMap<Long, String>(); fetchDrafts(newDrafts); activity.runOnUiThread { if (drafts.hashCode() != newDrafts.hashCode()) { drafts = newDrafts; notifyDataSetChanged() } } } }
     override fun getSelectableItemCount() = itemCount
     protected fun getSelectedItems() = currentList.filter { selectedKeys.contains(it.hashCode()) } as ArrayList<Conversation>
     override fun getIsItemSelectable(position: Int) = true
@@ -105,15 +90,8 @@ abstract class BaseConversationsAdapter(
     override fun getItemKeyPosition(key: Int) = currentList.indexOfFirst { it.hashCode() == key }
     override fun onActionModeCreated() {}
     override fun onActionModeDestroyed() {}
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = createViewHolder(ItemConversationBinding.inflate(layoutInflater, parent, false).root)
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val conversation = getItem(position)
-        holder.bindView(conversation, allowSingleClick = true, allowLongClick = true) { itemView, _ -> setupView(itemView, conversation) }
-        bindViewHolder(holder)
-    }
-
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) { val conversation = getItem(position); holder.bindView(conversation, allowSingleClick = true, allowLongClick = true) { itemView, _ -> setupView(itemView, conversation) }; bindViewHolder(holder) }
     override fun getItemId(position: Int) = getItem(position).threadId
     override fun onViewRecycled(holder: ViewHolder) { super.onViewRecycled(holder); if (!activity.isDestroyed && !activity.isFinishing) Glide.with(activity).clear(ItemConversationBinding.bind(holder.itemView).conversationImage) }
     private fun fetchDrafts(drafts: HashMap<Long, String>) { drafts.clear(); for ((threadId, draft) in activity.getAllDrafts()) drafts[threadId] = draft }
@@ -139,26 +117,12 @@ abstract class BaseConversationsAdapter(
             conversationFrame.isSelected = selectedKeys.contains(conversation.hashCode())
             conversationAddress.apply { text = conversation.title; setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f) }
             conversationBodyShort.apply { text = smsDraft ?: conversation.snippet; setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f) }
-            conversationDate.apply {
-                text = if (activity.config.usePersianCalendar) {
-                    PersianDateHelper.formatConversationList(conversation.date * 1000L, activity.config.dateFormat, activity.config.use24HourFormat)
-                } else {
-                    org.fossify.commons.extensions.formatDateOrTime(
-                        conversation.date * 1000L,
-                        context = activity,
-                        hideTimeOnOtherDays = true,
-                        showCurrentYear = false
-                    )
-                }
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
-            }
+            conversationDate.apply { text = if (activity.config.usePersianCalendar) PersianDateHelper.formatConversationList(conversation.date * 1000L, activity.config.dateFormat, activity.config.use24HourFormat) else org.fossify.commons.extensions.formatDateOrTime(conversation.date * 1000L, context = activity, hideTimeOnOtherDays = true, showCurrentYear = false); setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f) }
             val isUnread = !conversation.read
             conversationBodyShort.alpha = if (isUnread) 1f else 0.7f
             val style = if (isUnread) { if (conversation.isScheduled) Typeface.BOLD_ITALIC else Typeface.BOLD } else { if (conversation.isScheduled) Typeface.ITALIC else Typeface.NORMAL }
             val customTypeface = FontHelper.getTypeface(activity)
-            conversationAddress.setTypeface(customTypeface, style)
-            conversationBodyShort.setTypeface(customTypeface, style)
-            conversationDate.setTypeface(customTypeface, style)
+            conversationAddress.setTypeface(customTypeface, style); conversationBodyShort.setTypeface(customTypeface, style); conversationDate.setTypeface(customTypeface, style)
             arrayListOf(conversationAddress, conversationBodyShort, conversationDate).forEach { it.setTextColor(textColor) }
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
             bindFolderLabels(root, conversation)
@@ -175,6 +139,8 @@ abstract class BaseConversationsAdapter(
     private fun bindFolderLabels(root: ConstraintLayout, conversation: Conversation) {
         val folders = ConversationFolderManager.getFolders(activity).filter { !it.system && it.enabled }.associateBy { it.id }
         val memberships = ConversationFolderManager.getFolderMembership(activity, conversation.threadId).mapNotNull { folders[it] }.take(4)
+        val annotationLabels = MessageAnnotationStore.getConversationLabels(activity, conversation.threadId).take(3)
+        val annotationNote = MessageAnnotationStore.getConversationNote(activity, conversation.threadId)?.text?.trim().orEmpty()
         var box = root.findViewWithTag<LinearLayout>(FOLDER_LABELS_TAG)
         if (box == null) {
             box = LinearLayout(activity).apply { tag = FOLDER_LABELS_TAG; orientation = LinearLayout.HORIZONTAL; gravity = Gravity.START or Gravity.CENTER_VERTICAL; clipToPadding = false }
@@ -182,27 +148,21 @@ abstract class BaseConversationsAdapter(
             root.addView(box, lp)
         }
         box.removeAllViews()
-        box.visibility = if (memberships.isEmpty()) View.GONE else View.VISIBLE
-        root.findViewById<View>(org.fossify.messages.R.id.conversation_body_short)?.let { body -> (body.layoutParams as? ConstraintLayout.LayoutParams)?.let { lp -> lp.bottomMargin = if (memberships.isEmpty()) 0 else dp(24); body.layoutParams = lp } }
+        box.visibility = if (memberships.isEmpty() && annotationLabels.isEmpty() && annotationNote.isEmpty()) View.GONE else View.VISIBLE
+        root.findViewById<View>(org.fossify.messages.R.id.conversation_body_short)?.let { body -> (body.layoutParams as? ConstraintLayout.LayoutParams)?.let { lp -> lp.bottomMargin = if (memberships.isEmpty() && annotationLabels.isEmpty() && annotationNote.isEmpty()) 0 else dp(24); body.layoutParams = lp } }
         memberships.forEach { folder ->
-            box.addView(TextView(activity).apply {
-                text = folder.name; textSize = 10f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; gravity = Gravity.CENTER
-                setTextColor(folder.color.getContrastColor()); setPadding(dp(8), 0, dp(8), 0)
-                background = GradientDrawable().apply { cornerRadius = dp(10).toFloat(); setColor(folder.color) }
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(20)).apply { marginEnd = dp(5) }
-            })
+            box.addView(TextView(activity).apply { text = folder.name; textSize = 10f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; gravity = Gravity.CENTER; setTextColor(folder.color.getContrastColor()); setPadding(dp(8), 0, dp(8), 0); background = GradientDrawable().apply { cornerRadius = dp(10).toFloat(); setColor(folder.color) }; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(20)).apply { marginEnd = dp(5) } })
+        }
+        annotationLabels.forEach { label ->
+            box.addView(TextView(activity).apply { text = "#${label.name}"; textSize = 10f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; gravity = Gravity.CENTER; setTextColor(label.color); setPadding(dp(6), 0, dp(6), 0); layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(20)).apply { marginEnd = dp(5) } })
+        }
+        if (annotationNote.isNotEmpty()) {
+            box.addView(TextView(activity).apply { text = "Note  ·  $annotationNote"; textSize = 10f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; alpha = 0.7f; setTextColor(textColor); layoutParams = LinearLayout.LayoutParams(0, dp(20), 1f) })
         }
     }
 
     private fun dp(value: Int) = (value * activity.resources.displayMetrics.density).roundToInt()
-
-    private fun setupBadgeCount(view: TextView, isUnread: Boolean, count: Int) {
-        view.apply {
-            beVisibleIf(isUnread)
-            if (isUnread) { text = when { count > MAX_UNREAD_BADGE_COUNT -> "$MAX_UNREAD_BADGE_COUNT+"; count == 0 -> ""; else -> count.toString() }; setTextColor(properPrimaryColor.getContrastColor()); background?.applyColorFilter(properPrimaryColor) }
-        }
-    }
-
+    private fun setupBadgeCount(view: TextView, isUnread: Boolean, count: Int) { view.apply { beVisibleIf(isUnread); if (isUnread) { text = when { count > MAX_UNREAD_BADGE_COUNT -> "$MAX_UNREAD_BADGE_COUNT+"; count == 0 -> ""; else -> count.toString() }; setTextColor(properPrimaryColor.getContrastColor()); background?.applyColorFilter(properPrimaryColor) } } }
     override fun onChange(position: Int) = currentList.getOrNull(position)?.title ?: ""
     private fun saveRecyclerViewState() { recyclerViewState = recyclerView.layoutManager?.onSaveInstanceState() }
     private fun restoreRecyclerViewState() { recyclerView.layoutManager?.onRestoreInstanceState(recyclerViewState) }
@@ -211,6 +171,5 @@ abstract class BaseConversationsAdapter(
         override fun areItemsTheSame(oldItem: Conversation, newItem: Conversation) = Conversation.areItemsTheSame(oldItem, newItem)
         override fun areContentsTheSame(oldItem: Conversation, newItem: Conversation) = Conversation.areContentsTheSame(oldItem, newItem)
     }
-
     companion object { private const val MAX_UNREAD_BADGE_COUNT = 99; private const val FOLDER_LABELS_TAG = "conversation_folder_labels" }
 }
