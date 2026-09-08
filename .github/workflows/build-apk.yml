@@ -14,8 +14,8 @@ on:
 permissions:
   contents: read
 
-# Keep the three tests and the three release variants independent so one slow
-# Gradle task does not block every other task on the same runner.
+# Keep the three tests independent. Build only the FOSS release APK to keep
+# release CI lightweight while main is being stabilized.
 jobs:
   unit-tests:
     name: Unit tests (${{ matrix.variant }})
@@ -95,32 +95,13 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  build-apks:
-    name: Build ${{ matrix.variant }} release APK
+  build-apk:
+    name: Build FOSS release APK
     needs:
       - unit-tests
       - lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variant: Core
-            task: assembleCoreRelease
-            apk_glob: '*core*release*.apk'
-            artifact: Messages-core-release
-            filename: Messages-core-release.apk
-          - variant: FOSS
-            task: assembleFossRelease
-            apk_glob: '*foss*release*.apk'
-            artifact: Messages-foss-release
-            filename: Messages-foss-release.apk
-          - variant: GPlay
-            task: assembleGplayRelease
-            apk_glob: '*gplay*release*.apk'
-            artifact: Messages-gplay-release
-            filename: Messages-gplay-release.apk
 
     env:
       SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -158,21 +139,21 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Build ${{ matrix.variant }} release APK
-        run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon
+      - name: Build FOSS release APK
+        run: ./gradlew assembleFossRelease --stacktrace --no-daemon
 
       - name: Collect APK
         run: |
           mkdir -p artifact
-          APK=$(find app/build/outputs/apk -type f -name '${{ matrix.apk_glob }}' | head -n 1)
+          APK=$(find app/build/outputs/apk -type f -name '*foss*release*.apk' | head -n 1)
           test -n "$APK"
-          cp "$APK" "artifact/${{ matrix.filename }}"
+          cp "$APK" "artifact/Messages-foss-release.apk"
 
-      - name: Upload ${{ matrix.variant }} APK
+      - name: Upload FOSS APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: artifact/${{ matrix.filename }}
+          name: Messages-foss-release
+          path: artifact/Messages-foss-release.apk
           if-no-files-found: error
           retention-days: 14
 
