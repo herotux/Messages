@@ -1,12 +1,14 @@
 package org.fossify.messages.helpers
 
-import android.graphics.Color
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
 /** Pure validation helpers for theme readability. */
 object ThemeValidator {
+    private const val WHITE = 0xFFFFFFFF.toInt()
+    private const val BLACK = 0xFF000000.toInt()
+
     data class ContrastIssue(
         val name: String,
         val foreground: Int,
@@ -32,11 +34,8 @@ object ThemeValidator {
         })
     }
 
-    fun bestTextColor(background: Int): Int {
-        val white = Color.WHITE
-        val black = Color.BLACK
-        return if (contrastRatio(white, background) >= contrastRatio(black, background)) white else black
-    }
+    fun bestTextColor(background: Int): Int =
+        if (contrastRatio(WHITE, background) >= contrastRatio(BLACK, background)) WHITE else BLACK
 
     fun contrastRatio(foreground: Int, background: Int): Double {
         val a = relativeLuminance(foreground)
@@ -49,8 +48,12 @@ object ThemeValidator {
             val s = value / 255.0
             return if (s <= 0.03928) s / 12.92 else ((s + 0.055) / 1.055).pow(2.4)
         }
-        return 0.2126 * channel(Color.red(color)) +
-            0.7152 * channel(Color.green(color)) +
-            0.0722 * channel(Color.blue(color))
+        return 0.2126 * channel(red(color)) +
+            0.7152 * channel(green(color)) +
+            0.0722 * channel(blue(color))
     }
+
+    private fun red(color: Int) = color ushr 16 and 0xFF
+    private fun green(color: Int) = color ushr 8 and 0xFF
+    private fun blue(color: Int) = color and 0xFF
 }
