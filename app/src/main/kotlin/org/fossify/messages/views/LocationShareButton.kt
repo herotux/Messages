@@ -3,6 +3,7 @@ package org.fossify.messages.views
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
+import android.util.AttributeSet
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -13,7 +14,10 @@ import android.widget.TextView
 import org.fossify.messages.R
 import java.util.Locale
 
-class LocationShareButton(context: Context) : LinearLayout(context) {
+class LocationShareButton @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null
+) : LinearLayout(context, attrs) {
     private val activity = context as? Activity
     private var lat = 35.6892
     private var lon = 51.3890
