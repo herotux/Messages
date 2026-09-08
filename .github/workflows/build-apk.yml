@@ -135,11 +135,35 @@ jobs:
       # such as the emulator and SDK tools before the actual build.
       - name: Verify Android SDK
         run: |
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          test -n "${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          sdkmanager --list_installed | grep -E 'platforms;android-36|build-tools;36\.0\.0' || true
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT"
+          test -n "$SDK_ROOT"
+
+          SDKMANAGER=""
+          for candidate in \
+            "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "$SDK_ROOT/cmdline-tools/bin/sdkmanager" \
+            "$SDK_ROOT/tools/bin/sdkmanager"; do
+            if [ -x "$candidate" ]; then
+              SDKMANAGER="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+          fi
+
+          test -n "$SDKMANAGER"
+          test -x "$SDKMANAGER"
+          SDKMANAGER_DIR="$(dirname "$SDKMANAGER")"
+          echo "sdkmanager=$SDKMANAGER"
+          echo "$SDKMANAGER_DIR" >> "$GITHUB_PATH"
+          "$SDKMANAGER" --version
+
+          "$SDKMANAGER" --list_installed | grep -E 'platforms;android-36|build-tools;36\.0\.0' || true
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew
