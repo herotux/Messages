@@ -111,6 +111,16 @@ class HerotuxAboutActivity : SimpleActivity() {
         val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false; setPadding(dp(20), dp(10), dp(20), dp(28)) }
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         scroll.addView(content); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        val fileActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val import = TextView(this).apply {
+            text = "وارد کردن .homa-theme"; textSize = 14f; gravity = Gravity.CENTER; isClickable = true
+            setPadding(dp(8), dp(10), dp(8), dp(10)); background = makeSwatch(ThemeManager.colors(this@HerotuxAboutActivity).surface)
+            setOnClickListener { importThemeFile.launch(arrayOf(ThemeFileManager.MIME_TYPE, "application/octet-stream", "*/*")) }
+        }
+        fileActions.addView(import, LinearLayout.LayoutParams(0, dp(48), 1f))
+        content.addView(fileActions, LinearLayout.LayoutParams(-1, dp(48)).apply { setMargins(0, 0, 0, dp(8)) })
+
         val name = EditText(this).apply { hint = "نام تم"; setText(existing?.nameFa ?: ""); textSize = 16f }
         content.addView(name, LinearLayout.LayoutParams(-1, dp(58)))
 
@@ -196,6 +206,8 @@ class HerotuxAboutActivity : SimpleActivity() {
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(14), dp(18), dp(14)) }; content.addView(infoText(label, 13f, false, text)); content.addView(infoText(value, 17f, true, primary)); card.addView(content); root.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
     }
 
+    private fun makeSwatch(color: Int): GradientDrawable = GradientDrawable().apply { setColor(color); cornerRadius = dp(14).toFloat() }
+    private fun isLight(color: Int): Boolean = (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255.0 > 0.55
     private fun infoText(value: String, size: Float, bold: Boolean, color: Int) = TextView(this).apply { text = value; textSize = size; setTextColor(color); if (bold) typeface = Typeface.DEFAULT_BOLD; setPadding(0, dp(5), 0, dp(5)) }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 }
