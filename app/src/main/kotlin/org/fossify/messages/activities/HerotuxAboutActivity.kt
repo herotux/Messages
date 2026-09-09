@@ -13,6 +13,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -21,6 +22,7 @@ import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.messages.BuildConfig
+import org.fossify.messages.helpers.ThemeFileManager
 import org.fossify.messages.helpers.ThemeManager
 import java.util.UUID
 
@@ -31,6 +33,21 @@ class HerotuxAboutActivity : SimpleActivity() {
         private const val EXTRA_CONTACT_PAGE = "contact_page"
         private const val EXTRA_THEME_BUILDER = "theme_builder"
         private const val EXTRA_THEME_ID = "theme_id"
+    }
+
+    private val importThemeFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        runCatching {
+            contentResolver.openInputStream(uri)?.use { it.reader().readText() }
+                ?: error("فایل قابل خواندن نیست")
+        }.mapCatching { raw -> ThemeFileManager.import(this, raw).getOrThrow() }
+            .onSuccess { theme ->
+                if (ThemeFileManager.saveImported(this, theme)) {
+                    ThemeManager.select(this, theme.id)
+                    showThemeImported(theme)
+                } else showThemeError("ذخیره تم واردشده انجام نشد")
+            }
+            .onFailure { showThemeError(it.message ?: "فایل تم معتبر نیست") }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,6 +120,18 @@ class HerotuxAboutActivity : SimpleActivity() {
 
     private fun makeSwatch(color: Int) = GradientDrawable().apply { shape = GradientDrawable.RECTANGLE; cornerRadius = dp(12).toFloat(); setColor(color) }
     private fun isLight(color: Int) = (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255.0 > 0.55
+
+    private fun showThemeImported(theme: ThemeManager.ThemeDefinition) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("تم وارد شد")
+            .setMessage("«${theme.nameFa}» به کتابخانه تم اضافه و فعال شد.")
+            .setPositiveButton("باشه", null)
+            .show()
+    }
+
+    private fun showThemeError(message: String) {
+        MaterialAlertDialogBuilder(this).setTitle("خطا در فایل تم").setMessage(message).setPositiveButton("باشه", null).show()
+    }
 
     private fun renderAboutPage() {
         val bg = getProperBackgroundColor(); val text = getProperTextColor(); val primary = getProperPrimaryColor()
