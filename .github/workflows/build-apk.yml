@@ -49,15 +49,6 @@ jobs:
       - name: Run ${{ matrix.variant }} unit tests
         run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon
 
-      - name: Upload ${{ matrix.variant }} test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-test-report-${{ matrix.variant }}
-          path: app/build/reports/tests/**
-          if-no-files-found: ignore
-          retention-days: 14
-
   lint:
     name: Android lint
     runs-on: ubuntu-latest
@@ -85,15 +76,6 @@ jobs:
 
       - name: Run lint
         run: ./gradlew lint --stacktrace --no-daemon
-
-      - name: Upload lint report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-lint-report
-          path: app/build/reports/lint-results-*.html
-          if-no-files-found: ignore
-          retention-days: 14
 
   build-apk:
     name: Build FOSS release APK
