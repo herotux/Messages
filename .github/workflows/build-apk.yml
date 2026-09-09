@@ -170,8 +170,11 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
+      # The project defaults to an 8 GiB Gradle heap. Hosted GitHub runners
+      # have less physical memory, so cap the release build to reduce the
+      # chance of the runner being killed while R8 is running.
       - name: Build FOSS release APK
-        run: ./gradlew assembleFossRelease --stacktrace --no-daemon
+        run: ./gradlew assembleFossRelease --stacktrace --no-daemon --max-workers=2 -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
 
       - name: Collect APK
         run: |
