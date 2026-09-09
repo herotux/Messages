@@ -37,10 +37,8 @@ class HerotuxAboutActivity : SimpleActivity() {
 
     private val importThemeFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
-        runCatching {
-            contentResolver.openInputStream(uri)?.use { it.reader().readText() }
-                ?: error("فایل قابل خواندن نیست")
-        }.mapCatching { raw -> ThemeFileManager.import(this, raw).getOrThrow() }
+        runCatching { contentResolver.openInputStream(uri)?.use { it.reader().readText() } ?: error("فایل قابل خواندن نیست") }
+            .mapCatching { ThemeFileManager.import(this, it).getOrThrow() }
             .onSuccess { theme ->
                 if (ThemeFileManager.saveImported(this, theme)) {
                     ThemeManager.select(this, theme.id)
@@ -48,6 +46,16 @@ class HerotuxAboutActivity : SimpleActivity() {
                 } else showThemeError("ذخیره تم واردشده انجام نشد")
             }
             .onFailure { showThemeError(it.message ?: "فایل تم معتبر نیست") }
+    }
+
+    private fun exportThemeFile(theme: ThemeManager.ThemeDefinition) {
+        val raw = ThemeFileManager.export(theme)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = ThemeFileManager.MIME_TYPE
+            putExtra(Intent.EXTRA_TEXT, raw)
+            putExtra(Intent.EXTRA_TITLE, "${theme.nameEn}${ThemeFileManager.FILE_EXTENSION}")
+        }
+        startActivity(Intent.createChooser(send, "اشتراک‌گذاری تم"))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -118,15 +126,8 @@ class HerotuxAboutActivity : SimpleActivity() {
         MaterialAlertDialogBuilder(this).setTitle(field.label).setView(input).setPositiveButton("اعمال") { _, _ -> runCatching { Color.parseColor(input.text.toString().trim()) }.onSuccess { field.color = it; swatch.background = makeSwatch(it); changed() } }.setNegativeButton("لغو", null).show()
     }
 
-    private fun makeSwatch(color: Int) = GradientDrawable().apply { shape = GradientDrawable.RECTANGLE; cornerRadius = dp(12).toFloat(); setColor(color) }
-    private fun isLight(color: Int) = (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255.0 > 0.55
-
     private fun showThemeImported(theme: ThemeManager.ThemeDefinition) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("تم وارد شد")
-            .setMessage("«${theme.nameFa}» به کتابخانه تم اضافه و فعال شد.")
-            .setPositiveButton("باشه", null)
-            .show()
+        MaterialAlertDialogBuilder(this).setTitle("تم وارد شد").setMessage("«${theme.nameFa}» به کتابخانه تم اضافه و فعال شد.").setPositiveButton("باشه", null).show()
     }
 
     private fun showThemeError(message: String) {
