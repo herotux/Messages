@@ -35,6 +35,8 @@ class HerotuxAboutActivity : SimpleActivity() {
         private const val EXTRA_THEME_ID = "theme_id"
     }
 
+    private var pendingExportTheme: ThemeManager.ThemeDefinition? = null
+
     private val importThemeFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
         runCatching { contentResolver.openInputStream(uri)?.use { it.reader().readText() } ?: error("فایل قابل خواندن نیست") }
@@ -48,12 +50,37 @@ class HerotuxAboutActivity : SimpleActivity() {
             .onFailure { showThemeError(it.message ?: "فایل تم معتبر نیست") }
     }
 
+    private val createThemeFile = registerForActivityResult(ActivityResultContracts.CreateDocument(ThemeFileManager.MIME_TYPE)) { uri ->
+        val theme = pendingExportTheme ?: return@registerForActivityResult
+        pendingExportTheme = null
+        if (uri == null) return@registerForActivityResult
+        runCatching {
+            contentResolver.openOutputStream(uri)?.use { output -> output.write(ThemeFileManager.export(theme).toByteArray(Charsets.UTF_8)) }
+                ?: error("فایل قابل ایجاد نیست")
+        }.onFailure { showThemeError(it.message ?: "ذخیره فایل تم انجام نشد") }
+    }
+
     private fun exportThemeFile(theme: ThemeManager.ThemeDefinition) {
-        val raw = ThemeFileManager.export(theme)
+        pendingExportTheme = theme
+        createThemeFile.launch("${theme.nameEn.ifBlank { "theme" }}${ThemeFileManager.FILE_EXTENSION}")
+    }
+
+    private fun shareThemeFile(theme: ThemeManager.ThemeDefinition) {
+        val cacheFile = runCatching {
+            val safeName = theme.nameEn.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "theme" }
+            java.io.File(cacheDir, "$safeName${ThemeFileManager.FILE_EXTENSION}").apply {
+                writeText(ThemeFileManager.export(theme), Charsets.UTF_8)
+            }
+        }.getOrNull()
+        if (cacheFile == null) {
+            showThemeError("ساخت فایل اشتراک‌گذاری انجام نشد")
+            return
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(this, "${BuildConfig.APPLICATION_ID}.provider", cacheFile)
         val send = Intent(Intent.ACTION_SEND).apply {
             type = ThemeFileManager.MIME_TYPE
-            putExtra(Intent.EXTRA_TEXT, raw)
-            putExtra(Intent.EXTRA_TITLE, "${theme.nameEn}${ThemeFileManager.FILE_EXTENSION}")
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         startActivity(Intent.createChooser(send, "اشتراک‌گذاری تم"))
     }
@@ -118,6 +145,12 @@ class HerotuxAboutActivity : SimpleActivity() {
             }
         }
         content.addView(save, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0, dp(16), 0, 0) })
+        if (existing != null) {
+            val export = TextView(this).apply { text = "خروجی فایل .homa-theme"; textSize = 15f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(12)); isClickable = true; setOnClickListener { exportThemeFile(existing) } }
+            val share = TextView(this).apply { text = "اشتراک‌گذاری تم"; textSize = 15f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(12)); isClickable = true; setOnClickListener { shareThemeFile(existing) } }
+            content.addView(export, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+            content.addView(share, LinearLayout.LayoutParams(-1, dp(48)))
+        }
         setContentView(root); refresh()
     }
 
