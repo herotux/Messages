@@ -36,7 +36,11 @@ object ThemeFileManager {
         })
     }.toString(2)
 
-    fun import(context: Context, raw: String): Result<ThemeManager.ThemeDefinition> = runCatching {
+    fun import(context: Context, raw: String): Result<ThemeManager.ThemeDefinition> =
+        importTheme(raw, ThemeManager.allThemes(context).map { it.id }.toSet())
+
+    /** Pure parser used by JVM tests and by callers that already have theme IDs. */
+    fun importTheme(raw: String, existingIds: Set<String> = emptySet()): Result<ThemeManager.ThemeDefinition> = runCatching {
         val root = JSONObject(raw)
         require(root.optString("schema") == SCHEMA) { "فرمت فایل تم معتبر نیست" }
         val formatVersion = root.optInt("version", 0)
@@ -45,8 +49,7 @@ object ThemeFileManager {
         val colors = item.getJSONObject("colors")
         val originalId = item.optString("id").trim()
         require(originalId.isNotBlank()) { "شناسه تم وجود ندارد" }
-        val id = if (ThemeManager.find(context, originalId) == null) originalId
-        else "imported_${UUID.randomUUID()}"
+        val id = if (originalId !in existingIds) originalId else "imported_${UUID.randomUUID()}"
         ThemeManager.ThemeDefinition(
             id = id,
             nameFa = item.optString("nameFa", item.optString("nameEn", "تم واردشده")).trim().ifBlank { "تم واردشده" },
