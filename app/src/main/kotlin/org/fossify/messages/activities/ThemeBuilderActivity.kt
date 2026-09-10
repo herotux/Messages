@@ -18,6 +18,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.helpers.ThemeFileManager
 import org.fossify.messages.helpers.ThemeManager
+import org.fossify.messages.helpers.ThemeValidator
 import java.util.UUID
 
 /** Standalone editor for creating and editing Herotux themes. */
@@ -144,6 +145,10 @@ class ThemeBuilderActivity : SimpleActivity() {
         content.addView(preview, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(16), 0, dp(10)) })
 
         fun get(key: String) = fields.first { it.key == key }.color
+        fun buildColors() = ThemeManager.ThemeColors(
+            get("primary"), get("accent"), get("background"), get("surface"), get("text"),
+            get("secondary"), get("incoming"), get("outgoing"), get("toolbar"), get("accent"), get("fab")
+        )
         fun refresh() {
             preview.setCardBackgroundColor(get("background"))
             title.setTextColor(get("text"))
@@ -173,18 +178,21 @@ class ThemeBuilderActivity : SimpleActivity() {
             isClickable = true
             setOnClickListener {
                 val themeName = name.text.toString().trim().ifEmpty { "تم من" }
-                val c = { key: String -> get(key) }
-                val colors = ThemeManager.ThemeColors(
-                    c("primary"), c("accent"), c("background"), c("surface"), c("text"),
-                    c("secondary"), c("incoming"), c("outgoing"), c("toolbar"), c("accent"), c("fab")
-                )
-                val id = editingId ?: "user_" + UUID.randomUUID().toString()
-                ThemeManager.saveUserTheme(
-                    this@ThemeBuilderActivity,
-                    ThemeManager.ThemeDefinition(id, themeName, themeName, ThemeManager.ThemeSource.USER, colors = colors)
-                )
-                ThemeManager.select(this@ThemeBuilderActivity, id)
-                finish()
+                val colors = buildColors()
+                val report = ThemeValidator.validate(colors)
+                if (!report.isValid) {
+                    val details = report.issues.joinToString("\n") { issue ->
+                        "• ${issue.name}: ${String.format("%.2f", issue.ratio)}:1 (حداقل ${String.format("%.1f", issue.requiredRatio)}:1)"
+                    }
+                    MaterialAlertDialogBuilder(this@ThemeBuilderActivity)
+                        .setTitle("خوانایی تم نیاز به بررسی دارد")
+                        .setMessage("کنتراست بعضی ترکیب‌های متن و پس‌زمینه پایین است:\n\n$details\n\nمی‌خواهید با همین رنگ‌ها ذخیره شود؟")
+                        .setNegativeButton("اصلاح رنگ‌ها", null)
+                        .setPositiveButton("ذخیره با همین رنگ‌ها") { _, _ -> saveTheme(themeName, colors, editingId) }
+                        .show()
+                    return@setOnClickListener
+                }
+                saveTheme(themeName, colors, editingId)
             }
         }
         content.addView(save, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0, dp(16), 0, 0) })
@@ -212,6 +220,16 @@ class ThemeBuilderActivity : SimpleActivity() {
 
         setContentView(root)
         refresh()
+    }
+
+    private fun saveTheme(themeName: String, colors: ThemeManager.ThemeColors, editingId: String?) {
+        val id = editingId ?: "user_" + UUID.randomUUID().toString()
+        ThemeManager.saveUserTheme(
+            this,
+            ThemeManager.ThemeDefinition(id, themeName, themeName, ThemeManager.ThemeSource.USER, colors = colors)
+        )
+        ThemeManager.select(this, id)
+        finish()
     }
 
     private fun chooseThemeColor(field: ThemeField, swatch: View, changed: () -> Unit) {
