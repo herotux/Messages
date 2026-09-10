@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -51,7 +50,7 @@ object ThemeManager {
     private val defaultColors = ThemeColors(c("#388E3C"), c("#4CAF50"), c("#161616"), c("#242424"), c("#FFFFFF"), c("#BDBDBD"), c("#2A2A2A"), c("#388E3C"), c("#388E3C"), c("#388E3C"), c("#4CAF50"))
     private val auroraColors = ThemeColors(c("#6C63FF"), c("#8B80FF"), c("#17152A"), c("#24213D"), c("#FFFFFF"), c("#C9C5E8"), c("#302C4D"), c("#5B54C7"), c("#5B54C7"), c("#8B80FF"), c("#6C63FF"))
     private val oceanColors = ThemeColors(c("#0288D1"), c("#03A9F4"), c("#071A24"), c("#102D3A"), c("#FFFFFF"), c("#B8D5E2"), c("#173846"), c("#0277BD"), c("#0277BD"), c("#03A9F4"), c("#0288D1"))
-    private val sunsetColors = ThemeColors(c("#E65100"), c("#FF9800"), c("#21150F"), c("#382219"), c("#432A1D"), c("#E6C7B4"), c("#432A1D"), c("#D84315"), c("#D84315"), c("#FF9800"), c("#E65100"))
+    private val sunsetColors = ThemeColors(c("#E65100"), c("#FF9800"), c("#21150F"), c("#382219"), c("#FFFFFF"), c("#E6C7B4"), c("#432A1D"), c("#D84315"), c("#D84315"), c("#FF9800"), c("#E65100"))
     private val forestColors = ThemeColors(c("#2E7D32"), c("#66BB6A"), c("#0E1B11"), c("#19301D"), c("#FFFFFF"), c("#BFD8C2"), c("#203A25"), c("#2E7D32"), c("#2E7D32"), c("#66BB6A"), c("#43A047"))
     private val violetColors = ThemeColors(c("#7B1FA2"), c("#AB47BC"), c("#1B101F"), c("#321D38"), c("#FFFFFF"), c("#D8C1DE"), c("#3B2342"), c("#7B1FA2"), c("#7B1FA2"), c("#AB47BC"), c("#9C27B0"))
     private val midnightColors = ThemeColors(c("#607D8B"), c("#90A4AE"), c("#080B0D"), c("#151A1E"), c("#F5F7F8"), c("#AAB6BD"), c("#1D252A"), c("#455A64"), c("#263238"), c("#90A4AE"), c("#607D8B"))
