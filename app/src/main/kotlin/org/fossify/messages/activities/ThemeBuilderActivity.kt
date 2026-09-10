@@ -5,6 +5,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
@@ -16,6 +17,7 @@ import androidx.appcompat.widget.Toolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.messages.BuildConfig
+import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.ThemeFileManager
 import org.fossify.messages.helpers.ThemeManager
 import org.fossify.messages.helpers.ThemeValidator
@@ -24,7 +26,12 @@ import java.util.UUID
 /** Theme library and standalone editor for creating and editing Herotux themes. */
 class ThemeBuilderActivity : SimpleActivity() {
     private data class ThemeField(val key: String, val label: String, var color: Int)
-    companion object { const val EXTRA_THEME_ID = "theme_id"; private const val EXTRA_CREATE = "create_theme" }
+
+    companion object {
+        const val EXTRA_THEME_ID = "theme_id"
+        private const val EXTRA_CREATE = "create_theme"
+    }
+
     private var pendingExportTheme: ThemeManager.ThemeDefinition? = null
     private var themeFilter = 0
 
@@ -32,14 +39,23 @@ class ThemeBuilderActivity : SimpleActivity() {
         if (uri == null) return@registerForActivityResult
         runCatching { contentResolver.openInputStream(uri)?.use { it.reader().readText() } ?: error("فایل قابل خواندن نیست") }
             .mapCatching { ThemeFileManager.import(this, it).getOrThrow() }
-            .onSuccess { theme -> if (ThemeFileManager.saveImported(this, theme)) { ThemeManager.select(this, theme.id); renderThemeLibrary() } else showThemeError("ذخیره تم واردشده انجام نشد") }
+            .onSuccess { theme ->
+                if (ThemeFileManager.saveImported(this, theme)) {
+                    ThemeManager.select(this, theme.id)
+                    renderThemeLibrary()
+                } else showThemeError("ذخیره تم واردشده انجام نشد")
+            }
             .onFailure { showThemeError(it.message ?: "فایل تم معتبر نیست") }
     }
+
     private val createThemeFile = registerForActivityResult(ActivityResultContracts.CreateDocument(ThemeFileManager.MIME_TYPE)) { uri ->
-        val theme = pendingExportTheme ?: return@registerForActivityResult; pendingExportTheme = null
+        val theme = pendingExportTheme ?: return@registerForActivityResult
+        pendingExportTheme = null
         if (uri == null) return@registerForActivityResult
-        runCatching { contentResolver.openOutputStream(uri)?.use { it.write(ThemeFileManager.export(theme).toByteArray(Charsets.UTF_8)) } ?: error("فایل قابل ایجاد نیست") }
-            .onFailure { showThemeError(it.message ?: "ذخیره فایل تم انجام نشد") }
+        runCatching {
+            contentResolver.openOutputStream(uri)?.use { it.write(ThemeFileManager.export(theme).toByteArray(Charsets.UTF_8)) }
+                ?: error("فایل قابل ایجاد نیست")
+        }.onFailure { showThemeError(it.message ?: "ذخیره فایل تم انجام نشد") }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,45 +63,97 @@ class ThemeBuilderActivity : SimpleActivity() {
         val editingId = intent.getStringExtra(EXTRA_THEME_ID)
         if (editingId != null || intent.getBooleanExtra(EXTRA_CREATE, false)) renderThemeBuilder() else renderThemeLibrary()
     }
+
     private fun english(): Boolean = config.useEnglish
     private fun t(fa: String, en: String): String = if (english()) en else fa
-    private fun openEditor(themeId: String? = null) { startActivity(Intent(this, ThemeBuilderActivity::class.java).apply { putExtra(EXTRA_CREATE, themeId == null); if (themeId != null) putExtra(EXTRA_THEME_ID, themeId) }) }
+
+    private fun openEditor(themeId: String? = null) {
+        startActivity(Intent(this, ThemeBuilderActivity::class.java).apply {
+            putExtra(EXTRA_CREATE, themeId == null)
+            if (themeId != null) putExtra(EXTRA_THEME_ID, themeId)
+        })
+    }
+
+    private fun attrColor(attr: Int): Int {
+        val value = TypedValue()
+        theme.resolveAttribute(attr, value, true)
+        return if (value.resourceId != 0) getColor(value.resourceId) else value.data
+    }
 
     private fun renderThemeLibrary() {
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = if (english()) View.LAYOUT_DIRECTION_LTR else View.LAYOUT_DIRECTION_RTL; setBackgroundColor(color(com.google.android.material.R.attr.colorSurface)) }
-        val toolbar = Toolbar(this).apply { title = t("کتابخانه تم", "Theme library"); setTitleTextColor(color(com.google.android.material.R.attr.colorOnSurface)); navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material); setNavigationOnClickListener { finish() } }
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = if (english()) View.LAYOUT_DIRECTION_LTR else View.LAYOUT_DIRECTION_RTL
+            setBackgroundColor(attrColor(com.google.android.material.R.attr.colorSurface))
+        }
+        val toolbar = Toolbar(this).apply {
+            title = t("کتابخانه تم", "Theme library")
+            setTitleTextColor(attrColor(com.google.android.material.R.attr.colorOnSurface))
+            navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
+            setNavigationOnClickListener { finish() }
+        }
         root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(56)))
         val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false }
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(12), dp(18), dp(28)) }
-        scroll.addView(content); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
+        scroll.addView(content)
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        setContentView(root)
+
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         actions.addView(actionButton(t("＋ ساخت تم", "+ Create theme")) { openEditor() }, LinearLayout.LayoutParams(0, dp(48), 1f))
         actions.addView(actionButton(t("وارد کردن", "Import")) { importThemeFile.launch(arrayOf(ThemeFileManager.MIME_TYPE, "application/octet-stream", "*/*")) }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginStart = dp(8) })
         content.addView(actions)
-        val search = EditText(this).apply { hint = t("جستجوی نام تم…", "Search themes…"); singleLine = true; setPadding(dp(14), 0, dp(14), 0); setBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant)) }
+
+        val search = EditText(this).apply {
+            hint = t("جستجوی نام تم…", "Search themes…")
+            setSingleLine(true)
+            setPadding(dp(14), 0, dp(14), 0)
+            setBackgroundColor(attrColor(com.google.android.material.R.attr.colorSurfaceVariant))
+        }
         content.addView(search, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
+
         val filterRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        listOf(t("همه", "All"), t("ساخته من", "My themes"), t("واردشده", "Imported"), t("پسندیده", "Favorites")).forEachIndexed { index, label -> filterRow.addView(actionButton(label) { themeFilter = index; renderThemeCards(content, search.text.toString()) }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { if (index > 0) marginStart = dp(5) }) }
+        listOf(t("همه", "All"), t("ساخته من", "My themes"), t("واردشده", "Imported"), t("پسندیده", "Favorites")).forEachIndexed { index, label ->
+            filterRow.addView(actionButton(label) { themeFilter = index; renderThemeCards(content, search.text.toString()) }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { if (index > 0) marginStart = dp(5) })
+        }
         content.addView(filterRow, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(8) })
-        search.addTextChangedListener(object : android.text.TextWatcher { override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit; override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { renderThemeCards(content, s?.toString().orEmpty()) }; override fun afterTextChanged(s: android.text.Editable?) = Unit })
+        search.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { renderThemeCards(content, s?.toString().orEmpty()) }
+            override fun afterTextChanged(s: android.text.Editable?) = Unit
+        })
         renderThemeCards(content, "")
-        if (!english()) applyPersianFont(root)
     }
 
     private fun renderThemeCards(content: LinearLayout, query: String) {
         while (content.childCount > 3) content.removeViewAt(3)
         val all = ThemeManager.searchThemes(this, query)
-        val themes = when (themeFilter) { 1 -> all.filter { it.source == ThemeManager.ThemeSource.USER }; 2 -> all.filter { it.source == ThemeManager.ThemeSource.IMPORTED }; 3 -> all.filter { ThemeManager.isFavorite(this, it.id) }; else -> all }
-        val groups = listOf(ThemeManager.ThemeSource.BUILT_IN to t("تم‌های آماده", "Built-in themes"), ThemeManager.ThemeSource.USER to t("تم‌های من", "My themes"), ThemeManager.ThemeSource.IMPORTED to t("تم‌های واردشده", "Imported themes"), ThemeManager.ThemeSource.COMMUNITY to t("تم‌های جامعه", "Community themes"))
+        val themes = when (themeFilter) {
+            1 -> all.filter { it.source == ThemeManager.ThemeSource.USER }
+            2 -> all.filter { it.source == ThemeManager.ThemeSource.IMPORTED }
+            3 -> all.filter { ThemeManager.isFavorite(this, it.id) }
+            else -> all
+        }
+        val groups = listOf(
+            ThemeManager.ThemeSource.BUILT_IN to t("تم‌های آماده", "Built-in themes"),
+            ThemeManager.ThemeSource.USER to t("تم‌های من", "My themes"),
+            ThemeManager.ThemeSource.IMPORTED to t("تم‌های واردشده", "Imported themes"),
+            ThemeManager.ThemeSource.COMMUNITY to t("تم‌های جامعه", "Community themes")
+        )
         var count = 0
-        groups.forEach { (source, title) -> val group = themes.filter { it.source == source }; if (group.isEmpty()) return@forEach; content.addView(sectionTitle(title), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(16) }); group.forEach { theme -> content.addView(themeCard(theme), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) }); count++ } }
+        groups.forEach { (source, title) ->
+            val group = themes.filter { it.source == source }
+            if (group.isEmpty()) return@forEach
+            content.addView(sectionTitle(title), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(16) })
+            group.forEach { theme -> content.addView(themeCard(theme), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) }); count++ }
+        }
         if (count == 0) content.addView(sectionTitle(t("تمی پیدا نشد", "No themes found")))
     }
 
     private fun themeCard(theme: ThemeManager.ThemeDefinition): MaterialCardView {
         val selected = ThemeManager.selectedThemeId(this) == theme.id
         return MaterialCardView(this).apply {
-            radius = dp(18).toFloat(); strokeWidth = if (selected) dp(2) else dp(1); strokeColor = if (selected) theme.colors.accent else color(com.google.android.material.R.attr.colorOutlineVariant); setCardBackgroundColor(theme.colors.surface)
+            radius = dp(18).toFloat(); strokeWidth = if (selected) dp(2) else dp(1); strokeColor = if (selected) theme.colors.accent else attrColor(com.google.android.material.R.attr.colorOutlineVariant); setCardBackgroundColor(theme.colors.surface)
             setOnClickListener { ThemeManager.select(this@ThemeBuilderActivity, theme.id); renderThemeLibrary() }
             setOnLongClickListener { showThemeActions(theme); true }
             val box = LinearLayout(this@ThemeBuilderActivity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)) }
@@ -99,7 +167,8 @@ class ThemeBuilderActivity : SimpleActivity() {
             preview.addView(TextView(this@ThemeBuilderActivity).apply { text = t("پیام ارسالی", "Outgoing message"); textSize = 12f; setTextColor(if (isLight(theme.colors.outgoingBubble)) Color.BLACK else Color.WHITE); setBackgroundColor(theme.colors.outgoingBubble); gravity = Gravity.END; setPadding(dp(8), dp(6), dp(8), dp(6)) }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
             box.addView(preview)
             val source = when (theme.source) { ThemeManager.ThemeSource.BUILT_IN -> t("آماده", "Built-in"); ThemeManager.ThemeSource.USER -> t("ساخته من", "My theme"); ThemeManager.ThemeSource.IMPORTED -> t("واردشده", "Imported"); ThemeManager.ThemeSource.COMMUNITY -> t("جامعه", "Community") }
-            box.addView(TextView(this@ThemeBuilderActivity).apply { text = if (selected) "✓ $source · ${t("فعال", "Active")}" else source; textSize = 12f; setTextColor(theme.colors.textSecondary); setPadding(0, dp(8), 0, 0) }); addView(box)
+            box.addView(TextView(this@ThemeBuilderActivity).apply { text = if (selected) "✓ $source · ${t("فعال", "Active")}" else source; textSize = 12f; setTextColor(theme.colors.textSecondary); setPadding(0, dp(8), 0, 0) })
+            addView(box)
         }
     }
 
@@ -108,12 +177,13 @@ class ThemeBuilderActivity : SimpleActivity() {
         val items = if (builtIn) arrayOf(t("اعمال", "Apply"), t("تکثیر", "Duplicate"), if (ThemeManager.isFavorite(this, theme.id)) t("حذف از پسندیده‌ها", "Remove favorite") else t("افزودن به پسندیده‌ها", "Add to favorites")) else arrayOf(t("اعمال", "Apply"), t("ویرایش", "Edit"), t("تکثیر", "Duplicate"), t("خروجی", "Export"), t("اشتراک‌گذاری", "Share"), if (ThemeManager.isFavorite(this, theme.id)) t("حذف از پسندیده‌ها", "Remove favorite") else t("افزودن به پسندیده‌ها", "Add to favorites"), t("حذف", "Delete"))
         MaterialAlertDialogBuilder(this).setTitle(if (english()) theme.nameEn else theme.nameFa).setItems(items) { _, which -> if (builtIn) when (which) { 0 -> { ThemeManager.select(this, theme.id); renderThemeLibrary() }; 1 -> duplicateTheme(theme); 2 -> { ThemeManager.toggleFavorite(this, theme.id); renderThemeLibrary() } } else when (which) { 0 -> { ThemeManager.select(this, theme.id); renderThemeLibrary() }; 1 -> openEditor(theme.id); 2 -> duplicateTheme(theme); 3 -> exportThemeFile(theme); 4 -> shareThemeFile(theme); 5 -> { ThemeManager.toggleFavorite(this, theme.id); renderThemeLibrary() }; 6 -> confirmDeleteTheme(theme) } }.show()
     }
+
     private fun duplicateTheme(theme: ThemeManager.ThemeDefinition) { val copy = theme.copy(id = "user_${UUID.randomUUID()}", source = ThemeManager.ThemeSource.USER, nameFa = theme.nameFa + " (کپی)", nameEn = theme.nameEn + " (Copy)"); ThemeManager.saveUserTheme(this, copy); ThemeManager.select(this, copy.id); renderThemeLibrary() }
     private fun confirmDeleteTheme(theme: ThemeManager.ThemeDefinition) { MaterialAlertDialogBuilder(this).setTitle(t("حذف تم؟", "Delete theme?")).setMessage(t("تم «${theme.nameFa}» حذف شود؟", "Delete “${theme.nameEn}”?" )).setNegativeButton(t("لغو", "Cancel"), null).setPositiveButton(t("حذف", "Delete")) { _, _ -> ThemeManager.deleteCustomTheme(this, theme.id); renderThemeLibrary() }.show() }
     private fun exportThemeFile(theme: ThemeManager.ThemeDefinition) { pendingExportTheme = theme; createThemeFile.launch("${theme.nameEn.ifBlank { "theme" }}${ThemeFileManager.FILE_EXTENSION}") }
     private fun shareThemeFile(theme: ThemeManager.ThemeDefinition) { val file = runCatching { java.io.File(cacheDir, "${theme.id}${ThemeFileManager.FILE_EXTENSION}").apply { writeText(ThemeFileManager.export(theme), Charsets.UTF_8) } }.getOrNull() ?: return showThemeError("ساخت فایل اشتراک‌گذاری انجام نشد"); val uri = androidx.core.content.FileProvider.getUriForFile(this, "${BuildConfig.APPLICATION_ID}.provider", file); startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = ThemeFileManager.MIME_TYPE; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, t("اشتراک‌گذاری تم", "Share theme"))) }
-    private fun sectionTitle(text: String) = TextView(this).apply { this.text = text; textSize = 15f; typeface = Typeface.DEFAULT_BOLD; setTextColor(color(com.google.android.material.R.attr.colorOnSurface)); setPadding(0, dp(4), 0, dp(4)) }
-    private fun actionButton(text: String, onClick: () -> Unit) = TextView(this).apply { this.text = text; textSize = 13f; gravity = Gravity.CENTER; isClickable = true; setOnClickListener { onClick() }; setTextColor(color(androidx.appcompat.R.attr.colorPrimary)); setBackgroundColor(color(com.google.android.material.R.attr.colorSurfaceVariant)); setPadding(dp(8), 0, dp(8), 0) }
+    private fun sectionTitle(text: String) = TextView(this).apply { this.text = text; textSize = 15f; typeface = Typeface.DEFAULT_BOLD; setTextColor(attrColor(com.google.android.material.R.attr.colorOnSurface)); setPadding(0, dp(4), 0, dp(4)) }
+    private fun actionButton(text: String, onClick: () -> Unit) = TextView(this).apply { this.text = text; textSize = 13f; gravity = Gravity.CENTER; isClickable = true; setOnClickListener { onClick() }; setTextColor(attrColor(androidx.appcompat.R.attr.colorPrimary)); setBackgroundColor(attrColor(com.google.android.material.R.attr.colorSurfaceVariant)); setPadding(dp(8), 0, dp(8), 0) }
 
     private fun renderThemeBuilder() {
         val editingId = intent.getStringExtra(EXTRA_THEME_ID); val existing = editingId?.let { ThemeManager.find(this, it) }; val source = existing?.colors ?: ThemeManager.colors(this)
@@ -132,9 +202,9 @@ class ThemeBuilderActivity : SimpleActivity() {
         if (existing != null) { content.addView(TextView(this).apply { text = "خروجی فایل .homa-theme"; textSize = 15f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(12)); setOnClickListener { exportThemeFile(existing) } }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) }); content.addView(TextView(this).apply { text = "اشتراک‌گذاری تم"; textSize = 15f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(12)); setOnClickListener { shareThemeFile(existing) } }, LinearLayout.LayoutParams(-1, dp(48))) }
         setContentView(root); refresh()
     }
+
     private fun saveTheme(themeName: String, colors: ThemeManager.ThemeColors, editingId: String?) { val id = editingId ?: "user_${UUID.randomUUID()}"; ThemeManager.saveUserTheme(this, ThemeManager.ThemeDefinition(id, themeName, themeName, ThemeManager.ThemeSource.USER, colors = colors)); ThemeManager.select(this, id); finish() }
     private fun chooseThemeColor(field: ThemeField, swatch: View, changed: () -> Unit) { val input = EditText(this).apply { hint = "#RRGGBB"; setText(String.format("#%06X", 0xFFFFFF and field.color)); selectAll() }; MaterialAlertDialogBuilder(this).setTitle(field.label).setView(input).setPositiveButton("اعمال") { _, _ -> runCatching { Color.parseColor(input.text.toString().trim()) }.onSuccess { field.color = it; swatch.background = makeSwatch(it); changed() } }.setNegativeButton("لغو", null).show() }
-    private fun exportThemeFile(theme: ThemeManager.ThemeDefinition) { pendingExportTheme = theme; createThemeFile.launch("${theme.nameEn.ifBlank { "theme" }}${ThemeFileManager.FILE_EXTENSION}") }
     private fun showThemeError(message: String) { MaterialAlertDialogBuilder(this).setTitle("خطا در فایل تم").setMessage(message).setPositiveButton("باشه", null).show() }
     private fun makeSwatch(color: Int): android.graphics.drawable.GradientDrawable = android.graphics.drawable.GradientDrawable().apply { setColor(color); cornerRadius = dp(14).toFloat(); setStroke(dp(1), 0x33000000) }
     private fun isLight(color: Int): Boolean { val r = Color.red(color) / 255f; val g = Color.green(color) / 255f; val b = Color.blue(color) / 255f; return 0.2126f * r + 0.7152f * g + 0.0722f * b > 0.55f }
