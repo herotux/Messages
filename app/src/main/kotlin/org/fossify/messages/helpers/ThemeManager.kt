@@ -56,6 +56,9 @@ object ThemeManager {
 
     fun allThemes(context: Context): List<ThemeDefinition> = builtInThemes + ThemeStorage.load(context)
 
+    fun customThemes(context: Context): List<ThemeDefinition> = ThemeStorage.load(context)
+        .filter { it.source == ThemeSource.USER || it.source == ThemeSource.IMPORTED || it.source == ThemeSource.COMMUNITY }
+
     fun selectedThemeId(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         .getString(KEY_THEME_ID, DEFAULT_ID) ?: DEFAULT_ID
 
@@ -83,12 +86,24 @@ object ThemeManager {
         ThemeStorage.save(context, users + theme.copy(source = ThemeSource.USER, backgroundDrawable = 0))
     }
 
-    fun deleteUserTheme(context: Context, id: String): Boolean {
-        if (ThemeStorage.load(context).none { it.id == id }) return false
-        ThemeStorage.save(context, ThemeStorage.load(context).filterNot { it.id == id })
+    fun saveImportedTheme(context: Context, theme: ThemeDefinition): Boolean {
+        if (theme.source != ThemeSource.IMPORTED) return false
+        val existing = ThemeStorage.load(context).filterNot { it.id == theme.id }
+        ThemeStorage.save(context, existing + theme.copy(backgroundDrawable = 0))
+        return true
+    }
+
+    /** Deletes any persisted custom theme, but never a built-in theme. */
+    fun deleteCustomTheme(context: Context, id: String): Boolean {
+        val stored = ThemeStorage.load(context)
+        if (stored.none { it.id == id }) return false
+        ThemeStorage.save(context, stored.filterNot { it.id == id })
         if (selectedThemeId(context) == id) select(context, DEFAULT_ID)
         return true
     }
+
+    /** Backward-compatible alias for callers that only manage user-created themes. */
+    fun deleteUserTheme(context: Context, id: String): Boolean = deleteCustomTheme(context, id)
 
     fun applyBackground(activity: Activity) {
         val theme = current(activity)
