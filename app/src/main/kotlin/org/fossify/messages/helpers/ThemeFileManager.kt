@@ -1,7 +1,6 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
-import android.graphics.Color
 import org.json.JSONObject
 import java.util.UUID
 
@@ -67,7 +66,7 @@ object ThemeFileManager {
                 toolbar = parseColor(colors, "toolbar"),
                 tab = parseColor(colors, "tab"),
                 fab = parseColor(colors, "fab"),
-                divider = Color.parseColor(colors.optString("divider", "#33808080"))
+                divider = parseColor(colors, "divider", "#33808080")
             ),
             version = formatVersion
         )
@@ -80,6 +79,12 @@ object ThemeFileManager {
         return true
     }
 
-    private fun parseColor(colors: JSONObject, key: String): Int = Color.parseColor(colors.getString(key))
+    private fun parseColor(colors: JSONObject, key: String, default: String? = null): Int {
+        val value = colors.optString(key, default ?: "").trim()
+        require(value.matches(Regex("#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?"))) { "رنگ نامعتبر برای $key" }
+        val hex = value.substring(1).toLong(16).toInt()
+        return if (value.length == 7) (0xFF000000.toInt() or hex) else hex
+    }
+
     private fun hex(color: Int): String = String.format("#%08X", color)
 }
