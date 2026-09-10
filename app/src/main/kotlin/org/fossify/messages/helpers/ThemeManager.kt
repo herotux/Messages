@@ -3,7 +3,15 @@ package org.fossify.messages.helpers
 import android.app.Activity
 import android.content.Context
 import android.graphics.Color
+import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
+import androidx.appcompat.widget.Toolbar
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.messages.R
 
 /** Central theme definition for built-in and user-created themes. */
@@ -12,6 +20,7 @@ object ThemeManager {
     private const val KEY_THEME_ID = "selected_theme_id"
     private const val KEY_FAVORITES = "favorite_theme_ids"
     private const val KEY_LIBRARY_SORT = "library_sort"
+    private const val LIBRARY_UI_TAG = "herotux_theme_library_ui"
 
     const val DEFAULT_ID = "none"
     const val AURORA_ID = "aurora"
@@ -42,7 +51,7 @@ object ThemeManager {
     private val defaultColors = ThemeColors(c("#388E3C"), c("#4CAF50"), c("#161616"), c("#242424"), c("#FFFFFF"), c("#BDBDBD"), c("#2A2A2A"), c("#388E3C"), c("#388E3C"), c("#388E3C"), c("#4CAF50"))
     private val auroraColors = ThemeColors(c("#6C63FF"), c("#8B80FF"), c("#17152A"), c("#24213D"), c("#FFFFFF"), c("#C9C5E8"), c("#302C4D"), c("#5B54C7"), c("#5B54C7"), c("#8B80FF"), c("#6C63FF"))
     private val oceanColors = ThemeColors(c("#0288D1"), c("#03A9F4"), c("#071A24"), c("#102D3A"), c("#FFFFFF"), c("#B8D5E2"), c("#173846"), c("#0277BD"), c("#0277BD"), c("#03A9F4"), c("#0288D1"))
-    private val sunsetColors = ThemeColors(c("#E65100"), c("#FF9800"), c("#21150F"), c("#382219"), c("#FFFFFF"), c("#E6C7B4"), c("#432A1D"), c("#D84315"), c("#D84315"), c("#FF9800"), c("#E65100"))
+    private val sunsetColors = ThemeColors(c("#E65100"), c("#FF9800"), c("#21150F"), c("#382219"), c("#432A1D"), c("#E6C7B4"), c("#432A1D"), c("#D84315"), c("#D84315"), c("#FF9800"), c("#E65100"))
     private val forestColors = ThemeColors(c("#2E7D32"), c("#66BB6A"), c("#0E1B11"), c("#19301D"), c("#FFFFFF"), c("#BFD8C2"), c("#203A25"), c("#2E7D32"), c("#2E7D32"), c("#66BB6A"), c("#43A047"))
     private val violetColors = ThemeColors(c("#7B1FA2"), c("#AB47BC"), c("#1B101F"), c("#321D38"), c("#FFFFFF"), c("#D8C1DE"), c("#3B2342"), c("#7B1FA2"), c("#7B1FA2"), c("#AB47BC"), c("#9C27B0"))
     private val midnightColors = ThemeColors(c("#607D8B"), c("#90A4AE"), c("#080B0D"), c("#151A1E"), c("#F5F7F8"), c("#AAB6BD"), c("#1D252A"), c("#455A64"), c("#263238"), c("#90A4AE"), c("#607D8B"))
@@ -126,11 +135,79 @@ object ThemeManager {
     }
 
     fun searchThemes(context: Context, query: String): List<ThemeDefinition> {
+        installLibraryUi(context)
         val q = query.trim()
         val matches = if (q.isEmpty()) allThemes(context) else allThemes(context).filter {
             it.nameFa.contains(q, ignoreCase = true) || it.nameEn.contains(q, ignoreCase = true) || it.id.contains(q, ignoreCase = true)
         }
         return sortThemes(context, matches, librarySort(context))
+    }
+
+    /** Adds library-only controls without changing the standalone builder layout. */
+    private fun installLibraryUi(context: Context) {
+        val activity = context as? org.fossify.messages.activities.ThemeBuilderActivity ?: return
+        val contentRoot = activity.findViewById<ViewGroup>(android.R.id.content)?.getChildAt(0) as? ViewGroup ?: return
+        if (contentRoot.getTag() == LIBRARY_UI_TAG) return
+        val toolbar = contentRoot.getChildAt(0) as? Toolbar ?: return
+        val scroll = (0 until contentRoot.childCount).asSequence().map { contentRoot.getChildAt(it) }.firstOrNull { it is ScrollView } as? ScrollView ?: return
+        val libraryContent = scroll.getChildAt(0) as? LinearLayout ?: return
+        if (libraryContent.childCount < 3) return
+
+        val active = activeTheme(activity)
+        val activeCard = MaterialCardView(activity).apply {
+            radius = activity.dp(18).toFloat()
+            strokeWidth = activity.dp(2)
+            strokeColor = active.colors.accent
+            setCardBackgroundColor(active.colors.surface)
+            val box = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(activity.dp(14), activity.dp(12), activity.dp(14), activity.dp(12))
+            }
+            box.addView(TextView(activity).apply {
+                text = if (activity.config.useEnglish) "Active theme" else "تم فعال"
+                textSize = 12f
+                setTextColor(active.colors.accent)
+            })
+            box.addView(TextView(activity).apply {
+                text = if (activity.config.useEnglish) active.nameEn else active.nameFa
+                textSize = 19f
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                setTextColor(active.colors.textPrimary)
+                setPadding(0, activity.dp(2), 0, 0)
+            })
+            box.addView(TextView(activity).apply {
+                text = if (activity.config.useEnglish) "Currently applied to Messages" else "در حال حاضر روی برنامه اعمال شده است"
+                textSize = 12f
+                setTextColor(active.colors.textSecondary)
+            })
+            addView(box)
+        }
+        contentRoot.addView(activeCard, 1)
+
+        val sortButton = TextView(activity).apply {
+            text = if (activity.config.useEnglish) "Sort" else "مرتب‌سازی"
+            textSize = 13f
+            gravity = Gravity.CENTER
+            isClickable = true
+            setTextColor(active.colors.accent)
+            setPadding(activity.dp(10), 0, activity.dp(10), 0)
+            setOnClickListener { showLibrarySortDialog(activity) }
+        }
+        toolbar.addView(sortButton, Toolbar.LayoutParams(activity.dp(92), -1).apply { gravity = Gravity.END })
+        contentRoot.setTag(LIBRARY_UI_TAG)
+    }
+
+    private fun showLibrarySortDialog(activity: Activity) {
+        val options = arrayOf("پیش‌فرض / Default", "پسندیده‌ها اول / Favorites first", "نام: A → Z", "نام: Z → A")
+        MaterialAlertDialogBuilder(activity)
+            .setTitle("مرتب‌سازی کتابخانه / Sort library")
+            .setSingleChoiceItems(options, librarySort(activity).ordinal) { dialog, which ->
+                setLibrarySort(activity, ThemeSort.entries[which])
+                dialog.dismiss()
+                activity.recreate()
+            }
+            .setNegativeButton("لغو / Cancel", null)
+            .show()
     }
 
     /** Returns themes in a deterministic order suitable for the library UI. */
