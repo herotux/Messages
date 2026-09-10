@@ -1,6 +1,7 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.util.UUID
@@ -11,6 +12,8 @@ object ThemeFileManager {
     const val MIME_TYPE = "application/json"
     const val SCHEMA = "homa-theme"
     const val CURRENT_VERSION = 1
+
+    private val gson = GsonBuilder().setPrettyPrinting().create()
 
     fun export(theme: ThemeManager.ThemeDefinition): String = JsonObject().apply {
         addProperty("schema", SCHEMA)
@@ -34,7 +37,7 @@ object ThemeFileManager {
                 addProperty("divider", hex(theme.colors.divider))
             })
         })
-    }.toString()
+    }.let(gson::toJson)
 
     fun import(context: Context, raw: String): Result<ThemeManager.ThemeDefinition> =
         importTheme(raw, ThemeManager.allThemes(context).map { it.id }.toSet())
