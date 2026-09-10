@@ -48,8 +48,8 @@ object ThemeFileManager {
         require(root.get("schema")?.asString == SCHEMA) { "فرمت فایل تم معتبر نیست" }
         val formatVersion = root.get("version")?.asInt ?: 0
         require(formatVersion in 1..CURRENT_VERSION) { "نسخه فایل تم پشتیبانی نمی‌شود" }
-        val item = root.getAsJsonObject("theme")
-        val colors = item.getAsJsonObject("colors")
+        val item = root.getAsJsonObject("theme") ?: error("اطلاعات تم وجود ندارد")
+        val colors = item.getAsJsonObject("colors") ?: error("رنگ‌های تم وجود ندارد")
         val originalId = item.get("id")?.asString?.trim().orEmpty()
         require(originalId.isNotBlank()) { "شناسه تم وجود ندارد" }
         val id = if (originalId !in existingIds) originalId else "imported_${UUID.randomUUID()}"
@@ -76,12 +76,8 @@ object ThemeFileManager {
         )
     }
 
-    fun saveImported(context: Context, theme: ThemeManager.ThemeDefinition): Boolean {
-        if (theme.source != ThemeManager.ThemeSource.IMPORTED) return false
-        val existing = ThemeStorage.load(context).filterNot { it.id == theme.id }
-        ThemeStorage.save(context, existing + theme)
-        return true
-    }
+    fun saveImported(context: Context, theme: ThemeManager.ThemeDefinition): Boolean =
+        ThemeManager.saveImportedTheme(context, theme)
 
     private fun parseColor(colors: JsonObject, key: String, default: String? = null): Int {
         val value = colors.get(key)?.asString?.trim() ?: default.orEmpty()
