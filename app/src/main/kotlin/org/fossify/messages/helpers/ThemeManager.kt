@@ -54,7 +54,7 @@ object ThemeManager {
         ThemeDefinition(SUNSET_ID, "غروب", "Sunset", backgroundDrawable = R.drawable.bg_theme_sunset, colors = sunsetColors),
         ThemeDefinition(FOREST_ID, "جنگل", "Forest", backgroundDrawable = R.drawable.bg_theme_forest, colors = forestColors),
         ThemeDefinition(VIOLET_ID, "بنفش", "Violet", backgroundDrawable = R.drawable.bg_theme_violet, colors = violetColors),
-        ThemeDefinition(MIDNIGHT_ID, "نیمه‌شب", "Midnight", backgroundDrawable = midnightColors)
+        ThemeDefinition(MIDNIGHT_ID, "نیمه‌شب", "Midnight", backgroundDrawable = R.drawable.bg_theme_midnight, colors = midnightColors)
     )
 
     fun allThemes(context: Context): List<ThemeDefinition> = builtInThemes + ThemeStorage.load(context)
