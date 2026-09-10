@@ -82,7 +82,7 @@ class ThemeBuilderActivity : SimpleActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setBackgroundColor(ThemeManager.colors(this@ThemeBuilderActivity).background)
+            setBackgroundColor(source.background)
         }
         val toolbar = Toolbar(this).apply {
             title = if (existing == null) "ساخت تم جدید" else "ویرایش تم"
@@ -107,7 +107,7 @@ class ThemeBuilderActivity : SimpleActivity() {
             gravity = Gravity.CENTER
             isClickable = true
             setPadding(dp(8), dp(10), dp(8), dp(10))
-            background = makeSwatch(ThemeManager.colors(this@ThemeBuilderActivity).surface)
+            background = makeSwatch(source.surface)
             setOnClickListener { importThemeFile.launch(arrayOf(ThemeFileManager.MIME_TYPE, "application/octet-stream", "*/*")) }
         }
         fileActions.addView(import, LinearLayout.LayoutParams(0, dp(48), 1f))
@@ -169,7 +169,7 @@ class ThemeBuilderActivity : SimpleActivity() {
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
             setPadding(0, dp(14), 0, dp(14))
-            background = makeSwatch(ThemeManager.colors(this@ThemeBuilderActivity).primary)
+            background = makeSwatch(source.primary)
             isClickable = true
             setOnClickListener {
                 val themeName = name.text.toString().trim().ifEmpty { "تم من" }
