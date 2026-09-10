@@ -10,6 +10,7 @@ import org.fossify.messages.R
 object ThemeManager {
     private const val PREFS = "messages_theme"
     private const val KEY_THEME_ID = "selected_theme_id"
+    private const val KEY_FAVORITES = "favorite_theme_ids"
 
     const val DEFAULT_ID = "none"
     const val AURORA_ID = "aurora"
@@ -59,6 +60,17 @@ object ThemeManager {
     fun customThemes(context: Context): List<ThemeDefinition> = ThemeStorage.load(context)
         .filter { it.source == ThemeSource.USER || it.source == ThemeSource.IMPORTED || it.source == ThemeSource.COMMUNITY }
 
+    fun userThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.USER }
+    fun importedThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.IMPORTED }
+    fun communityThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.COMMUNITY }
+
+    fun libraryThemes(context: Context): Map<ThemeSource, List<ThemeDefinition>> = linkedMapOf(
+        ThemeSource.BUILT_IN to builtInThemes,
+        ThemeSource.USER to userThemes(context),
+        ThemeSource.IMPORTED to importedThemes(context),
+        ThemeSource.COMMUNITY to communityThemes(context)
+    )
+
     fun selectedThemeId(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         .getString(KEY_THEME_ID, DEFAULT_ID) ?: DEFAULT_ID
 
@@ -81,6 +93,33 @@ object ThemeManager {
     fun findBuiltIn(id: String): ThemeDefinition? = builtInThemes.firstOrNull { it.id == id }
     fun find(context: Context, id: String): ThemeDefinition? = allThemes(context).firstOrNull { it.id == id }
 
+    fun isFavorite(context: Context, id: String): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        .getStringSet(KEY_FAVORITES, emptySet())?.contains(id) == true
+
+    fun setFavorite(context: Context, id: String, favorite: Boolean) {
+        if (find(context, id) == null) return
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val favorites = prefs.getStringSet(KEY_FAVORITES, emptySet())?.toMutableSet() ?: mutableSetOf()
+        if (favorite) favorites.add(id) else favorites.remove(id)
+        prefs.edit().putStringSet(KEY_FAVORITES, favorites).apply()
+    }
+
+    fun toggleFavorite(context: Context, id: String): Boolean {
+        val next = !isFavorite(context, id)
+        setFavorite(context, id, next)
+        return next
+    }
+
+    fun favoriteThemes(context: Context): List<ThemeDefinition> = allThemes(context).filter { isFavorite(context, it.id) }
+
+    fun searchThemes(context: Context, query: String): List<ThemeDefinition> {
+        val q = query.trim()
+        if (q.isEmpty()) return allThemes(context)
+        return allThemes(context).filter {
+            it.nameFa.contains(q, ignoreCase = true) || it.nameEn.contains(q, ignoreCase = true) || it.id.contains(q, ignoreCase = true)
+        }
+    }
+
     fun saveUserTheme(context: Context, theme: ThemeDefinition) {
         val users = ThemeStorage.load(context).filterNot { it.id == theme.id }
         ThemeStorage.save(context, users + theme.copy(source = ThemeSource.USER, backgroundDrawable = 0))
@@ -98,6 +137,7 @@ object ThemeManager {
         val stored = ThemeStorage.load(context)
         if (stored.none { it.id == id }) return false
         ThemeStorage.save(context, stored.filterNot { it.id == id })
+        setFavorite(context, id, false)
         if (selectedThemeId(context) == id) select(context, DEFAULT_ID)
         return true
     }
