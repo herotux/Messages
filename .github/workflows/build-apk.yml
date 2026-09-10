@@ -16,6 +16,7 @@ permissions:
 
 # Keep the three tests independent. Build only the FOSS release APK to keep
 # release CI lightweight while main is being stabilized.
+# Diagnostic trigger: verify a fresh runner execution independently of run 34449657423.
 jobs:
   unit-tests:
     name: Unit tests (${{ matrix.variant }})
