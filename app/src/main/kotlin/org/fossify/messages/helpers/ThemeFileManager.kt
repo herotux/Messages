@@ -1,7 +1,8 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
-import org.json.JSONObject
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import java.util.UUID
 
 /** Versioned .homa-theme import/export format. */
@@ -11,48 +12,48 @@ object ThemeFileManager {
     const val SCHEMA = "homa-theme"
     const val CURRENT_VERSION = 1
 
-    fun export(theme: ThemeManager.ThemeDefinition): String = JSONObject().apply {
-        put("schema", SCHEMA)
-        put("version", CURRENT_VERSION)
-        put("theme", JSONObject().apply {
-            put("id", theme.id)
-            put("nameFa", theme.nameFa)
-            put("nameEn", theme.nameEn)
-            put("colors", JSONObject().apply {
-                put("primary", hex(theme.colors.primary))
-                put("accent", hex(theme.colors.accent))
-                put("background", hex(theme.colors.background))
-                put("surface", hex(theme.colors.surface))
-                put("textPrimary", hex(theme.colors.textPrimary))
-                put("textSecondary", hex(theme.colors.textSecondary))
-                put("incomingBubble", hex(theme.colors.incomingBubble))
-                put("outgoingBubble", hex(theme.colors.outgoingBubble))
-                put("toolbar", hex(theme.colors.toolbar))
-                put("tab", hex(theme.colors.tab))
-                put("fab", hex(theme.colors.fab))
-                put("divider", hex(theme.colors.divider))
+    fun export(theme: ThemeManager.ThemeDefinition): String = JsonObject().apply {
+        addProperty("schema", SCHEMA)
+        addProperty("version", CURRENT_VERSION)
+        add("theme", JsonObject().apply {
+            addProperty("id", theme.id)
+            addProperty("nameFa", theme.nameFa)
+            addProperty("nameEn", theme.nameEn)
+            add("colors", JsonObject().apply {
+                addProperty("primary", hex(theme.colors.primary))
+                addProperty("accent", hex(theme.colors.accent))
+                addProperty("background", hex(theme.colors.background))
+                addProperty("surface", hex(theme.colors.surface))
+                addProperty("textPrimary", hex(theme.colors.textPrimary))
+                addProperty("textSecondary", hex(theme.colors.textSecondary))
+                addProperty("incomingBubble", hex(theme.colors.incomingBubble))
+                addProperty("outgoingBubble", hex(theme.colors.outgoingBubble))
+                addProperty("toolbar", hex(theme.colors.toolbar))
+                addProperty("tab", hex(theme.colors.tab))
+                addProperty("fab", hex(theme.colors.fab))
+                addProperty("divider", hex(theme.colors.divider))
             })
         })
-    }.toString(2)
+    }.toString()
 
     fun import(context: Context, raw: String): Result<ThemeManager.ThemeDefinition> =
         importTheme(raw, ThemeManager.allThemes(context).map { it.id }.toSet())
 
     /** Pure parser used by JVM tests and by callers that already have theme IDs. */
     fun importTheme(raw: String, existingIds: Set<String> = emptySet()): Result<ThemeManager.ThemeDefinition> = runCatching {
-        val root = JSONObject(raw)
-        require(root.optString("schema") == SCHEMA) { "فرمت فایل تم معتبر نیست" }
-        val formatVersion = root.optInt("version", 0)
+        val root = JsonParser.parseString(raw).asJsonObject
+        require(root.get("schema")?.asString == SCHEMA) { "فرمت فایل تم معتبر نیست" }
+        val formatVersion = root.get("version")?.asInt ?: 0
         require(formatVersion in 1..CURRENT_VERSION) { "نسخه فایل تم پشتیبانی نمی‌شود" }
-        val item = root.getJSONObject("theme")
-        val colors = item.getJSONObject("colors")
-        val originalId = item.optString("id").trim()
+        val item = root.getAsJsonObject("theme")
+        val colors = item.getAsJsonObject("colors")
+        val originalId = item.get("id")?.asString?.trim().orEmpty()
         require(originalId.isNotBlank()) { "شناسه تم وجود ندارد" }
         val id = if (originalId !in existingIds) originalId else "imported_${UUID.randomUUID()}"
         ThemeManager.ThemeDefinition(
             id = id,
-            nameFa = item.optString("nameFa", item.optString("nameEn", "تم واردشده")).trim().ifBlank { "تم واردشده" },
-            nameEn = item.optString("nameEn", item.optString("nameFa", "Imported theme")).trim().ifBlank { "Imported theme" },
+            nameFa = item.get("nameFa")?.asString?.trim().orEmpty().ifBlank { "تم واردشده" },
+            nameEn = item.get("nameEn")?.asString?.trim().orEmpty().ifBlank { "Imported theme" },
             source = ThemeManager.ThemeSource.IMPORTED,
             colors = ThemeManager.ThemeColors(
                 primary = parseColor(colors, "primary"),
@@ -79,8 +80,8 @@ object ThemeFileManager {
         return true
     }
 
-    private fun parseColor(colors: JSONObject, key: String, default: String? = null): Int {
-        val value = colors.optString(key, default ?: "").trim()
+    private fun parseColor(colors: JsonObject, key: String, default: String? = null): Int {
+        val value = colors.get(key)?.asString?.trim() ?: default.orEmpty()
         require(value.matches(Regex("#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?"))) { "رنگ نامعتبر برای $key" }
         val hex = value.substring(1).toLong(16).toInt()
         return if (value.length == 7) (0xFF000000.toInt() or hex) else hex
