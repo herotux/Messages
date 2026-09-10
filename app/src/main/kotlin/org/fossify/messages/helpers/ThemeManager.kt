@@ -3,14 +3,7 @@ package org.fossify.messages.helpers
 import android.app.Activity
 import android.content.Context
 import android.graphics.Color
-import android.view.Gravity
 import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
-import androidx.appcompat.widget.Toolbar
-import com.google.android.material.card.MaterialCardView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.messages.R
 
 /** Central theme definition for built-in and user-created themes. */
@@ -19,7 +12,6 @@ object ThemeManager {
     private const val KEY_THEME_ID = "selected_theme_id"
     private const val KEY_FAVORITES = "favorite_theme_ids"
     private const val KEY_LIBRARY_SORT = "library_sort"
-    private const val LIBRARY_UI_TAG = "herotux_theme_library_ui"
 
     const val DEFAULT_ID = "none"
     const val AURORA_ID = "aurora"
@@ -84,7 +76,6 @@ object ThemeManager {
     fun selectedThemeId(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         .getString(KEY_THEME_ID, DEFAULT_ID) ?: DEFAULT_ID
 
-    /** Returns the complete currently active theme definition. */
     fun activeTheme(context: Context): ThemeDefinition = current(context)
 
     fun current(context: Context): ThemeDefinition = allThemes(context).firstOrNull { it.id == selectedThemeId(context) }
@@ -134,7 +125,6 @@ object ThemeManager {
     }
 
     fun searchThemes(context: Context, query: String): List<ThemeDefinition> {
-        installLibraryUi(context)
         val q = query.trim()
         val matches = if (q.isEmpty()) allThemes(context) else allThemes(context).filter {
             it.nameFa.contains(q, ignoreCase = true) || it.nameEn.contains(q, ignoreCase = true) || it.id.contains(q, ignoreCase = true)
@@ -142,74 +132,6 @@ object ThemeManager {
         return sortThemes(context, matches, librarySort(context))
     }
 
-    /** Adds library-only controls without changing the standalone builder layout. */
-    private fun installLibraryUi(context: Context) {
-        val activity = context as? org.fossify.messages.activities.ThemeBuilderActivity ?: return
-        val contentRoot = activity.findViewById<ViewGroup>(android.R.id.content)?.getChildAt(0) as? ViewGroup ?: return
-        if (contentRoot.getTag() == LIBRARY_UI_TAG) return
-        val toolbar = contentRoot.getChildAt(0) as? Toolbar ?: return
-        val scroll = (0 until contentRoot.childCount).asSequence().map { contentRoot.getChildAt(it) }.firstOrNull { it is ScrollView } as? ScrollView ?: return
-        val libraryContent = scroll.getChildAt(0) as? LinearLayout ?: return
-        if (libraryContent.childCount < 3) return
-
-        val active = activeTheme(activity)
-        val activeCard = MaterialCardView(activity).apply {
-            radius = activity.dp(18).toFloat()
-            strokeWidth = activity.dp(2)
-            strokeColor = active.colors.accent
-            setCardBackgroundColor(active.colors.surface)
-            val box = LinearLayout(activity).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(activity.dp(14), activity.dp(12), activity.dp(14), activity.dp(12))
-            }
-            box.addView(TextView(activity).apply {
-                text = if (activity.config.useEnglish) "Active theme" else "تم فعال"
-                textSize = 12f
-                setTextColor(active.colors.accent)
-            })
-            box.addView(TextView(activity).apply {
-                text = if (activity.config.useEnglish) active.nameEn else active.nameFa
-                textSize = 19f
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                setTextColor(active.colors.textPrimary)
-                setPadding(0, activity.dp(2), 0, 0)
-            })
-            box.addView(TextView(activity).apply {
-                text = if (activity.config.useEnglish) "Currently applied to Messages" else "در حال حاضر روی برنامه اعمال شده است"
-                textSize = 12f
-                setTextColor(active.colors.textSecondary)
-            })
-            addView(box)
-        }
-        contentRoot.addView(activeCard, 1)
-
-        val sortButton = TextView(activity).apply {
-            text = if (activity.config.useEnglish) "Sort" else "مرتب‌سازی"
-            textSize = 13f
-            gravity = Gravity.CENTER
-            isClickable = true
-            setTextColor(active.colors.accent)
-            setPadding(activity.dp(10), 0, activity.dp(10), 0)
-            setOnClickListener { showLibrarySortDialog(activity) }
-        }
-        toolbar.addView(sortButton, Toolbar.LayoutParams(activity.dp(92), -1).apply { gravity = Gravity.END })
-        contentRoot.setTag(LIBRARY_UI_TAG)
-    }
-
-    private fun showLibrarySortDialog(activity: Activity) {
-        val options = arrayOf("پیش‌فرض / Default", "پسندیده‌ها اول / Favorites first", "نام: A → Z", "نام: Z → A")
-        MaterialAlertDialogBuilder(activity)
-            .setTitle("مرتب‌سازی کتابخانه / Sort library")
-            .setSingleChoiceItems(options, librarySort(activity).ordinal) { dialog, which ->
-                setLibrarySort(activity, ThemeSort.entries[which])
-                dialog.dismiss()
-                activity.recreate()
-            }
-            .setNegativeButton("لغو / Cancel", null)
-            .show()
-    }
-
-    /** Returns themes in a deterministic order suitable for the library UI. */
     fun sortThemes(context: Context, themes: List<ThemeDefinition>, sort: ThemeSort): List<ThemeDefinition> = when (sort) {
         ThemeSort.DEFAULT -> themes
         ThemeSort.FAVORITES_FIRST -> themes.sortedWith(compareByDescending<ThemeDefinition> { isFavorite(context, it.id) }.thenBy { it.nameEn.lowercase() })
@@ -217,7 +139,6 @@ object ThemeManager {
         ThemeSort.NAME_DESC -> themes.sortedWith(compareByDescending<ThemeDefinition> { it.nameEn.lowercase() }.thenBy { it.id })
     }
 
-    /** Search plus sorting in one operation for library screens. */
     fun queryThemes(context: Context, query: String, sort: ThemeSort = librarySort(context)): List<ThemeDefinition> =
         sortThemes(context, searchThemes(context, query), sort)
 
@@ -233,7 +154,6 @@ object ThemeManager {
         return true
     }
 
-    /** Deletes any persisted custom theme, but never a built-in theme. */
     fun deleteCustomTheme(context: Context, id: String): Boolean {
         val stored = ThemeStorage.load(context)
         if (stored.none { it.id == id }) return false
@@ -243,7 +163,6 @@ object ThemeManager {
         return true
     }
 
-    /** Backward-compatible alias for callers that only manage user-created themes. */
     fun deleteUserTheme(context: Context, id: String): Boolean = deleteCustomTheme(context, id)
 
     fun applyBackground(activity: Activity) {
