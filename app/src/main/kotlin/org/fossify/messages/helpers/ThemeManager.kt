@@ -11,6 +11,7 @@ object ThemeManager {
     private const val PREFS = "messages_theme"
     private const val KEY_THEME_ID = "selected_theme_id"
     private const val KEY_FAVORITES = "favorite_theme_ids"
+    private const val KEY_LIBRARY_SORT = "library_sort"
 
     const val DEFAULT_ID = "none"
     const val AURORA_ID = "aurora"
@@ -53,7 +54,7 @@ object ThemeManager {
         ThemeDefinition(SUNSET_ID, "غروب", "Sunset", backgroundDrawable = R.drawable.bg_theme_sunset, colors = sunsetColors),
         ThemeDefinition(FOREST_ID, "جنگل", "Forest", backgroundDrawable = R.drawable.bg_theme_forest, colors = forestColors),
         ThemeDefinition(VIOLET_ID, "بنفش", "Violet", backgroundDrawable = R.drawable.bg_theme_violet, colors = violetColors),
-        ThemeDefinition(MIDNIGHT_ID, "نیمه‌شب", "Midnight", backgroundDrawable = R.drawable.bg_theme_midnight, colors = midnightColors)
+        ThemeDefinition(MIDNIGHT_ID, "نیمه‌شب", "Midnight", backgroundDrawable = midnightColors)
     )
 
     fun allThemes(context: Context): List<ThemeDefinition> = builtInThemes + ThemeStorage.load(context)
@@ -74,6 +75,9 @@ object ThemeManager {
 
     fun selectedThemeId(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         .getString(KEY_THEME_ID, DEFAULT_ID) ?: DEFAULT_ID
+
+    /** Returns the complete currently active theme definition. */
+    fun activeTheme(context: Context): ThemeDefinition = current(context)
 
     fun current(context: Context): ThemeDefinition = allThemes(context).firstOrNull { it.id == selectedThemeId(context) }
         ?: builtInThemes.first()
@@ -113,24 +117,32 @@ object ThemeManager {
 
     fun favoriteThemes(context: Context): List<ThemeDefinition> = allThemes(context).filter { isFavorite(context, it.id) }
 
+    fun librarySort(context: Context): ThemeSort = ThemeSort.entries.getOrElse(
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_LIBRARY_SORT, ThemeSort.FAVORITES_FIRST.ordinal)
+    ) { ThemeSort.FAVORITES_FIRST }
+
+    fun setLibrarySort(context: Context, sort: ThemeSort) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_LIBRARY_SORT, sort.ordinal).apply()
+    }
+
     fun searchThemes(context: Context, query: String): List<ThemeDefinition> {
         val q = query.trim()
-        if (q.isEmpty()) return allThemes(context)
-        return allThemes(context).filter {
+        val matches = if (q.isEmpty()) allThemes(context) else allThemes(context).filter {
             it.nameFa.contains(q, ignoreCase = true) || it.nameEn.contains(q, ignoreCase = true) || it.id.contains(q, ignoreCase = true)
         }
+        return sortThemes(context, matches, librarySort(context))
     }
 
     /** Returns themes in a deterministic order suitable for the library UI. */
     fun sortThemes(context: Context, themes: List<ThemeDefinition>, sort: ThemeSort): List<ThemeDefinition> = when (sort) {
         ThemeSort.DEFAULT -> themes
         ThemeSort.FAVORITES_FIRST -> themes.sortedWith(compareByDescending<ThemeDefinition> { isFavorite(context, it.id) }.thenBy { it.nameEn.lowercase() })
-        ThemeSort.NAME_ASC -> themes.sortedBy { it.nameEn.lowercase() }
-        ThemeSort.NAME_DESC -> themes.sortedByDescending { it.nameEn.lowercase() }
+        ThemeSort.NAME_ASC -> themes.sortedWith(compareBy<ThemeDefinition> { it.nameEn.lowercase() }.thenBy { it.id })
+        ThemeSort.NAME_DESC -> themes.sortedWith(compareByDescending<ThemeDefinition> { it.nameEn.lowercase() }.thenBy { it.id })
     }
 
     /** Search plus sorting in one operation for library screens. */
-    fun queryThemes(context: Context, query: String, sort: ThemeSort = ThemeSort.DEFAULT): List<ThemeDefinition> =
+    fun queryThemes(context: Context, query: String, sort: ThemeSort = librarySort(context)): List<ThemeDefinition> =
         sortThemes(context, searchThemes(context, query), sort)
 
     fun saveUserTheme(context: Context, theme: ThemeDefinition) {
