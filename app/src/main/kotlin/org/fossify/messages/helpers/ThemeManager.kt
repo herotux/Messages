@@ -21,6 +21,7 @@ object ThemeManager {
     const val MIDNIGHT_ID = "midnight"
 
     enum class ThemeSource { BUILT_IN, USER, IMPORTED, COMMUNITY }
+    enum class ThemeSort { DEFAULT, FAVORITES_FIRST, NAME_ASC, NAME_DESC }
 
     data class ThemeColors(
         val primary: Int, val accent: Int, val background: Int, val surface: Int,
@@ -119,6 +120,18 @@ object ThemeManager {
             it.nameFa.contains(q, ignoreCase = true) || it.nameEn.contains(q, ignoreCase = true) || it.id.contains(q, ignoreCase = true)
         }
     }
+
+    /** Returns themes in a deterministic order suitable for the library UI. */
+    fun sortThemes(context: Context, themes: List<ThemeDefinition>, sort: ThemeSort): List<ThemeDefinition> = when (sort) {
+        ThemeSort.DEFAULT -> themes
+        ThemeSort.FAVORITES_FIRST -> themes.sortedWith(compareByDescending<ThemeDefinition> { isFavorite(context, it.id) }.thenBy { it.nameEn.lowercase() })
+        ThemeSort.NAME_ASC -> themes.sortedBy { it.nameEn.lowercase() }
+        ThemeSort.NAME_DESC -> themes.sortedByDescending { it.nameEn.lowercase() }
+    }
+
+    /** Search plus sorting in one operation for library screens. */
+    fun queryThemes(context: Context, query: String, sort: ThemeSort = ThemeSort.DEFAULT): List<ThemeDefinition> =
+        sortThemes(context, searchThemes(context, query), sort)
 
     fun saveUserTheme(context: Context, theme: ThemeDefinition) {
         val users = ThemeStorage.load(context).filterNot { it.id == theme.id }
