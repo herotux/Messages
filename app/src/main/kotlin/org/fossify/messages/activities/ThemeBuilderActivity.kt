@@ -286,4 +286,6 @@ class ThemeBuilderActivity : SimpleActivity() {
         val luminance = 0.2126f * r + 0.7152f * g + 0.0722f * b
         return luminance > 0.55f
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
