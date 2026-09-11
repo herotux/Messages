@@ -27,30 +27,19 @@ object ThemeScheduleManager {
 
     fun setEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_ENABLED, enabled).apply()
-        if (enabled) {
-            applyCurrent(context)
-            scheduleNext(context)
-        } else {
-            cancel(context)
-        }
+        if (enabled) { applyCurrent(context); scheduleNext(context) } else cancel(context)
     }
 
     fun setDayTheme(context: Context, id: String) {
         if (ThemeManager.find(context, id) == null) return
         prefs(context).edit().putString(KEY_DAY_THEME, id).apply()
-        if (isEnabled(context)) {
-            applyCurrent(context)
-            scheduleNext(context)
-        }
+        if (isEnabled(context)) { applyCurrent(context); scheduleNext(context) }
     }
 
     fun setNightTheme(context: Context, id: String) {
         if (ThemeManager.find(context, id) == null) return
         prefs(context).edit().putString(KEY_NIGHT_THEME, id).apply()
-        if (isEnabled(context)) {
-            applyCurrent(context)
-            scheduleNext(context)
-        }
+        if (isEnabled(context)) { applyCurrent(context); scheduleNext(context) }
     }
 
     fun setDayMinutes(context: Context, minutes: Int) {
@@ -86,23 +75,24 @@ object ThemeScheduleManager {
         val triggerAt = candidates.minByOrNull { it.timeInMillis }?.timeInMillis ?: return
         val pendingIntent = pendingIntent(context)
         alarmManager.cancel(pendingIntent)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
-        } else {
-            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+        else alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
     }
 
-    fun cancel(context: Context) {
-        context.getSystemService(AlarmManager::class.java)?.cancel(pendingIntent(context))
+    fun cancel(context: Context) { context.getSystemService(AlarmManager::class.java)?.cancel(pendingIntent(context)) }
+
+    internal fun isDayPeriodAtMinutes(day: Int, night: Int, now: Int): Boolean {
+        val safeDay = day.coerceIn(0, 1439)
+        val safeNight = night.coerceIn(0, 1439)
+        val safeNow = now.coerceIn(0, 1439)
+        if (safeDay == safeNight) return true
+        return if (safeDay < safeNight) safeNow in safeDay until safeNight else safeNow >= safeDay || safeNow < safeNight
     }
 
     private fun isDayPeriod(context: Context): Boolean {
-        val day = dayMinutes(context)
-        val night = nightMinutes(context)
-        if (day == night) return true
-        val now = Calendar.getInstance().get(Calendar.HOUR_OF_DAY) * 60 + Calendar.getInstance().get(Calendar.MINUTE)
-        return if (day < night) now in day until night else now >= day || now < night
+        val calendar = Calendar.getInstance()
+        val now = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+        return isDayPeriodAtMinutes(dayMinutes(context), nightMinutes(context), now)
     }
 
     private fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
