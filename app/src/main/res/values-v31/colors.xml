@@ -1,13 +1,22 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources><color name="you_primary_color">@android:color/system_accent1_400</color>
-    <color name="you_neutral_text_color">@android:color/system_accent1_900</color>
-    <color name="you_dialog_background_color">@android:color/system_accent2_50</color>
-    <color name="you_background_color">@android:color/system_neutral1_10</color>
-    <color name="you_bottom_bar_color">@android:color/system_neutral1_50</color>    
-    <color name="you_contextual_status_bar_color">@android:color/system_accent1_400</color>
-    <color name="you_status_bar_color">@android:color/system_accent1_50</color>
-    <color name="you_ripple_color">@android:color/system_neutral1_200</color>
-<color name="you_selected_item_background_color">@android:color/system_accent2_100</color>
-    <color name="you_surface_color">@android:color/system_neutral1_50</color>
-    <color name="you_primary_dark_color">@android:color/system_accent1_600</color>
-    </resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ compatibility bridge: existing consumers resolve through M3 semantic roles. -->
+    <color name="you_primary_color">@color/m3_primary</color>
+    <color name="you_neutral_text_color">@color/m3_on_surface</color>
+    <color name="you_dialog_background_color">@color/m3_surface</color>
+    <color name="you_background_color">@color/m3_background</color>
+    <color name="you_bottom_bar_color">@color/m3_surface</color>
+    <color name="you_contextual_status_bar_color">@color/m3_status_bar</color>
+    <color name="you_status_bar_color">@color/m3_surface</color>
+    <color name="you_ripple_color">@color/m3_ripple</color>
+    <color name="you_selected_item_background_color">@color/m3_secondary_container</color>
+    <color name="you_surface_color">@color/m3_surface_variant</color>
+    <color name="you_primary_dark_color">@color/m3_status_bar</color>
+
+    <!-- Legacy names still used by a few shared styles; keep them semantically wired. -->
+    <color name="color_primary">@color/m3_primary</color>
+    <color name="color_primary_dark">@color/m3_status_bar</color>
+    <color name="color_accent">@color/m3_primary</color>
+    <color name="theme_light_background_color">@color/m3_background</color>
+    <color name="theme_light_text_color">@color/m3_on_background</color>
+</resources>
