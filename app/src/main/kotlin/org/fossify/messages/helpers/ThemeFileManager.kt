@@ -2,6 +2,7 @@ package org.fossify.messages.helpers
 
 import android.content.Context
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.util.UUID
@@ -11,7 +12,7 @@ object ThemeFileManager {
     const val FILE_EXTENSION = ".homa-theme"
     const val MIME_TYPE = "application/json"
     const val SCHEMA = "homa-theme"
-    const val CURRENT_VERSION = 1
+    const val CURRENT_VERSION = 2
 
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -22,6 +23,9 @@ object ThemeFileManager {
             addProperty("id", theme.id)
             addProperty("nameFa", theme.nameFa)
             addProperty("nameEn", theme.nameEn)
+            addProperty("backgroundType", theme.backgroundType.name)
+            addProperty("gradientAngle", theme.gradientAngle)
+            add("gradientColors", JsonArray().apply { theme.gradientColors.forEach { add(hex(it)) } })
             add("colors", JsonObject().apply {
                 addProperty("primary", hex(theme.colors.primary))
                 addProperty("accent", hex(theme.colors.accent))
@@ -53,6 +57,13 @@ object ThemeFileManager {
         val originalId = item.get("id")?.asString?.trim().orEmpty()
         require(originalId.isNotBlank()) { "شناسه تم وجود ندارد" }
         val id = if (originalId !in existingIds) originalId else "imported_${UUID.randomUUID()}"
+        val backgroundType = runCatching {
+            ThemeManager.BackgroundType.valueOf(item.get("backgroundType")?.asString ?: ThemeManager.BackgroundType.SOLID.name)
+        }.getOrDefault(ThemeManager.BackgroundType.SOLID)
+        val gradientColors = item.getAsJsonArray("gradientColors")?.mapNotNull { element ->
+            runCatching { parseColorValue(element.asString) }.getOrNull()
+        } ?: emptyList()
+        require(backgroundType == ThemeManager.BackgroundType.SOLID || gradientColors.size >= 2) { "رنگ‌های گرادیان کامل نیستند" }
         ThemeManager.ThemeDefinition(
             id = id,
             nameFa = item.get("nameFa")?.asString?.trim().orEmpty().ifBlank { "تم واردشده" },
@@ -72,18 +83,29 @@ object ThemeFileManager {
                 fab = parseColor(colors, "fab"),
                 divider = parseColor(colors, "divider", "#33808080")
             ),
-            version = formatVersion
+            version = formatVersion,
+            backgroundType = backgroundType,
+            gradientColors = gradientColors,
+            gradientAngle = normalizeAngle(item.get("gradientAngle")?.asInt ?: 0)
         )
     }
 
-    fun saveImported(context: Context, theme: ThemeManager.ThemeDefinition): Boolean =
-        ThemeManager.saveImportedTheme(context, theme)
+    fun saveImported(context: Context, theme: ThemeManager.ThemeDefinition): Boolean = ThemeManager.saveImportedTheme(context, theme)
 
     private fun parseColor(colors: JsonObject, key: String, default: String? = null): Int {
         val value = colors.get(key)?.asString?.trim() ?: default.orEmpty()
+        return parseColorValue(value, key)
+    }
+
+    private fun parseColorValue(value: String, key: String = "color"): Int {
         require(value.matches(Regex("#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?"))) { "رنگ نامعتبر برای $key" }
         val hex = value.substring(1).toLong(16).toInt()
         return if (value.length == 7) (0xFF000000.toInt() or hex) else hex
+    }
+
+    private fun normalizeAngle(value: Int): Int {
+        val normalized = ((value % 360) + 360) % 360
+        return ((normalized + 22) / 45 * 45) % 360
     }
 
     private fun hex(color: Int): String = String.format("#%08X", color)
