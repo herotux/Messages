@@ -59,10 +59,8 @@ open class SimpleActivity : BaseSimpleActivity() {
     /** Applies the active global or conversation-specific ThemeManager palette. */
     private fun applyThemeChrome() {
         val colors = ThemeManager.themeForActivity(this).colors
-
         supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.toolbar))
         supportActionBar?.setStackedBackgroundDrawable(ColorDrawable(colors.toolbar))
-
         window.statusBarColor = colors.toolbar
         window.navigationBarColor = colors.background
 
@@ -104,6 +102,22 @@ open class SimpleActivity : BaseSimpleActivity() {
                 view.setHintTextColor(colors.textSecondary)
                 view.highlightColor = colors.accent
             }
+        }
+
+        when (view.id) {
+            R.id.message_holder -> view.setBackgroundColor(colors.surface)
+            R.id.scheduled_message_holder -> view.setBackgroundColor(colors.surface)
+            R.id.thread_type_message -> if (view is TextView) {
+                view.setTextColor(colors.textPrimary)
+                view.setHintTextColor(colors.textSecondary)
+            }
+            R.id.thread_send_message -> {
+                view.backgroundTintList = ColorStateList.valueOf(colors.fab)
+                if (view is TextView) view.setTextColor(colors.textPrimary)
+            }
+            R.id.thread_add_attachment,
+            R.id.thread_select_sim_icon,
+            R.id.thread_character_counter -> if (view is TextView) view.setTextColor(colors.textSecondary)
         }
 
         styleMessageBubble(view, colors)
