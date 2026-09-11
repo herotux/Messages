@@ -38,7 +38,9 @@ object ThemeManager {
         val backgroundDrawable: Int = 0, val colors: ThemeColors, val version: Int = 1,
         val backgroundType: BackgroundType = BackgroundType.SOLID,
         val gradientColors: List<Int> = emptyList(), val gradientAngle: Int = 0,
-        val wallpaperUri: String? = null
+        val wallpaperUri: String? = null,
+        /** Temporary payload used while importing an embedded wallpaper. */
+        val embeddedWallpaperBase64: String? = null
     )
 
     private fun c(value: String): Int = Color.parseColor(value)
@@ -83,8 +85,16 @@ object ThemeManager {
     fun searchThemes(context: Context, query: String): List<ThemeDefinition> { val q = query.trim(); val matches = if (q.isEmpty()) allThemes(context) else allThemes(context).filter { it.nameFa.contains(q, true) || it.nameEn.contains(q, true) || it.id.contains(q, true) }; return sortThemes(context, matches, librarySort(context)) }
     fun sortThemes(context: Context, themes: List<ThemeDefinition>, sort: ThemeSort): List<ThemeDefinition> = when (sort) { ThemeSort.DEFAULT -> themes; ThemeSort.FAVORITES_FIRST -> themes.sortedWith(compareByDescending<ThemeDefinition> { isFavorite(context, it.id) }.thenBy { it.nameEn.lowercase() }); ThemeSort.NAME_ASC -> themes.sortedWith(compareBy<ThemeDefinition> { it.nameEn.lowercase() }.thenBy { it.id }); ThemeSort.NAME_DESC -> themes.sortedWith(compareByDescending<ThemeDefinition> { it.nameEn.lowercase() }.thenBy { it.id }) }
     fun queryThemes(context: Context, query: String, sort: ThemeSort = librarySort(context)): List<ThemeDefinition> = sortThemes(context, searchThemes(context, query), sort)
-    fun saveUserTheme(context: Context, theme: ThemeDefinition) { val users = ThemeStorage.load(context).filterNot { it.id == theme.id }; ThemeStorage.save(context, users + theme.copy(source = ThemeSource.USER, backgroundDrawable = 0)) }
-    fun saveImportedTheme(context: Context, theme: ThemeDefinition): Boolean { if (theme.source != ThemeSource.IMPORTED) return false; val existing = ThemeStorage.load(context).filterNot { it.id == theme.id }; ThemeStorage.save(context, existing + theme.copy(backgroundDrawable = 0)); return true }
+    fun saveUserTheme(context: Context, theme: ThemeDefinition) { val users = ThemeStorage.load(context).filterNot { it.id == theme.id }; ThemeStorage.save(context, users + theme.copy(source = ThemeSource.USER, backgroundDrawable = 0, embeddedWallpaperBase64 = null)) }
+    fun saveImportedTheme(context: Context, theme: ThemeDefinition): Boolean {
+        if (theme.source != ThemeSource.IMPORTED) return false
+        val storedTheme = if (!theme.embeddedWallpaperBase64.isNullOrBlank()) {
+            ThemeFileManager.materializeEmbeddedWallpaper(context, theme).getOrElse { return false }
+        } else theme
+        val existing = ThemeStorage.load(context).filterNot { it.id == storedTheme.id }
+        ThemeStorage.save(context, existing + storedTheme.copy(backgroundDrawable = 0, embeddedWallpaperBase64 = null))
+        return true
+    }
     fun deleteCustomTheme(context: Context, id: String): Boolean { val stored = ThemeStorage.load(context); if (stored.none { it.id == id }) return false; ThemeStorage.save(context, stored.filterNot { it.id == id }); setFavorite(context, id, false); if (selectedThemeId(context) == id) select(context, DEFAULT_ID); return true }
     fun deleteUserTheme(context: Context, id: String): Boolean = deleteCustomTheme(context, id)
     fun applyBackground(activity: Activity) { val theme = current(activity); val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return; val root = if (content.childCount == 1 && content.getChildAt(0) is ViewGroup) content.getChildAt(0) as ViewGroup else content; if (theme.backgroundDrawable != 0) root.setBackgroundResource(theme.backgroundDrawable) else ThemeBackground.apply(root, theme.backgroundType, theme.colors.background, theme.gradientColors, theme.gradientAngle, theme.wallpaperUri) }
