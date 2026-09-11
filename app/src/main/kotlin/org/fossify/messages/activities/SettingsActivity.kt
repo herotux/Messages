@@ -61,7 +61,6 @@ class SettingsActivity : SimpleActivity() {
         private const val BANKS = "banks"
         private const val PRIVACY = "privacy"
         private const val ABOUT = "about"
-        private const val EXTRA_THEME_BUILDER = "theme_builder"
         private const val EXTRA_THEME_ID = "theme_id"
     }
 
@@ -202,7 +201,7 @@ class SettingsActivity : SimpleActivity() {
     private fun themeLibrary(root: LinearLayout) {
         section(root, t("کتابخانه تم", "Theme library"))
         row(root, t("＋ ساخت تم جدید", "+ Create new theme"), t("ساخت تم با رنگ‌ها و پیش‌نمایش زنده", "Create a theme with colors and live preview")) {
-            startActivity(Intent(this, HerotuxAboutActivity::class.java).putExtra(EXTRA_THEME_BUILDER, true))
+            startActivity(Intent(this, ThemeBuilderActivity::class.java))
         }
         val selectedId = ThemeManager.selectedThemeId(this)
         val themes = ThemeManager.allThemes(this)
