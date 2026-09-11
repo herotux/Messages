@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 semantic dark palette for pre-dynamic Android versions. -->
+    <color name="m3_primary">@color/md_green_300</color>
+    <color name="m3_on_primary">@color/md_grey_900</color>
+    <color name="m3_primary_container">@color/md_green_700</color>
+    <color name="m3_on_primary_container">@color/md_grey_white</color>
+
+    <color name="m3_secondary">@color/md_teal_300</color>
+    <color name="m3_on_secondary">@color/md_grey_900</color>
+    <color name="m3_secondary_container">@color/md_teal_700</color>
+    <color name="m3_on_secondary_container">@color/md_grey_white</color>
+
+    <color name="m3_tertiary">@color/md_blue_300</color>
+    <color name="m3_on_tertiary">@color/md_grey_900</color>
+    <color name="m3_tertiary_container">@color/md_blue_700</color>
+    <color name="m3_on_tertiary_container">@color/md_grey_white</color>
+
+    <color name="m3_background">@color/theme_dark_background_color</color>
+    <color name="m3_on_background">@color/md_grey_100</color>
+    <color name="m3_surface">@color/theme_dark_background_color</color>
+    <color name="m3_on_surface">@color/md_grey_100</color>
+    <color name="m3_surface_variant">@color/md_grey_700</color>
+    <color name="m3_on_surface_variant">@color/md_grey_200</color>
+
+    <color name="m3_outline">@color/md_grey_500</color>
+    <color name="m3_error">@color/md_red_300</color>
+    <color name="m3_on_error">@color/md_grey_900</color>
+
+    <color name="m3_status_bar">@color/md_green_900</color>
+    <color name="m3_navigation_bar">@color/theme_dark_background_color</color>
+    <color name="m3_ripple">@color/activated_item_foreground</color>
+</resources>
