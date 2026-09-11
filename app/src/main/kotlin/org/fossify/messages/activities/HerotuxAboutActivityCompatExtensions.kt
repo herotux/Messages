@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
 import org.fossify.commons.helpers.FontHelper
+import org.fossify.messages.extensions.config
 
 /**
  * Compatibility helpers for the legacy HerotuxAboutActivity UI.
@@ -13,7 +14,7 @@ import org.fossify.commons.helpers.FontHelper
  * without coupling ThemeManager to Android UI code.
  */
 val HerotuxAboutActivity.config
-    get() = org.fossify.messages.extensions.config
+    get() = applicationContext.config
 
 var EditText.singleLine: Boolean
     get() = maxLines == 1
@@ -42,4 +43,9 @@ fun View.applyPersianFont() {
     }
 
     apply(this)
+}
+
+/** Legacy call site compatibility: the activity itself is a convenient root. */
+fun HerotuxAboutActivity.applyPersianFont() {
+    window.decorView.applyPersianFont()
 }
