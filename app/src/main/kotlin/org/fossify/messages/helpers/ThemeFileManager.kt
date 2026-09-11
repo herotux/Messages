@@ -33,11 +33,18 @@ object ThemeFileManager {
             addProperty("backgroundType", theme.backgroundType.name)
             addProperty("gradientAngle", normalizeAngle(theme.gradientAngle))
             addProperty("wallpaperUri", theme.wallpaperUri)
-            if (theme.backgroundType == ThemeManager.BackgroundType.WALLPAPER && context != null) {
-                val bytes = readWallpaperBytes(context, theme.wallpaperUri)
-                require(bytes != null) { "تصویر پس‌زمینه قابل خواندن نیست" }
-                require(bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "حجم تصویر پس‌زمینه بیش از حد مجاز است" }
-                addProperty("wallpaperBase64", ThemeBase64.encode(bytes))
+            val embeddedWallpaper = when {
+                theme.backgroundType != ThemeManager.BackgroundType.WALLPAPER -> null
+                !theme.embeddedWallpaperBase64.isNullOrBlank() -> theme.embeddedWallpaperBase64
+                context != null -> readWallpaperBytes(context, theme.wallpaperUri)?.let { bytes ->
+                    require(bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "حجم تصویر پس‌زمینه بیش از حد مجاز است" }
+                    ThemeBase64.encode(bytes)
+                }
+                else -> null
+            }
+            addProperty("wallpaperBase64", embeddedWallpaper)
+            if (theme.backgroundType == ThemeManager.BackgroundType.WALLPAPER && context != null && embeddedWallpaper == null) {
+                require(false) { "تصویر پس‌زمینه قابل خواندن نیست" }
             }
             add("gradientColors", JsonArray().apply { theme.gradientColors.forEach { add(hex(it)) } })
             add("colors", JsonObject().apply {
