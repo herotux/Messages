@@ -23,6 +23,7 @@ object ThemeManager {
 
     enum class ThemeSource { BUILT_IN, USER, IMPORTED, COMMUNITY }
     enum class ThemeSort { DEFAULT, FAVORITES_FIRST, NAME_ASC, NAME_DESC }
+    enum class BackgroundType { SOLID, LINEAR_GRADIENT }
 
     data class ThemeColors(
         val primary: Int, val accent: Int, val background: Int, val surface: Int,
@@ -34,7 +35,9 @@ object ThemeManager {
     data class ThemeDefinition(
         val id: String, val nameFa: String, val nameEn: String,
         val source: ThemeSource = ThemeSource.BUILT_IN,
-        val backgroundDrawable: Int = 0, val colors: ThemeColors, val version: Int = 1
+        val backgroundDrawable: Int = 0, val colors: ThemeColors, val version: Int = 1,
+        val backgroundType: BackgroundType = BackgroundType.SOLID,
+        val gradientColors: List<Int> = emptyList(), val gradientAngle: Int = 0
     )
 
     private fun c(value: String): Int = Color.parseColor(value)
@@ -58,10 +61,8 @@ object ThemeManager {
     )
 
     fun allThemes(context: Context): List<ThemeDefinition> = builtInThemes + ThemeStorage.load(context)
-
     fun customThemes(context: Context): List<ThemeDefinition> = ThemeStorage.load(context)
         .filter { it.source == ThemeSource.USER || it.source == ThemeSource.IMPORTED || it.source == ThemeSource.COMMUNITY }
-
     fun userThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.USER }
     fun importedThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.IMPORTED }
     fun communityThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.COMMUNITY }
@@ -75,12 +76,8 @@ object ThemeManager {
 
     fun selectedThemeId(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         .getString(KEY_THEME_ID, DEFAULT_ID) ?: DEFAULT_ID
-
     fun activeTheme(context: Context): ThemeDefinition = current(context)
-
-    fun current(context: Context): ThemeDefinition = allThemes(context).firstOrNull { it.id == selectedThemeId(context) }
-        ?: builtInThemes.first()
-
+    fun current(context: Context): ThemeDefinition = allThemes(context).firstOrNull { it.id == selectedThemeId(context) } ?: builtInThemes.first()
     fun colors(context: Context): ThemeColors = current(context).colors
 
     fun select(context: Context, id: String): Boolean {
@@ -139,8 +136,7 @@ object ThemeManager {
         ThemeSort.NAME_DESC -> themes.sortedWith(compareByDescending<ThemeDefinition> { it.nameEn.lowercase() }.thenBy { it.id })
     }
 
-    fun queryThemes(context: Context, query: String, sort: ThemeSort = librarySort(context)): List<ThemeDefinition> =
-        sortThemes(context, searchThemes(context, query), sort)
+    fun queryThemes(context: Context, query: String, sort: ThemeSort = librarySort(context)): List<ThemeDefinition> = sortThemes(context, searchThemes(context, query), sort)
 
     fun saveUserTheme(context: Context, theme: ThemeDefinition) {
         val users = ThemeStorage.load(context).filterNot { it.id == theme.id }
@@ -169,6 +165,10 @@ object ThemeManager {
         val theme = current(activity)
         val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
         val root = if (content.childCount == 1 && content.getChildAt(0) is ViewGroup) content.getChildAt(0) as ViewGroup else content
-        if (theme.backgroundDrawable != 0) root.setBackgroundResource(theme.backgroundDrawable) else root.setBackgroundColor(theme.colors.background)
+        if (theme.backgroundDrawable != 0) {
+            root.setBackgroundResource(theme.backgroundDrawable)
+        } else {
+            ThemeBackground.apply(root, theme.backgroundType, theme.colors.background, theme.gradientColors, theme.gradientAngle)
+        }
     }
 }
