@@ -40,6 +40,9 @@ object ThemeStorage {
         put("nameFa", theme.nameFa)
         put("nameEn", theme.nameEn)
         put("version", theme.version)
+        put("backgroundType", theme.backgroundType.name)
+        put("gradientAngle", theme.gradientAngle)
+        put("gradientColors", JSONArray().apply { theme.gradientColors.forEach { put(hex(it)) } })
         put("primary", hex(theme.colors.primary))
         put("accent", hex(theme.colors.accent))
         put("background", hex(theme.colors.background))
@@ -69,13 +72,23 @@ object ThemeStorage {
             fab = Color.parseColor(item.getString("fab")),
             divider = Color.parseColor(item.optString("divider", "#33808080"))
         )
+        val type = runCatching { ThemeManager.BackgroundType.valueOf(item.optString("backgroundType", ThemeManager.BackgroundType.SOLID.name)) }
+            .getOrDefault(ThemeManager.BackgroundType.SOLID)
+        val gradientColors = item.optJSONArray("gradientColors")?.let { array ->
+            buildList {
+                for (i in 0 until array.length()) runCatching { Color.parseColor(array.getString(i)) }.getOrNull()?.let(::add)
+            }
+        } ?: emptyList()
         return ThemeManager.ThemeDefinition(
             id = item.getString("id"),
             nameFa = item.optString("nameFa", item.optString("nameEn", "Custom")),
             nameEn = item.optString("nameEn", item.optString("nameFa", "Custom")),
             source = ThemeManager.ThemeSource.USER,
             colors = colors,
-            version = item.optInt("version", 1).coerceAtLeast(1)
+            version = item.optInt("version", 1).coerceAtLeast(1),
+            backgroundType = type,
+            gradientColors = gradientColors,
+            gradientAngle = item.optInt("gradientAngle", 0)
         )
     }
 
