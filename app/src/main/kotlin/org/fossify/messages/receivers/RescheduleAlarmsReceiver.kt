@@ -12,10 +12,13 @@ class RescheduleAlarmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         ensureBackgroundThread {
-            context.rescheduleAllScheduledMessages()
-            ThemeScheduleManager.applyCurrent(context)
-            ThemeScheduleManager.scheduleNext(context)
-            pendingResult.finish()
+            try {
+                context.rescheduleAllScheduledMessages()
+                ThemeScheduleManager.applyCurrent(context)
+                ThemeScheduleManager.scheduleNext(context)
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 }
