@@ -89,7 +89,8 @@ object ThemeFileManager {
         val wallpaperBase64 = item.get("wallpaperBase64")?.takeIf { !it.isJsonNull }?.asString?.trim()?.takeIf { it.isNotBlank() }
         require(backgroundType != ThemeManager.BackgroundType.LINEAR_GRADIENT || gradientColors.size >= 2) { "رنگ‌های گرادیان کامل نیستند" }
         require(backgroundType != ThemeManager.BackgroundType.WALLPAPER || !wallpaperUri.isNullOrBlank() || !wallpaperBase64.isNullOrBlank()) { "تصویر پس‌زمینه تم وجود ندارد" }
-        wallpaperBase64?.let { validateWallpaperBase64(it) }
+        // Keep the embedded payload intact while parsing. Actual Base64 decoding and size validation
+        // happen when the imported theme is materialized/saved, where Android's decoder is available.
         ThemeManager.ThemeDefinition(
             id = id,
             nameFa = item.get("nameFa")?.asString?.trim().orEmpty().ifBlank { "تم واردشده" },
@@ -136,11 +137,6 @@ object ThemeFileManager {
                 output.toByteArray()
             }
         }.getOrNull()
-    }
-
-    private fun validateWallpaperBase64(encoded: String) {
-        val bytes = decodeWallpaperBase64(encoded)
-        require(bytes.isNotEmpty() && bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "داده تصویر پس‌زمینه نامعتبر یا بیش از حد بزرگ است" }
     }
 
     private fun decodeWallpaperBase64(encoded: String): ByteArray = runCatching {
