@@ -1,0 +1,44 @@
+name: Temporary main theme route fix
+on:
+  push:
+    paths:
+      - '.github/workflows/tmp-main-theme-route.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Patch SettingsActivity
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt')
+          s = p.read_text()
+          old = 'startActivity(Intent(this, HerotuxAboutActivity::class.java).putExtra(EXTRA_THEME_BUILDER, true))'
+          new = 'startActivity(Intent(this, ThemeBuilderActivity::class.java))'
+          if old not in s:
+              raise SystemExit('expected SettingsActivity theme-library route not found')
+          s = s.replace(old, new, 1)
+          s = s.replace('        private const val EXTRA_THEME_BUILDER = "theme_builder"\n', '', 1)
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
+          git commit -m 'fix: route settings theme library to ThemeBuilder'
+          git push origin HEAD:main
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          rm -f .github/workflows/tmp-main-theme-route.yml
+          git add .github/workflows/tmp-main-theme-route.yml
+          git commit -m 'chore: remove temporary theme route workflow' || true
+          git push origin HEAD:main || true
+
