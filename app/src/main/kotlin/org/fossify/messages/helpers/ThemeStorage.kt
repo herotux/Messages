@@ -1,7 +1,6 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
-import android.graphics.Color
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -60,18 +59,18 @@ object ThemeStorage {
 
     private fun fromJson(item: JSONObject): ThemeManager.ThemeDefinition {
         val colors = ThemeManager.ThemeColors(
-            Color.parseColor(item.getString("primary")),
-            Color.parseColor(item.getString("accent")),
-            Color.parseColor(item.getString("background")),
-            Color.parseColor(item.getString("surface")),
-            Color.parseColor(item.getString("textPrimary")),
-            Color.parseColor(item.getString("textSecondary")),
-            Color.parseColor(item.getString("incomingBubble")),
-            Color.parseColor(item.getString("outgoingBubble")),
-            Color.parseColor(item.getString("toolbar")),
-            Color.parseColor(item.getString("tab")),
-            Color.parseColor(item.getString("fab")),
-            Color.parseColor(item.optString("divider", "#33808080"))
+            parseColor(item.getString("primary")),
+            parseColor(item.getString("accent")),
+            parseColor(item.getString("background")),
+            parseColor(item.getString("surface")),
+            parseColor(item.getString("textPrimary")),
+            parseColor(item.getString("textSecondary")),
+            parseColor(item.getString("incomingBubble")),
+            parseColor(item.getString("outgoingBubble")),
+            parseColor(item.getString("toolbar")),
+            parseColor(item.getString("tab")),
+            parseColor(item.getString("fab")),
+            parseColor(item.optString("divider", "#33808080"))
         )
         val type = runCatching {
             ThemeManager.BackgroundType.valueOf(item.optString("backgroundType", ThemeManager.BackgroundType.SOLID.name))
@@ -82,7 +81,7 @@ object ThemeStorage {
         val gradientColors = item.optJSONArray("gradientColors")?.let { array ->
             buildList {
                 for (i in 0 until array.length()) {
-                    runCatching { Color.parseColor(array.getString(i)) }.getOrNull()?.let(::add)
+                    runCatching { parseColor(array.getString(i)) }.getOrNull()?.let(::add)
                 }
             }
         } ?: emptyList()
@@ -99,6 +98,18 @@ object ThemeStorage {
             gradientAngle = normalizeAngle(item.optInt("gradientAngle", 0)),
             wallpaperUri = wallpaperUri
         )
+    }
+
+    /** Parses #RGB, #RRGGBB and #AARRGGBB without relying on Android graphics classes. */
+    private fun parseColor(value: String): Int {
+        val hex = value.trim().removePrefix("#")
+        val normalized = when (hex.length) {
+            3 -> hex.map { "$it$it" }.joinToString("")
+            6, 8 -> hex
+            else -> throw IllegalArgumentException("Unsupported theme color: $value")
+        }
+        val argb = if (normalized.length == 6) "FF$normalized" else normalized
+        return argb.toLong(16).toInt()
     }
 
     private fun normalizeAngle(value: Int): Int {
