@@ -114,7 +114,7 @@ class ThemePreviewActivity : SimpleActivity() {
         this.setTextColor(textColor)
         setPadding(dp(14), dp(11), dp(14), dp(11))
         gravity = if (alignEnd) Gravity.END else Gravity.START
-        background = android.graphics.drawable.GradientDrawable().apply {
+        this.background = android.graphics.drawable.GradientDrawable().apply {
             setColor(background)
             cornerRadius = dp(18).toFloat()
         }
