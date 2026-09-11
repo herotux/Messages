@@ -21,6 +21,7 @@ import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.SimpleContact
+import org.fossify.messages.R
 import org.fossify.messages.adapters.ContactsAdapter
 import org.fossify.messages.databinding.ActivityConversationDetailsBinding
 import org.fossify.messages.dialogs.RenameConversationDialog
@@ -31,8 +32,11 @@ import org.fossify.messages.extensions.getThreadParticipants
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.renameConversation
 import org.fossify.messages.extensions.startContactDetailsIntent
+import org.fossify.messages.helpers.ConversationThemeManager
 import org.fossify.messages.helpers.THREAD_ID
+import org.fossify.messages.helpers.ThemeManager
 import org.fossify.messages.models.Conversation
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class ConversationDetailsActivity : SimpleActivity() {
 
@@ -65,6 +69,7 @@ class ConversationDetailsActivity : SimpleActivity() {
                 setupTextViews()
                 setupParticipants()
                 setupCustomNotifications()
+                setupConversationTheme()
             }
         }
     }
@@ -82,6 +87,52 @@ class ConversationDetailsActivity : SimpleActivity() {
         ).forEach {
             it.setTextColor(primaryColor)
         }
+    }
+
+    private fun setupConversationTheme() {
+        val current = ConversationThemeManager.getThemeId(this, threadId)
+        val themeView = binding.conversationDetailsHolder.findViewById<android.view.View>(R.id.conversation_theme_holder)
+        if (themeView != null) {
+            val text = themeView as? android.widget.TextView
+            text?.text = getConversationThemeLabel(current)
+            return
+        }
+
+        val view = org.fossify.commons.views.MyTextView(this).apply {
+            id = R.id.conversation_theme_holder
+            setPadding(resources.getDimensionPixelSize(org.fossify.messages.R.dimen.activity_margin), resources.getDimensionPixelSize(org.fossify.messages.R.dimen.medium_margin), resources.getDimensionPixelSize(org.fossify.messages.R.dimen.activity_margin), resources.getDimensionPixelSize(org.fossify.messages.R.dimen.medium_margin))
+            textSize = resources.getDimension(org.fossify.messages.R.dimen.big_text_size)
+            setBackgroundResource(android.R.attr.selectableItemBackground)
+            isClickable = true
+            isFocusable = true
+            text = getConversationThemeLabel(current)
+            setOnClickListener { showConversationThemePicker() }
+        }
+        val holder = binding.conversationDetailsHolder
+        val nameIndex = holder.indexOfChild(binding.conversationName)
+        holder.addView(view, nameIndex + 1, android.widget.LinearLayout.LayoutParams(-1, -2))
+    }
+
+    private fun getConversationThemeLabel(themeId: String?): String {
+        val theme = themeId?.let { ThemeManager.find(this, it) }
+        return if (theme == null) "تم گفتگو: پیش‌فرض" else "تم گفتگو: ${if (config.useEnglish) theme.nameEn else theme.nameFa}"
+    }
+
+    private fun showConversationThemePicker() {
+        val themes = ThemeManager.allThemes(this)
+        val labels = arrayOf("پیش‌فرض") + themes.map { if (config.useEnglish) it.nameEn else it.nameFa }
+        val selectedId = ConversationThemeManager.getThemeId(this, threadId)
+        val selectedIndex = themes.indexOfFirst { it.id == selectedId }.let { if (it >= 0) it + 1 else 0 }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("تم این گفتگو")
+            .setSingleChoiceItems(labels, selectedIndex) { dialog, which ->
+                if (which == 0) ConversationThemeManager.clearTheme(this, threadId)
+                else ConversationThemeManager.setTheme(this, threadId, themes[which - 1].id)
+                dialog.dismiss()
+                setupConversationTheme()
+            }
+            .setNegativeButton("لغو", null)
+            .show()
     }
 
     private fun setupCustomNotifications() {
