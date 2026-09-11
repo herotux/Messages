@@ -47,6 +47,33 @@ class ThemeFileManagerTest {
     }
 
     @Test
+    fun gradient_round_trip_preserves_angle_and_colors() {
+        val original = theme().copy(
+            backgroundType = ThemeManager.BackgroundType.LINEAR_GRADIENT,
+            gradientColors = listOf(0xFF112233.toInt(), 0xFF445566.toInt(), 0xFF778899.toInt()),
+            gradientAngle = 91
+        )
+        val imported = ThemeFileManager.importTheme(ThemeFileManager.export(original)).getOrThrow()
+        assertEquals(ThemeManager.BackgroundType.LINEAR_GRADIENT, imported.backgroundType)
+        assertEquals(original.gradientColors, imported.gradientColors)
+        assertEquals(90, imported.gradientAngle)
+    }
+
+    @Test
+    fun embedded_wallpaper_is_preserved_on_import() {
+        val raw = ThemeFileManager.export(theme()).replace(
+            "\"backgroundType\": \"SOLID\"",
+            "\"backgroundType\": \"WALLPAPER\""
+        ).replace(
+            "\"wallpaperUri\": null",
+            "\"wallpaperUri\": null,\n      \"wallpaperBase64\": \"aGVsbG8=\""
+        )
+        val imported = ThemeFileManager.importTheme(raw).getOrThrow()
+        assertEquals(ThemeManager.BackgroundType.WALLPAPER, imported.backgroundType)
+        assertEquals("aGVsbG8=", imported.embeddedWallpaperBase64)
+    }
+
+    @Test
     fun import_rejects_wrong_schema() {
         val result = ThemeFileManager.importTheme("{\"schema\":\"other\",\"version\":1}")
         assertTrue(result.isFailure)
