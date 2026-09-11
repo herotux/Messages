@@ -47,6 +47,7 @@ import org.fossify.messages.helpers.LOCK_SCREEN_SENDER
 import org.fossify.messages.helpers.LOCK_SCREEN_SENDER_MESSAGE
 import org.fossify.messages.helpers.PersianFontCatalog
 import org.fossify.messages.helpers.ThemeManager
+import org.fossify.messages.helpers.ThemeScheduleManager
 
 /** Standalone Messages settings UI. */
 class SettingsActivity : SimpleActivity() {
@@ -181,11 +182,21 @@ class SettingsActivity : SimpleActivity() {
             getSharedPreferences("messages_settings_ui", MODE_PRIVATE).edit().putBoolean("dark_mode", it).apply()
             AppCompatDelegate.setDefaultNightMode(if (it) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
         }
+        row(root, t("زمان‌بندی خودکار تم", "Automatic theme schedule"), scheduleSummary()) {
+            startActivity(Intent(this, ThemeScheduleActivity::class.java))
+        }
         themeLibrary(root)
         row(root, t("فونت برنامه", "App font"), fontLabel()) { chooseFont() }
         row(root, t("اندازه متن", "Text size"), fontSizeLabel()) { chooseFontSize() }
         toggle(root, t("شمارنده کاراکتر", "Character counter"), t("نمایش تعداد کاراکتر هنگام نوشتن", "Show character count while typing"), config.showCharacterCounter) { config.showCharacterCounter = it }
         toggle(root, t("نویسه‌های ساده", "Simple characters"), t("استفاده از نویسه‌های ساده‌تر", "Use simpler characters"), config.useSimpleCharacters) { config.useSimpleCharacters = it }
+    }
+
+    private fun scheduleSummary(): String {
+        if (!ThemeScheduleManager.isEnabled(this)) return t("غیرفعال", "Disabled")
+        val day = ThemeScheduleManager.dayMinutes(this)
+        val night = ThemeScheduleManager.nightMinutes(this)
+        return String.format(Locale.US, "%s %02d:%02d  •  %s %02d:%02d", t("روز", "Day"), day / 60, day % 60, t("شب", "Night"), night / 60, night % 60)
     }
 
     private fun themeLibrary(root: LinearLayout) {
