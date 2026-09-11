@@ -65,8 +65,8 @@ class ThemeFileManagerTest {
             "\"backgroundType\": \"SOLID\"",
             "\"backgroundType\": \"WALLPAPER\""
         ).replace(
-            "\"wallpaperBase64\": null",
-            "\"wallpaperBase64\": \"aGVsbG8=\""
+            "\"wallpaperUri\": null",
+            "\"wallpaperUri\": null,\n      \"wallpaperBase64\": \"aGVsbG8=\""
         )
         val imported = ThemeFileManager.importTheme(raw).getOrThrow()
         assertEquals(ThemeManager.BackgroundType.WALLPAPER, imported.backgroundType)
