@@ -1,15 +1,21 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.view.View
-import androidx.core.content.ContextCompat
 
 /** Creates and applies the drawable used for a theme's background. */
 object ThemeBackground {
-    fun apply(view: View, type: ThemeManager.BackgroundType, solidColor: Int, colors: List<Int>, angle: Int, wallpaperUri: String? = null) {
+    fun apply(
+        view: View,
+        type: ThemeManager.BackgroundType,
+        solidColor: Int,
+        colors: List<Int>,
+        angle: Int,
+        wallpaperUri: String? = null
+    ) {
         when {
             type == ThemeManager.BackgroundType.WALLPAPER && !wallpaperUri.isNullOrBlank() -> {
                 val drawable = loadWallpaper(view.context, wallpaperUri)
@@ -19,7 +25,9 @@ object ThemeBackground {
                 }
             }
             type == ThemeManager.BackgroundType.LINEAR_GRADIENT && colors.size >= 2 -> {
-                view.background = GradientDrawable(orientation(angle), colors.toIntArray()).apply { cornerRadius = 0f }
+                view.background = GradientDrawable(orientation(angle), colors.toIntArray()).apply {
+                    cornerRadius = 0f
+                }
                 return
             }
         }
@@ -30,10 +38,7 @@ object ThemeBackground {
         context.contentResolver.openInputStream(Uri.parse(rawUri))?.use { input ->
             Drawable.createFromStream(input, rawUri)
         }
-    }.getOrNull()?.also { drawable ->
-        drawable.setTintList(null)
-        ContextCompat.getDrawable(context, android.R.color.transparent)
-    }
+    }.getOrNull()
 
     private fun orientation(angle: Int): GradientDrawable.Orientation = when (((angle % 360) + 360) % 360) {
         0 -> GradientDrawable.Orientation.LEFT_RIGHT
