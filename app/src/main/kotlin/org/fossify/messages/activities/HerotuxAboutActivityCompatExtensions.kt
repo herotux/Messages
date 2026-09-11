@@ -22,8 +22,9 @@ var EditText.singleLine: Boolean
         setSingleLine(value)
     }
 
-fun View.applyPersianFont() {
-    val typeface = runCatching { FontHelper.getTypeface(context) }.getOrElse { Typeface.DEFAULT }
+/** Applies the Persian font to the supplied legacy activity root view. */
+fun HerotuxAboutActivity.applyPersianFont(root: View) {
+    val typeface = runCatching { FontHelper.getTypeface(this) }.getOrElse { Typeface.DEFAULT }
 
     fun apply(view: View) {
         if (view is TextView) {
@@ -42,10 +43,5 @@ fun View.applyPersianFont() {
         }
     }
 
-    apply(this)
-}
-
-/** Legacy call site compatibility: the activity itself is a convenient root. */
-fun HerotuxAboutActivity.applyPersianFont() {
-    window.decorView.applyPersianFont()
+    apply(root)
 }
