@@ -8,9 +8,11 @@ import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
@@ -18,6 +20,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.extensions.config
+import org.fossify.messages.helpers.ThemeBackground
 import org.fossify.messages.helpers.ThemeFileManager
 import org.fossify.messages.helpers.ThemeManager
 import org.fossify.messages.helpers.ThemeValidator
@@ -161,7 +164,8 @@ class ThemeBuilderActivity : SimpleActivity() {
             header.addView(TextView(this@ThemeBuilderActivity).apply { text = if (english()) theme.nameEn else theme.nameFa; textSize = 17f; setTextColor(theme.colors.textPrimary); typeface = Typeface.DEFAULT_BOLD }, LinearLayout.LayoutParams(0, dp(40), 1f))
             header.addView(TextView(this@ThemeBuilderActivity).apply { text = if (ThemeManager.isFavorite(this@ThemeBuilderActivity, theme.id)) "★" else "☆"; textSize = 24f; gravity = Gravity.CENTER; setTextColor(theme.colors.accent); setOnClickListener { ThemeManager.toggleFavorite(this@ThemeBuilderActivity, theme.id); renderThemeLibrary() } }, LinearLayout.LayoutParams(dp(44), dp(40)))
             box.addView(header)
-            val preview = LinearLayout(this@ThemeBuilderActivity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(10), dp(12), dp(10)); setBackgroundColor(theme.colors.background) }
+            val preview = LinearLayout(this@ThemeBuilderActivity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(10), dp(12), dp(10)) }
+            ThemeBackground.apply(preview, theme.backgroundType, theme.colors.background, theme.gradientColors, theme.gradientAngle)
             preview.addView(TextView(this@ThemeBuilderActivity).apply { text = "Aa  ${theme.nameEn}"; textSize = 13f; setTextColor(theme.colors.textPrimary) })
             preview.addView(TextView(this@ThemeBuilderActivity).apply { text = t("پیام دریافتی", "Incoming message"); textSize = 12f; setTextColor(theme.colors.textPrimary); setBackgroundColor(theme.colors.incomingBubble); setPadding(dp(8), dp(6), dp(8), dp(6)) }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
             preview.addView(TextView(this@ThemeBuilderActivity).apply { text = t("پیام ارسالی", "Outgoing message"); textSize = 12f; setTextColor(if (isLight(theme.colors.outgoingBubble)) Color.BLACK else Color.WHITE); setBackgroundColor(theme.colors.outgoingBubble); gravity = Gravity.END; setPadding(dp(8), dp(6), dp(8), dp(6)) }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
@@ -186,25 +190,123 @@ class ThemeBuilderActivity : SimpleActivity() {
     private fun actionButton(text: String, onClick: () -> Unit) = TextView(this).apply { this.text = text; textSize = 13f; gravity = Gravity.CENTER; isClickable = true; setOnClickListener { onClick() }; setTextColor(attrColor(androidx.appcompat.R.attr.colorPrimary)); setBackgroundColor(attrColor(com.google.android.material.R.attr.colorSurfaceVariant)); setPadding(dp(8), 0, dp(8), 0) }
 
     private fun renderThemeBuilder() {
-        val editingId = intent.getStringExtra(EXTRA_THEME_ID); val existing = editingId?.let { ThemeManager.find(this, it) }; val source = existing?.colors ?: ThemeManager.colors(this)
-        val fields = mutableListOf(ThemeField("primary", "رنگ اصلی", source.primary), ThemeField("accent", "رنگ تأکیدی", source.accent), ThemeField("background", "پس‌زمینه", source.background), ThemeField("surface", "سطح کارت‌ها", source.surface), ThemeField("toolbar", "نوار ابزار", source.toolbar), ThemeField("incoming", "حباب دریافتی", source.incomingBubble), ThemeField("outgoing", "حباب ارسالی", source.outgoingBubble), ThemeField("text", "متن اصلی", source.textPrimary), ThemeField("secondary", "متن ثانویه", source.textSecondary), ThemeField("fab", "دکمه شناور", source.fab))
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL; setBackgroundColor(source.background) }
-        val toolbar = Toolbar(this).apply { title = if (existing == null) "ساخت تم جدید" else "ویرایش تم"; navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material); setNavigationOnClickListener { finish() } }; root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(56)))
-        val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false; setPadding(dp(20), dp(10), dp(20), dp(28)) }; val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }; scroll.addView(content); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        val fileActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }; val import = TextView(this).apply { text = "وارد کردن .homa-theme"; textSize = 14f; gravity = Gravity.CENTER; isClickable = true; setPadding(dp(8), dp(10), dp(8), dp(10)); background = makeSwatch(source.surface); setOnClickListener { importThemeFile.launch(arrayOf(ThemeFileManager.MIME_TYPE, "application/octet-stream", "*/*")) } }; fileActions.addView(import, LinearLayout.LayoutParams(0, dp(48), 1f)); content.addView(fileActions, LinearLayout.LayoutParams(-1, dp(48)).apply { setMargins(0, 0, 0, dp(8)) })
-        val name = EditText(this).apply { hint = "نام تم"; setText(existing?.nameFa ?: ""); textSize = 16f }; content.addView(name, LinearLayout.LayoutParams(-1, dp(58)))
-        val preview = MaterialCardView(this).apply { radius = dp(20).toFloat(); cardElevation = 0f }; val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(16), dp(16), dp(16)) }; val title = TextView(this).apply { text = "پیش‌نمایش گفتگو"; textSize = 17f }; val incoming = TextView(this).apply { text = "سلام 👋 این یک پیام دریافتی است"; textSize = 15f; setPadding(dp(12), dp(10), dp(12), dp(10)) }; val outgoing = TextView(this).apply { text = "سلام! تم جدید آماده است 😊"; textSize = 15f; gravity = Gravity.END; setPadding(dp(12), dp(10), dp(12), dp(10)) }; box.addView(title); box.addView(incoming, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(12), dp(28), dp(6)) }); box.addView(outgoing, LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(28), dp(6), 0, 0) }); preview.addView(box); content.addView(preview, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(16), 0, dp(10)) })
+        val editingId = intent.getStringExtra(EXTRA_THEME_ID)
+        val existing = editingId?.let { ThemeManager.find(this, it) }
+        val source = existing?.colors ?: ThemeManager.colors(this)
+        val fields = mutableListOf(
+            ThemeField("primary", "رنگ اصلی", source.primary), ThemeField("accent", "رنگ تأکیدی", source.accent),
+            ThemeField("background", "پس‌زمینه", source.background), ThemeField("surface", "سطح کارت‌ها", source.surface),
+            ThemeField("toolbar", "نوار ابزار", source.toolbar), ThemeField("incoming", "حباب دریافتی", source.incomingBubble),
+            ThemeField("outgoing", "حباب ارسالی", source.outgoingBubble), ThemeField("text", "متن اصلی", source.textPrimary),
+            ThemeField("secondary", "متن ثانویه", source.textSecondary), ThemeField("fab", "دکمه شناور", source.fab)
+        )
+        var backgroundType = existing?.backgroundType ?: ThemeManager.BackgroundType.SOLID
+        var gradientStart = existing?.gradientColors?.getOrNull(0) ?: source.background
+        var gradientEnd = existing?.gradientColors?.getOrNull(1) ?: source.primary
+        var gradientAngle = existing?.gradientAngle ?: 0
+
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        val toolbar = Toolbar(this).apply { title = if (existing == null) "ساخت تم جدید" else "ویرایش تم"; navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material); setNavigationOnClickListener { finish() } }
+        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(56)))
+        val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false; setPadding(dp(20), dp(10), dp(20), dp(28)) }
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        scroll.addView(content); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        val fileActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val import = TextView(this).apply { text = "وارد کردن .homa-theme"; textSize = 14f; gravity = Gravity.CENTER; isClickable = true; setPadding(dp(8), dp(10), dp(8), dp(10)); background = makeSwatch(source.surface); setOnClickListener { importThemeFile.launch(arrayOf(ThemeFileManager.MIME_TYPE, "application/octet-stream", "*/*")) } }
+        fileActions.addView(import, LinearLayout.LayoutParams(0, dp(48), 1f)); content.addView(fileActions, LinearLayout.LayoutParams(-1, dp(48)).apply { setMargins(0, 0, 0, dp(8)) })
+        val name = EditText(this).apply { hint = "نام تم"; setText(existing?.nameFa ?: ""); textSize = 16f }
+        content.addView(name, LinearLayout.LayoutParams(-1, dp(58)))
+
+        val preview = MaterialCardView(this).apply { radius = dp(20).toFloat(); cardElevation = 0f }
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(16), dp(16), dp(16)) }
+        val title = TextView(this).apply { text = "پیش‌نمایش گفتگو"; textSize = 17f }
+        val incoming = TextView(this).apply { text = "سلام 👋 این یک پیام دریافتی است"; textSize = 15f; setPadding(dp(12), dp(10), dp(12), dp(10)) }
+        val outgoing = TextView(this).apply { text = "سلام! تم جدید آماده است 😊"; textSize = 15f; gravity = Gravity.END; setPadding(dp(12), dp(10), dp(12), dp(10)) }
+        box.addView(title); box.addView(incoming, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(12), dp(28), dp(6)) }); box.addView(outgoing, LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(28), dp(6), 0, 0) }); preview.addView(box)
+        content.addView(preview, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(16), 0, dp(10)) })
+
+        val backgroundButton = actionButton(gradientLabel(backgroundType, gradientAngle)) {
+            val startInput = EditText(this).apply { hint = "رنگ شروع #RRGGBB"; setText(String.format("#%06X", 0xFFFFFF and gradientStart)); selectAll() }
+            val endInput = EditText(this).apply { hint = "رنگ پایان #RRGGBB"; setText(String.format("#%06X", 0xFFFFFF and gradientEnd)); selectAll() }
+            val angleSpinner = Spinner(this)
+            val angles = listOf(0, 45, 90, 135, 180, 225, 270, 315)
+            angleSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, angles.map { "${it}°" })
+            angleSpinner.setSelection(angles.indexOf(gradientAngle).coerceAtLeast(0))
+            val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), dp(4), dp(8), 0) }
+            layout.addView(startInput); layout.addView(endInput); layout.addView(TextView(this).apply { text = "زاویه گرادیان"; setPadding(0, dp(8), 0, dp(2)) }); layout.addView(angleSpinner)
+            MaterialAlertDialogBuilder(this).setTitle("پس‌زمینه تم").setSingleChoiceItems(arrayOf("رنگ ساده", "گرادیان خطی"), if (backgroundType == ThemeManager.BackgroundType.LINEAR_GRADIENT) 1 else 0) { dialog, which ->
+                backgroundType = if (which == 1) ThemeManager.BackgroundType.LINEAR_GRADIENT else ThemeManager.BackgroundType.SOLID
+                if (backgroundType == ThemeManager.BackgroundType.LINEAR_GRADIENT) {
+                    dialog.dismiss()
+                    MaterialAlertDialogBuilder(this).setTitle("تنظیم گرادیان").setView(layout).setPositiveButton("اعمال") { _, _ ->
+                        runCatching {
+                            gradientStart = Color.parseColor(startInput.text.toString().trim())
+                            gradientEnd = Color.parseColor(endInput.text.toString().trim())
+                            gradientAngle = angles[angleSpinner.selectedItemPosition]
+                        }.onSuccess { refreshBackgroundButton(backgroundButton, backgroundType, gradientAngle); refresh() }
+                            .onFailure { showThemeError("رنگ گرادیان نامعتبر است") }
+                    }.setNegativeButton("لغو", null).show()
+                } else {
+                    dialog.dismiss(); refreshBackgroundButton(backgroundButton, backgroundType, gradientAngle); refresh()
+                }
+            }.show()
+        }
+        content.addView(backgroundButton, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
+
         fun get(key: String) = fields.first { it.key == key }.color
         fun buildColors() = ThemeManager.ThemeColors(get("primary"), get("accent"), get("background"), get("surface"), get("text"), get("secondary"), get("incoming"), get("outgoing"), get("toolbar"), get("accent"), get("fab"))
-        fun refresh() { preview.setCardBackgroundColor(get("background")); title.setTextColor(get("text")); incoming.setTextColor(get("text")); outgoing.setTextColor(if (isLight(get("outgoing"))) Color.BLACK else Color.WHITE); incoming.backgroundTintList = ColorStateList.valueOf(get("incoming")); outgoing.backgroundTintList = ColorStateList.valueOf(get("outgoing")) }
-        fields.forEach { field -> val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(5), 0, dp(5)) }; row.addView(TextView(this).apply { text = field.label; textSize = 15f }, LinearLayout.LayoutParams(0, dp(52), 1f)); val swatch = View(this).apply { background = makeSwatch(field.color) }; row.addView(swatch, LinearLayout.LayoutParams(dp(58), dp(42))); row.setOnClickListener { chooseThemeColor(field, swatch) { refresh() } }; content.addView(row) }
-        val save = TextView(this).apply { text = if (existing == null) "ذخیره تم" else "ذخیره تغییرات"; textSize = 16f; gravity = Gravity.CENTER; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE); setPadding(0, dp(14), 0, dp(14)); background = makeSwatch(source.primary); isClickable = true; setOnClickListener { val themeName = name.text.toString().trim().ifEmpty { "تم من" }; val colors = buildColors(); val report = ThemeValidator.validate(colors); if (!report.isValid) { val details = report.issues.joinToString("\n") { issue -> "• ${issue.name}: ${String.format("%.2f", issue.ratio)}:1 (حداقل ${String.format("%.1f", issue.requiredRatio)}:1)" }; MaterialAlertDialogBuilder(this@ThemeBuilderActivity).setTitle("خوانایی تم نیاز به بررسی دارد").setMessage("کنتراست بعضی ترکیب‌های متن و پس‌زمینه پایین است:\n\n$details\n\nمی‌خواهید با همین رنگ‌ها ذخیره شود؟").setNegativeButton("اصلاح رنگ‌ها", null).setPositiveButton("ذخیره با همین رنگ‌ها") { _, _ -> saveTheme(themeName, colors, editingId) }.show(); return@setOnClickListener }; saveTheme(themeName, colors, editingId) } }; content.addView(save, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0, dp(16), 0, 0) })
-        if (existing != null) { content.addView(TextView(this).apply { text = "خروجی فایل .homa-theme"; textSize = 15f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(12)); setOnClickListener { exportThemeFile(existing) } }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) }); content.addView(TextView(this).apply { text = "اشتراک‌گذاری تم"; textSize = 15f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(12)); setOnClickListener { shareThemeFile(existing) } }, LinearLayout.LayoutParams(-1, dp(48))) }
-        setContentView(root); refresh()
+        fun refresh() {
+            val background = if (backgroundType == ThemeManager.BackgroundType.LINEAR_GRADIENT) listOf(gradientStart, gradientEnd) else emptyList()
+            ThemeBackground.apply(box, backgroundType, get("background"), background, gradientAngle)
+            title.setTextColor(get("text")); incoming.setTextColor(get("text")); outgoing.setTextColor(if (isLight(get("outgoing"))) Color.BLACK else Color.WHITE)
+            incoming.backgroundTintList = ColorStateList.valueOf(get("incoming")); outgoing.backgroundTintList = ColorStateList.valueOf(get("outgoing"))
+        }
+        fun refreshBackgroundButtonLocal() { refreshBackgroundButton(backgroundButton, backgroundType, gradientAngle) }
+        fields.forEach { field ->
+            val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(5), 0, dp(5)) }
+            row.addView(TextView(this).apply { text = field.label; textSize = 15f }, LinearLayout.LayoutParams(0, dp(52), 1f))
+            val swatch = View(this).apply { background = makeSwatch(field.color) }
+            row.addView(swatch, LinearLayout.LayoutParams(dp(58), dp(42)))
+            row.setOnClickListener { chooseThemeColor(field, swatch) { refresh() } }
+            content.addView(row)
+        }
+        val save = TextView(this).apply {
+            text = if (existing == null) "ذخیره تم" else "ذخیره تغییرات"; textSize = 16f; gravity = Gravity.CENTER; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE); setPadding(0, dp(14), 0, dp(14)); background = makeSwatch(source.primary); isClickable = true
+            setOnClickListener {
+                val themeName = name.text.toString().trim().ifEmpty { "تم من" }; val colors = buildColors(); val report = ThemeValidator.validate(colors)
+                if (!report.isValid) {
+                    val details = report.issues.joinToString("\n") { issue -> "• ${issue.name}: ${String.format("%.2f", issue.ratio)}:1 (حداقل ${String.format("%.1f", issue.requiredRatio)}:1)" }
+                    MaterialAlertDialogBuilder(this@ThemeBuilderActivity).setTitle("خوانایی تم نیاز به بررسی دارد").setMessage("کنتراست بعضی ترکیب‌های متن و پس‌زمینه پایین است:\n\n$details\n\nمی‌خواهید با همین رنگ‌ها ذخیره شود؟").setNegativeButton("اصلاح رنگ‌ها", null).setPositiveButton("ذخیره با همین رنگ‌ها") { _, _ -> saveTheme(themeName, colors, editingId, backgroundType, gradientStart, gradientEnd, gradientAngle) }.show(); return@setOnClickListener
+                }
+                saveTheme(themeName, colors, editingId, backgroundType, gradientStart, gradientEnd, gradientAngle)
+            }
+        }
+        content.addView(save, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0, dp(16), 0, 0) })
+        if (existing != null) {
+            content.addView(TextView(this).apply { text = "خروجی فایل .homa-theme"; textSize = 15f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(12)); setOnClickListener { exportThemeFile(existing) } }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+            content.addView(TextView(this).apply { text = "اشتراک‌گذاری تم"; textSize = 15f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(12)); setOnClickListener { shareThemeFile(existing) } }, LinearLayout.LayoutParams(-1, dp(48)))
+        }
+        setContentView(root); refreshBackgroundButtonLocal(); refresh()
     }
 
-    private fun saveTheme(themeName: String, colors: ThemeManager.ThemeColors, editingId: String?) { val id = editingId ?: "user_${UUID.randomUUID()}"; ThemeManager.saveUserTheme(this, ThemeManager.ThemeDefinition(id, themeName, themeName, ThemeManager.ThemeSource.USER, colors = colors)); ThemeManager.select(this, id); finish() }
-    private fun chooseThemeColor(field: ThemeField, swatch: View, changed: () -> Unit) { val input = EditText(this).apply { hint = "#RRGGBB"; setText(String.format("#%06X", 0xFFFFFF and field.color)); selectAll() }; MaterialAlertDialogBuilder(this).setTitle(field.label).setView(input).setPositiveButton("اعمال") { _, _ -> runCatching { Color.parseColor(input.text.toString().trim()) }.onSuccess { field.color = it; swatch.background = makeSwatch(it); changed() } }.setNegativeButton("لغو", null).show() }
+    private fun refreshBackgroundButton(button: TextView, type: ThemeManager.BackgroundType, angle: Int) {
+        button.text = if (type == ThemeManager.BackgroundType.LINEAR_GRADIENT) "پس‌زمینه: گرادیان خطی · ${angle}°" else "پس‌زمینه: رنگ ساده"
+    }
+
+    private fun gradientLabel(type: ThemeManager.BackgroundType, angle: Int): String = if (type == ThemeManager.BackgroundType.LINEAR_GRADIENT) "پس‌زمینه: گرادیان خطی · ${angle}°" else "پس‌زمینه: رنگ ساده"
+
+    private fun saveTheme(themeName: String, colors: ThemeManager.ThemeColors, editingId: String?, backgroundType: ThemeManager.BackgroundType, gradientStart: Int, gradientEnd: Int, gradientAngle: Int) {
+        val id = editingId ?: "user_${UUID.randomUUID()}"
+        val gradientColors = if (backgroundType == ThemeManager.BackgroundType.LINEAR_GRADIENT) listOf(gradientStart, gradientEnd) else emptyList()
+        ThemeManager.saveUserTheme(this, ThemeManager.ThemeDefinition(id, themeName, themeName, ThemeManager.ThemeSource.USER, colors = colors, backgroundType = backgroundType, gradientColors = gradientColors, gradientAngle = gradientAngle))
+        ThemeManager.select(this, id); finish()
+    }
+
+    private fun chooseThemeColor(field: ThemeField, swatch: View, changed: () -> Unit) {
+        val input = EditText(this).apply { hint = "#RRGGBB"; setText(String.format("#%06X", 0xFFFFFF and field.color)); selectAll() }
+        MaterialAlertDialogBuilder(this).setTitle(field.label).setView(input).setPositiveButton("اعمال") { _, _ -> runCatching { Color.parseColor(input.text.toString().trim()) }.onSuccess { field.color = it; swatch.background = makeSwatch(it); changed() } }.setNegativeButton("لغو", null).show()
+    }
+
     private fun showThemeError(message: String) { MaterialAlertDialogBuilder(this).setTitle("خطا در فایل تم").setMessage(message).setPositiveButton("باشه", null).show() }
     private fun makeSwatch(color: Int): android.graphics.drawable.GradientDrawable = android.graphics.drawable.GradientDrawable().apply { setColor(color); cornerRadius = dp(14).toFloat(); setStroke(dp(1), 0x33000000) }
     private fun isLight(color: Int): Boolean { val r = Color.red(color) / 255f; val g = Color.green(color) / 255f; val b = Color.blue(color) / 255f; return 0.2126f * r + 0.7152f * g + 0.0722f * b > 0.55f }
