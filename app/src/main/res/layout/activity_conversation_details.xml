@@ -96,6 +96,19 @@
                 android:textSize="@dimen/bigger_text_size"
                 tools:text="Conversation name" />
 
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/conversation_theme_holder"
+                style="@style/SettingsHolderTextViewOneLinerStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:drawableEnd="@drawable/ic_palette_vector"
+                android:drawablePadding="@dimen/bigger_margin"
+                android:focusable="true"
+                android:text="تم گفتگو: پیش‌فرض"
+                android:textSize="@dimen/bigger_text_size" />
+
             <include
                 android:id="@+id/settings_conversation_name_divider"
                 layout="@layout/divider" />
