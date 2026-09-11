@@ -22,7 +22,6 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.helpers.FontHelper
 import org.fossify.messages.R
 import org.fossify.messages.extensions.config
-import org.fossify.messages.helpers.BackgroundThemeManager
 import org.fossify.messages.helpers.ThemeManager
 
 open class SimpleActivity : BaseSimpleActivity() {
@@ -52,32 +51,38 @@ open class SimpleActivity : BaseSimpleActivity() {
     }
 
     private fun applyVisualTheme() {
-        BackgroundThemeManager.apply(this)
+        ThemeManager.applyBackground(this)
         applyThemeChrome()
         installThemeChromeObserver()
     }
 
-    /** Applies the active ThemeManager palette to system/app chrome and common surfaces. */
+    /** Applies the active global or conversation-specific ThemeManager palette. */
     private fun applyThemeChrome() {
-        val colors = ThemeManager.colors(this)
+        val colors = ThemeManager.themeForActivity(this).colors
 
-        supportActionBar?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        supportActionBar?.setStackedBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.toolbar))
+        supportActionBar?.setStackedBackgroundDrawable(ColorDrawable(colors.toolbar))
 
         window.statusBarColor = colors.toolbar
         window.navigationBarColor = colors.background
 
         val tabs = findViewById<View>(R.id.folder_tabs)
-        if (tabs is ViewGroup) {
-            styleFolderTabs(tabs, colors)
-        }
+        if (tabs is ViewGroup) styleFolderTabs(tabs, colors)
 
         applyPaletteToCommonViews(window.decorView, colors)
-        clearToolbarBackgrounds(window.decorView)
+        clearToolbarBackgrounds(window.decorView, colors)
     }
 
     private fun applyPaletteToCommonViews(view: View, colors: ThemeManager.ThemeColors) {
         when (view) {
+            is Toolbar -> {
+                view.setBackgroundColor(colors.toolbar)
+                view.setTitleTextColor(colors.textPrimary)
+                view.setSubtitleTextColor(colors.textSecondary)
+                view.navigationIcon?.setTint(colors.textPrimary)
+                for (index in 0 until view.menu.size()) view.menu.getItem(index).icon?.setTint(colors.textPrimary)
+            }
+            is AppBarLayout -> view.setBackgroundColor(colors.toolbar)
             is FloatingActionButton -> {
                 view.backgroundTintList = ColorStateList.valueOf(colors.fab)
                 view.imageTintList = ColorStateList.valueOf(colors.textPrimary)
@@ -105,63 +110,47 @@ open class SimpleActivity : BaseSimpleActivity() {
 
         if (view is TextView && view !is EditText && view.id != R.id.folder_tabs && view.id != R.id.thread_message_body) {
             val current = view.currentTextColor
-            if (current == Color.WHITE || current == Color.BLACK || current == Color.GRAY) {
-                view.setTextColor(colors.textPrimary)
-            }
+            if (current == Color.WHITE || current == Color.BLACK || current == Color.GRAY) view.setTextColor(colors.textPrimary)
         }
 
         if (view is ViewGroup) {
-            for (index in 0 until view.childCount) {
-                applyPaletteToCommonViews(view.getChildAt(index), colors)
-            }
+            for (index in 0 until view.childCount) applyPaletteToCommonViews(view.getChildAt(index), colors)
         }
     }
 
-    /**
-     * Applies theme colors to incoming/outgoing message bubbles while preserving
-     * the existing bubble shape and the adapter's selection foreground.
-     */
+    /** Applies theme colors to message bubbles while preserving their existing shape. */
     private fun styleMessageBubble(view: View, colors: ThemeManager.ThemeColors) {
         if (view.id != R.id.thread_message_body || view !is TextView) return
-
         val wrapper = view.parent as? RelativeLayout ?: return
         val params = wrapper.layoutParams as? ConstraintLayout.LayoutParams ?: return
-
         val isOutgoing = params.endToEnd == ConstraintSet.PARENT_ID && params.startToStart != ConstraintSet.PARENT_ID
         val isIncoming = params.startToStart == ConstraintSet.PARENT_ID && params.endToEnd != ConstraintSet.PARENT_ID
         if (!isOutgoing && !isIncoming) return
-
         val bubbleColor = if (isOutgoing) colors.outgoingBubble else colors.incomingBubble
         val textColor = if (isOutgoing) bubbleColor.contrastColor() else colors.textPrimary
-
         view.backgroundTintList = ColorStateList.valueOf(bubbleColor)
         view.setTextColor(textColor)
         view.setLinkTextColor(colors.accent)
     }
 
     private fun Int.contrastColor(): Int {
-        val red = Color.red(this)
-        val green = Color.green(this)
-        val blue = Color.blue(this)
-        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
+        val luminance = (0.299 * Color.red(this) + 0.587 * Color.green(this) + 0.114 * Color.blue(this)) / 255.0
         return if (luminance > 0.55) Color.BLACK else Color.WHITE
     }
 
-    private fun clearToolbarBackgrounds(view: View) {
-        if (view is Toolbar || view is AppBarLayout) {
-            view.background = null
+    private fun clearToolbarBackgrounds(view: View, colors: ThemeManager.ThemeColors) {
+        if (view is AppBarLayout) {
+            view.setBackgroundColor(colors.toolbar)
             view.elevation = 0f
         } else {
             val name = view.javaClass.name
             if (name.contains("ActionBarContainer")) {
-                view.background = null
+                view.background = ColorDrawable(colors.toolbar)
                 view.elevation = 0f
             }
         }
         if (view is ViewGroup) {
-            for (index in 0 until view.childCount) {
-                clearToolbarBackgrounds(view.getChildAt(index))
-            }
+            for (index in 0 until view.childCount) clearToolbarBackgrounds(view.getChildAt(index), colors)
         }
     }
 
@@ -185,11 +174,11 @@ open class SimpleActivity : BaseSimpleActivity() {
         val content = window.decorView as? ViewGroup ?: return
         chromeObserverInstalled = true
         content.viewTreeObserver.addOnGlobalLayoutListener {
-            val colors = ThemeManager.colors(this)
+            val colors = ThemeManager.themeForActivity(this).colors
             val tabs = findViewById<View>(R.id.folder_tabs)
             if (tabs is ViewGroup) styleFolderTabs(tabs, colors)
             applyPaletteToCommonViews(content, colors)
-            clearToolbarBackgrounds(content)
+            clearToolbarBackgrounds(content, colors)
         }
     }
 
@@ -216,9 +205,7 @@ open class SimpleActivity : BaseSimpleActivity() {
             view.setTypeface(typeface, currentStyle)
         }
         if (view is ViewGroup) {
-            for (index in 0 until view.childCount) {
-                applyTypeface(view.getChildAt(index), typeface)
-            }
+            for (index in 0 until view.childCount) applyTypeface(view.getChildAt(index), typeface)
         }
     }
 
@@ -245,6 +232,5 @@ open class SimpleActivity : BaseSimpleActivity() {
     )
 
     override fun getAppLauncherName() = getString(R.string.app_launcher_name)
-
     override fun getRepositoryName() = "Messages"
 }
