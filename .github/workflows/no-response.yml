@@ -5,7 +5,6 @@ on:
     - cron: "0 12 * * *" # Runs daily at noon
   workflow_dispatch:
 
-# trigger theme route fix
 jobs:
   call-no-response-workflow:
     uses: FossifyOrg/.github/.github/workflows/no-response.yml@main
