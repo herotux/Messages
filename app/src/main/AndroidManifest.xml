@@ -217,6 +217,9 @@
             android:name=".receivers.ScheduledMessageReceiver"
             android:exported="false" />
         <receiver
+            android:name=".receivers.ThemeScheduleReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".receivers.RescheduleAlarmsReceiver"
             android:enabled="true"
             android:exported="false">
