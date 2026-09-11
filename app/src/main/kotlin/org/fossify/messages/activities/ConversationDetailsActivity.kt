@@ -9,6 +9,7 @@ import android.media.RingtoneManager
 import android.os.Bundle
 import android.provider.Settings
 import androidx.core.content.res.ResourcesCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -21,7 +22,6 @@ import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.SimpleContact
-import org.fossify.messages.R
 import org.fossify.messages.adapters.ContactsAdapter
 import org.fossify.messages.databinding.ActivityConversationDetailsBinding
 import org.fossify.messages.dialogs.RenameConversationDialog
@@ -36,7 +36,6 @@ import org.fossify.messages.helpers.ConversationThemeManager
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.ThemeManager
 import org.fossify.messages.models.Conversation
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class ConversationDetailsActivity : SimpleActivity() {
 
@@ -51,10 +50,7 @@ class ConversationDetailsActivity : SimpleActivity() {
         setContentView(binding.root)
 
         setupEdgeToEdge(padBottomSystem = listOf(binding.conversationDetailsNestedScrollview))
-        setupMaterialScrollListener(
-            scrollingView = binding.conversationDetailsNestedScrollview,
-            topAppBar = binding.conversationDetailsAppbar,
-        )
+        setupMaterialScrollListener(scrollingView = binding.conversationDetailsNestedScrollview, topAppBar = binding.conversationDetailsAppbar)
 
         threadId = intent.getLongExtra(THREAD_ID, 0L)
         ensureBackgroundThread {
@@ -62,9 +58,7 @@ class ConversationDetailsActivity : SimpleActivity() {
             participants = if (conversation != null && conversation!!.isScheduled) {
                 val message = messagesDB.getThreadMessages(conversation!!.threadId).firstOrNull()
                 message?.participants ?: arrayListOf()
-            } else {
-                getThreadParticipants(threadId, null)
-            }
+            } else getThreadParticipants(threadId, null)
             runOnUiThread {
                 setupTextViews()
                 setupParticipants()
@@ -78,39 +72,15 @@ class ConversationDetailsActivity : SimpleActivity() {
         super.onResume()
         setupTopAppBar(binding.conversationDetailsAppbar, NavigationIcon.Arrow)
         updateTextColors(binding.conversationDetailsHolder)
-
         val primaryColor = getProperPrimaryColor()
-        arrayOf(
-            binding.notificationsHeading,
-            binding.conversationNameHeading,
-            binding.membersHeading
-        ).forEach {
-            it.setTextColor(primaryColor)
-        }
+        arrayOf(binding.notificationsHeading, binding.conversationNameHeading, binding.membersHeading).forEach { it.setTextColor(primaryColor) }
+        if (::participants.isInitialized) setupConversationTheme()
     }
 
     private fun setupConversationTheme() {
-        val current = ConversationThemeManager.getThemeId(this, threadId)
-        val themeView = binding.conversationDetailsHolder.findViewById<android.view.View>(R.id.conversation_theme_holder)
-        if (themeView != null) {
-            val text = themeView as? android.widget.TextView
-            text?.text = getConversationThemeLabel(current)
-            return
-        }
-
-        val view = org.fossify.commons.views.MyTextView(this).apply {
-            id = R.id.conversation_theme_holder
-            setPadding(resources.getDimensionPixelSize(org.fossify.messages.R.dimen.activity_margin), resources.getDimensionPixelSize(org.fossify.messages.R.dimen.medium_margin), resources.getDimensionPixelSize(org.fossify.messages.R.dimen.activity_margin), resources.getDimensionPixelSize(org.fossify.messages.R.dimen.medium_margin))
-            textSize = resources.getDimension(org.fossify.messages.R.dimen.big_text_size)
-            setBackgroundResource(android.R.attr.selectableItemBackground)
-            isClickable = true
-            isFocusable = true
-            text = getConversationThemeLabel(current)
-            setOnClickListener { showConversationThemePicker() }
-        }
-        val holder = binding.conversationDetailsHolder
-        val nameIndex = holder.indexOfChild(binding.conversationName)
-        holder.addView(view, nameIndex + 1, android.widget.LinearLayout.LayoutParams(-1, -2))
+        val themeId = ConversationThemeManager.getThemeId(this, threadId)
+        binding.conversationThemeHolder.text = getConversationThemeLabel(themeId)
+        binding.conversationThemeHolder.setOnClickListener { showConversationThemePicker() }
     }
 
     private fun getConversationThemeLabel(themeId: String?): String {
@@ -141,7 +111,6 @@ class ConversationDetailsActivity : SimpleActivity() {
             customNotificationsHolder.beVisible()
             customNotifications.isChecked = config.customNotifications.contains(threadId.toString())
             customNotificationsButton.beVisibleIf(customNotifications.isChecked)
-
             customNotificationsHolder.setOnClickListener {
                 customNotifications.toggle()
                 if (customNotifications.isChecked) {
@@ -154,7 +123,6 @@ class ConversationDetailsActivity : SimpleActivity() {
                     removeNotificationChannel()
                 }
             }
-
             customNotificationsButton.setOnClickListener {
                 Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
                     putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
@@ -167,49 +135,26 @@ class ConversationDetailsActivity : SimpleActivity() {
 
     private fun createNotificationChannel() {
         val name = conversation?.title
-        val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .setLegacyStreamType(AudioManager.STREAM_NOTIFICATION)
-            .build()
-
+        val audioAttributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).setLegacyStreamType(AudioManager.STREAM_NOTIFICATION).build()
         NotificationChannel(threadId.toString(), name, NotificationManager.IMPORTANCE_HIGH).apply {
-            setBypassDnd(false)
-            enableLights(true)
-            setSound(
-                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-                audioAttributes
-            )
-            enableVibration(true)
-            notificationManager.createNotificationChannel(this)
+            setBypassDnd(false); enableLights(true)
+            setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), audioAttributes)
+            enableVibration(true); notificationManager.createNotificationChannel(this)
         }
     }
 
-    private fun removeNotificationChannel() {
-        notificationManager.deleteNotificationChannel(threadId.toString())
-    }
+    private fun removeNotificationChannel() { notificationManager.deleteNotificationChannel(threadId.toString()) }
 
     private fun setupTextViews() {
         binding.conversationName.apply {
-            ResourcesCompat.getDrawable(
-                resources,
-                org.fossify.messages.R.drawable.ic_edit_vector,
-                theme
-            )?.apply {
-                applyColorFilter(getProperTextColor())
-                setCompoundDrawablesWithIntrinsicBounds(null, null, this, null)
+            ResourcesCompat.getDrawable(resources, org.fossify.messages.R.drawable.ic_edit_vector, theme)?.apply {
+                applyColorFilter(getProperTextColor()); setCompoundDrawablesWithIntrinsicBounds(null, null, this, null)
             }
-
             text = conversation?.title
             setOnClickListener {
-                RenameConversationDialog(
-                    this@ConversationDetailsActivity,
-                    conversation!!
-                ) { title ->
+                RenameConversationDialog(this@ConversationDetailsActivity, conversation!!) { title ->
                     text = title
-                    ensureBackgroundThread {
-                        conversation = renameConversation(conversation!!, newTitle = title)
-                    }
+                    ensureBackgroundThread { conversation = renameConversation(conversation!!, newTitle = title) }
                 }
             }
         }
@@ -219,11 +164,7 @@ class ConversationDetailsActivity : SimpleActivity() {
         val adapter = ContactsAdapter(this, participants, binding.participantsRecyclerview) {
             val contact = it as SimpleContact
             val address = contact.phoneNumbers.first().normalizedNumber
-            getContactFromAddress(address) { simpleContact ->
-                if (simpleContact != null) {
-                    startContactDetailsIntent(simpleContact)
-                }
-            }
+            getContactFromAddress(address) { simpleContact -> if (simpleContact != null) startContactDetailsIntent(simpleContact) }
         }
         binding.participantsRecyclerview.adapter = adapter
     }
