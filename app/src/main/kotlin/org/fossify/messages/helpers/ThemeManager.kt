@@ -12,6 +12,7 @@ object ThemeManager {
     private const val KEY_THEME_ID = "selected_theme_id"
     private const val KEY_FAVORITES = "favorite_theme_ids"
     private const val KEY_LIBRARY_SORT = "library_sort"
+    private var applicationContext: Context? = null
 
     const val DEFAULT_ID = "none"
     const val AURORA_ID = "aurora"
@@ -43,6 +44,7 @@ object ThemeManager {
         val embeddedWallpaperBase64: String? = null
     )
 
+    fun contextForThemeFiles(): Context? = applicationContext
     private fun c(value: String): Int = Color.parseColor(value)
     private val defaultColors = ThemeColors(c("#388E3C"), c("#4CAF50"), c("#161616"), c("#242424"), c("#FFFFFF"), c("#BDBDBD"), c("#2A2A2A"), c("#388E3C"), c("#388E3C"), c("#388E3C"), c("#4CAF50"))
     private val auroraColors = ThemeColors(c("#6C63FF"), c("#8B80FF"), c("#17152A"), c("#24213D"), c("#FFFFFF"), c("#C9C5E8"), c("#302C4D"), c("#5B54C7"), c("#5B54C7"), c("#8B80FF"), c("#6C63FF"))
@@ -62,7 +64,7 @@ object ThemeManager {
         ThemeDefinition(MIDNIGHT_ID, "نیمه‌شب", "Midnight", backgroundDrawable = R.drawable.bg_theme_midnight, colors = midnightColors)
     )
 
-    fun allThemes(context: Context): List<ThemeDefinition> = builtInThemes + ThemeStorage.load(context)
+    fun allThemes(context: Context): List<ThemeDefinition> { applicationContext = context.applicationContext; return builtInThemes + ThemeStorage.load(context) }
     fun customThemes(context: Context): List<ThemeDefinition> = ThemeStorage.load(context).filter { it.source != ThemeSource.BUILT_IN }
     fun userThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.USER }
     fun importedThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.IMPORTED }
@@ -88,9 +90,7 @@ object ThemeManager {
     fun saveUserTheme(context: Context, theme: ThemeDefinition) { val users = ThemeStorage.load(context).filterNot { it.id == theme.id }; ThemeStorage.save(context, users + theme.copy(source = ThemeSource.USER, backgroundDrawable = 0, embeddedWallpaperBase64 = null)) }
     fun saveImportedTheme(context: Context, theme: ThemeDefinition): Boolean {
         if (theme.source != ThemeSource.IMPORTED) return false
-        val storedTheme = if (!theme.embeddedWallpaperBase64.isNullOrBlank()) {
-            ThemeFileManager.materializeEmbeddedWallpaper(context, theme).getOrElse { return false }
-        } else theme
+        val storedTheme = if (!theme.embeddedWallpaperBase64.isNullOrBlank()) ThemeFileManager.materializeEmbeddedWallpaper(context, theme).getOrElse { return false } else theme
         val existing = ThemeStorage.load(context).filterNot { it.id == storedTheme.id }
         ThemeStorage.save(context, existing + storedTheme.copy(backgroundDrawable = 0, embeddedWallpaperBase64 = null))
         return true
