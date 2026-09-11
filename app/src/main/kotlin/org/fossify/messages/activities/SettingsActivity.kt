@@ -236,7 +236,7 @@ class SettingsActivity : SimpleActivity() {
         val items = arrayOf(t("ویرایش", "Edit"), t("تکثیر", "Duplicate"), t("حذف", "Delete"))
         MaterialAlertDialogBuilder(this).setTitle(if (english()) theme.nameEn else theme.nameFa).setItems(items) { _, which ->
             when (which) {
-                0 -> startActivity(Intent(this, HerotuxAboutActivity::class.java).putExtra(EXTRA_THEME_BUILDER, true).putExtra(EXTRA_THEME_ID, theme.id))
+                0 -> startActivity(Intent(this, ThemeBuilderActivity::class.java).putExtra(EXTRA_THEME_ID, theme.id))
                 1 -> duplicateTheme(theme)
                 2 -> confirmDeleteTheme(theme)
             }
