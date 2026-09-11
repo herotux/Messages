@@ -38,13 +38,19 @@ object ThemeScheduleManager {
     fun setDayTheme(context: Context, id: String) {
         if (ThemeManager.find(context, id) == null) return
         prefs(context).edit().putString(KEY_DAY_THEME, id).apply()
-        if (isEnabled(context)) applyCurrent(context)
+        if (isEnabled(context)) {
+            applyCurrent(context)
+            scheduleNext(context)
+        }
     }
 
     fun setNightTheme(context: Context, id: String) {
         if (ThemeManager.find(context, id) == null) return
         prefs(context).edit().putString(KEY_NIGHT_THEME, id).apply()
-        if (isEnabled(context)) applyCurrent(context)
+        if (isEnabled(context)) {
+            applyCurrent(context)
+            scheduleNext(context)
+        }
     }
 
     fun setDayMinutes(context: Context, minutes: Int) {
@@ -79,6 +85,7 @@ object ThemeScheduleManager {
         }
         val triggerAt = candidates.minByOrNull { it.timeInMillis }?.timeInMillis ?: return
         val pendingIntent = pendingIntent(context)
+        alarmManager.cancel(pendingIntent)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
         } else {
