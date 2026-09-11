@@ -2,7 +2,6 @@ package org.fossify.messages.helpers
 
 import android.app.Activity
 import android.content.Context
-import android.graphics.Color
 import android.view.ViewGroup
 import org.fossify.messages.R
 
@@ -47,7 +46,20 @@ object ThemeManager {
     )
 
     fun contextForThemeFiles(): Context? = applicationContext
-    private fun c(value: String): Int = Color.parseColor(value)
+
+    /** Parses the limited CSS-style hex colors used by the built-in themes without Android APIs. */
+    private fun c(value: String): Int {
+        val hex = value.trim().removePrefix("#")
+        val rgb = when (hex.length) {
+            3 -> hex.map { "$it$it" }.joinToString("")
+            6 -> hex
+            8 -> hex
+            else -> throw IllegalArgumentException("Unsupported theme color: $value")
+        }
+        val argb = if (rgb.length == 6) "FF$rgb" else rgb
+        return argb.toLong(16).toInt()
+    }
+
     private val defaultColors = ThemeColors(c("#388E3C"), c("#4CAF50"), c("#161616"), c("#242424"), c("#FFFFFF"), c("#BDBDBD"), c("#2A2A2A"), c("#388E3C"), c("#388E3C"), c("#388E3C"), c("#4CAF50"))
     private val auroraColors = ThemeColors(c("#6C63FF"), c("#8B80FF"), c("#17152A"), c("#24213D"), c("#FFFFFF"), c("#C9C5E8"), c("#302C4D"), c("#5B54C7"), c("#5B54C7"), c("#8B80FF"), c("#6C63FF"))
     private val oceanColors = ThemeColors(c("#0288D1"), c("#03A9F4"), c("#071A24"), c("#102D3A"), c("#FFFFFF"), c("#B8D5E2"), c("#173846"), c("#0277BD"), c("#0277BD"), c("#03A9F4"), c("#0288D1"))
