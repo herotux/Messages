@@ -2,7 +2,6 @@ package org.fossify.messages.helpers
 
 import android.content.Context
 import android.net.Uri
-import android.util.Base64
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -38,7 +37,7 @@ object ThemeFileManager {
                 val bytes = readWallpaperBytes(context, theme.wallpaperUri)
                 require(bytes != null) { "تصویر پس‌زمینه قابل خواندن نیست" }
                 require(bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "حجم تصویر پس‌زمینه بیش از حد مجاز است" }
-                addProperty("wallpaperBase64", Base64.encodeToString(bytes, Base64.NO_WRAP))
+                addProperty("wallpaperBase64", ThemeBase64.encode(bytes))
             }
             add("gradientColors", JsonArray().apply { theme.gradientColors.forEach { add(hex(it)) } })
             add("colors", JsonObject().apply {
@@ -136,7 +135,7 @@ object ThemeFileManager {
     }
 
     private fun decodeWallpaperBase64(encoded: String): ByteArray = runCatching {
-        Base64.decode(encoded, Base64.DEFAULT)
+        ThemeBase64.decode(encoded)
     }.getOrElse { error("داده تصویر پس‌زمینه نامعتبر است") }.also {
         require(it.isNotEmpty() && it.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "داده تصویر پس‌زمینه نامعتبر یا بیش از حد بزرگ است" }
     }
