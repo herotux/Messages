@@ -42,7 +42,9 @@ object ThemeFileManager {
                 }
                 else -> null
             }
-            addProperty("wallpaperBase64", embeddedWallpaper)
+            if (embeddedWallpaper != null) {
+                addProperty("wallpaperBase64", embeddedWallpaper)
+            }
             if (theme.backgroundType == ThemeManager.BackgroundType.WALLPAPER && context != null && embeddedWallpaper == null) {
                 require(false) { "تصویر پس‌زمینه قابل خواندن نیست" }
             }
