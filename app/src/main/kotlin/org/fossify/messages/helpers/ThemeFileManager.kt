@@ -1,10 +1,13 @@
 package org.fossify.messages.helpers
 
 import android.content.Context
+import android.net.Uri
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import java.io.File
+import java.util.Base64
 import java.util.UUID
 
 /** Versioned .homa-theme import/export format. */
@@ -12,15 +15,27 @@ object ThemeFileManager {
     const val FILE_EXTENSION = ".homa-theme"
     const val MIME_TYPE = "application/json"
     const val SCHEMA = "homa-theme"
-    const val CURRENT_VERSION = 3
+    const val CURRENT_VERSION = 4
+    private const val WALLPAPER_FILE_PREFIX = "homa_wallpaper_"
+    private const val MAX_EMBEDDED_WALLPAPER_BYTES = 12 * 1024 * 1024
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
-    fun export(theme: ThemeManager.ThemeDefinition): String = JsonObject().apply {
+    fun export(theme: ThemeManager.ThemeDefinition): String = exportInternal(theme, null)
+
+    fun export(context: Context, theme: ThemeManager.ThemeDefinition): String = exportInternal(theme, context)
+
+    private fun exportInternal(theme: ThemeManager.ThemeDefinition, context: Context?): String = JsonObject().apply {
         addProperty("schema", SCHEMA); addProperty("version", CURRENT_VERSION)
         add("theme", JsonObject().apply {
             addProperty("id", theme.id); addProperty("nameFa", theme.nameFa); addProperty("nameEn", theme.nameEn)
             addProperty("backgroundType", theme.backgroundType.name); addProperty("gradientAngle", theme.gradientAngle)
             addProperty("wallpaperUri", theme.wallpaperUri)
+            if (theme.backgroundType == ThemeManager.BackgroundType.WALLPAPER && context != null) {
+                val bytes = readWallpaperBytes(context, theme.wallpaperUri)
+                require(bytes != null) { "تصویر پس‌زمینه قابل خواندن نیست" }
+                require(bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "حجم تصویر پس‌زمینه بیش از حد مجاز است" }
+                addProperty("wallpaperBase64", Base64.getEncoder().encodeToString(bytes))
+            }
             add("gradientColors", JsonArray().apply { theme.gradientColors.forEach { add(hex(it)) } })
             add("colors", JsonObject().apply {
                 addProperty("primary", hex(theme.colors.primary)); addProperty("accent", hex(theme.colors.accent)); addProperty("background", hex(theme.colors.background)); addProperty("surface", hex(theme.colors.surface))
@@ -44,17 +59,33 @@ object ThemeFileManager {
         val backgroundType = runCatching { ThemeManager.BackgroundType.valueOf(item.get("backgroundType")?.asString ?: ThemeManager.BackgroundType.SOLID.name) }.getOrDefault(ThemeManager.BackgroundType.SOLID)
         val gradientColors = item.getAsJsonArray("gradientColors")?.mapNotNull { runCatching { parseColorValue(it.asString) }.getOrNull() } ?: emptyList()
         val wallpaperUri = item.get("wallpaperUri")?.takeIf { !it.isJsonNull }?.asString?.trim()?.takeIf { it.isNotBlank() }
+        val wallpaperBase64 = item.get("wallpaperBase64")?.takeIf { !it.isJsonNull }?.asString?.trim()?.takeIf { it.isNotBlank() }
         require(backgroundType != ThemeManager.BackgroundType.LINEAR_GRADIENT || gradientColors.size >= 2) { "رنگ‌های گرادیان کامل نیستند" }
-        require(backgroundType != ThemeManager.BackgroundType.WALLPAPER || !wallpaperUri.isNullOrBlank()) { "تصویر پس‌زمینه تم وجود ندارد" }
+        require(backgroundType != ThemeManager.BackgroundType.WALLPAPER || !wallpaperUri.isNullOrBlank() || !wallpaperBase64.isNullOrBlank()) { "تصویر پس‌زمینه تم وجود ندارد" }
+        wallpaperBase64?.let { encoded ->
+            val bytes = runCatching { Base64.getDecoder().decode(encoded) }.getOrElse { error("داده تصویر پس‌زمینه نامعتبر است") }
+            require(bytes.isNotEmpty() && bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "داده تصویر پس‌زمینه نامعتبر یا بیش از حد بزرگ است" }
+        }
         ThemeManager.ThemeDefinition(
             id = id, nameFa = item.get("nameFa")?.asString?.trim().orEmpty().ifBlank { "تم واردشده" }, nameEn = item.get("nameEn")?.asString?.trim().orEmpty().ifBlank { "Imported theme" },
             source = ThemeManager.ThemeSource.IMPORTED,
             colors = ThemeManager.ThemeColors(parseColor(colors, "primary"), parseColor(colors, "accent"), parseColor(colors, "background"), parseColor(colors, "surface"), parseColor(colors, "textPrimary"), parseColor(colors, "textSecondary"), parseColor(colors, "incomingBubble"), parseColor(colors, "outgoingBubble"), parseColor(colors, "toolbar"), parseColor(colors, "tab"), parseColor(colors, "fab"), parseColor(colors, "divider", "#33808080")),
-            version = formatVersion, backgroundType = backgroundType, gradientColors = gradientColors, gradientAngle = normalizeAngle(item.get("gradientAngle")?.asInt ?: 0), wallpaperUri = wallpaperUri
+            version = formatVersion, backgroundType = backgroundType, gradientColors = gradientColors, gradientAngle = normalizeAngle(item.get("gradientAngle")?.asInt ?: 0), wallpaperUri = wallpaperUri,
+            embeddedWallpaperBase64 = wallpaperBase64
         )
     }
 
+    fun materializeEmbeddedWallpaper(context: Context, theme: ThemeManager.ThemeDefinition): Result<ThemeManager.ThemeDefinition> = runCatching {
+        val encoded = theme.embeddedWallpaperBase64 ?: return@runCatching theme
+        val bytes = Base64.getDecoder().decode(encoded)
+        require(bytes.isNotEmpty() && bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "داده تصویر پس‌زمینه نامعتبر است" }
+        val file = File(context.filesDir, "$WALLPAPER_FILE_PREFIX${theme.id}_${UUID.randomUUID()}.img")
+        file.writeBytes(bytes)
+        theme.copy(wallpaperUri = Uri.fromFile(file).toString(), embeddedWallpaperBase64 = null)
+    }
+
     fun saveImported(context: Context, theme: ThemeManager.ThemeDefinition): Boolean = ThemeManager.saveImportedTheme(context, theme)
+    private fun readWallpaperBytes(context: Context, wallpaperUri: String?): ByteArray? = wallpaperUri?.let { uri -> runCatching { context.contentResolver.openInputStream(Uri.parse(uri))?.use { it.readBytes() } }.getOrNull() }
     private fun parseColor(colors: JsonObject, key: String, default: String? = null): Int = parseColorValue(colors.get(key)?.asString?.trim() ?: default.orEmpty(), key)
     private fun parseColorValue(value: String, key: String = "color"): Int { require(value.matches(Regex("#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?"))) { "رنگ نامعتبر برای $key" }; val hex = value.substring(1).toLong(16).toInt(); return if (value.length == 7) (0xFF000000.toInt() or hex) else hex }
     private fun normalizeAngle(value: Int): Int { val normalized = ((value % 360) + 360) % 360; return ((normalized + 22) / 45 * 45) % 360 }
