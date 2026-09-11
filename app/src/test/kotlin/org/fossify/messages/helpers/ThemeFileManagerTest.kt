@@ -30,7 +30,7 @@ class ThemeFileManagerTest {
     fun export_contains_versioned_schema() {
         val raw = ThemeFileManager.export(theme())
         assertTrue(raw.contains("\"schema\": \"homa-theme\""))
-        assertTrue(raw.contains("\"version\": 1"))
+        assertTrue(raw.contains("\"version\": ${ThemeFileManager.CURRENT_VERSION}"))
         assertTrue(raw.contains("\"colors\""))
     }
 
@@ -43,6 +43,7 @@ class ThemeFileManagerTest {
         assertEquals(original.nameEn, imported.nameEn)
         assertEquals(original.colors, imported.colors)
         assertEquals(ThemeManager.ThemeSource.IMPORTED, imported.source)
+        assertEquals(ThemeFileManager.CURRENT_VERSION, imported.version)
     }
 
     @Test
@@ -53,7 +54,10 @@ class ThemeFileManagerTest {
 
     @Test
     fun import_rejects_unsupported_version() {
-        val raw = ThemeFileManager.export(theme()).replace("\"version\": 1", "\"version\": 99")
+        val raw = ThemeFileManager.export(theme()).replace(
+            "\"version\": ${ThemeFileManager.CURRENT_VERSION}",
+            "\"version\": 99"
+        )
         assertTrue(ThemeFileManager.importTheme(raw).isFailure)
     }
 
