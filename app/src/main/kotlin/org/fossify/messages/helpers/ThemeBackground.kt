@@ -18,9 +18,8 @@ object ThemeBackground {
     ) {
         when {
             type == ThemeManager.BackgroundType.WALLPAPER && !wallpaperUri.isNullOrBlank() -> {
-                val drawable = loadWallpaper(view.context, wallpaperUri)
-                if (drawable != null) {
-                    view.background = drawable
+                loadWallpaper(view.context, wallpaperUri)?.let {
+                    view.background = it
                     return
                 }
             }
@@ -40,14 +39,18 @@ object ThemeBackground {
         }
     }.getOrNull()
 
-    private fun orientation(angle: Int): GradientDrawable.Orientation = when (((angle % 360) + 360) % 360) {
-        0 -> GradientDrawable.Orientation.LEFT_RIGHT
-        45 -> GradientDrawable.Orientation.BL_TR
-        90 -> GradientDrawable.Orientation.BOTTOM_TOP
-        135 -> GradientDrawable.Orientation.BR_TL
-        180 -> GradientDrawable.Orientation.RIGHT_LEFT
-        225 -> GradientDrawable.Orientation.TR_BL
-        270 -> GradientDrawable.Orientation.TOP_BOTTOM
-        else -> GradientDrawable.Orientation.TL_BR
+    private fun orientation(angle: Int): GradientDrawable.Orientation {
+        val normalized = ((angle % 360) + 360) % 360
+        val snapped = ((normalized + 22) / 45 * 45) % 360
+        return when (snapped) {
+            0 -> GradientDrawable.Orientation.LEFT_RIGHT
+            45 -> GradientDrawable.Orientation.BL_TR
+            90 -> GradientDrawable.Orientation.BOTTOM_TOP
+            135 -> GradientDrawable.Orientation.BR_TL
+            180 -> GradientDrawable.Orientation.RIGHT_LEFT
+            225 -> GradientDrawable.Orientation.TR_BL
+            270 -> GradientDrawable.Orientation.TOP_BOTTOM
+            else -> GradientDrawable.Orientation.TL_BR
+        }
     }
 }
