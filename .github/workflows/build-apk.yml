@@ -10,13 +10,18 @@ on:
       - 'fix/**'
   pull_request:
   workflow_dispatch:
+    inputs:
+      build_apk:
+        description: 'Build and upload the signed FOSS release APK'
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
 
-# Keep the three tests independent. Build only the FOSS release APK to keep
-# release CI lightweight while main is being stabilized.
-# Diagnostic trigger: verify a fresh runner execution independently of run 34449657423.
+# Normal commits/PRs run validation only. Release APK creation is explicit via
+# workflow_dispatch with build_apk=true, so ordinary commits never build APKs.
 jobs:
   unit-tests:
     name: Unit tests (${{ matrix.variant }})
@@ -80,6 +85,7 @@ jobs:
 
   build-apk:
     name: Build FOSS release APK
+    if: github.event_name == 'workflow_dispatch' && inputs.build_apk == true
     needs:
       - unit-tests
       - lint
@@ -113,8 +119,6 @@ jobs:
           chmod 600 "$SIGNING_STORE_FILE"
           test -s "$SIGNING_STORE_FILE"
 
-      # ubuntu-latest provides the Android SDK. Avoid setup-android here so
-      # the release job does not install unnecessary emulator/SDK tooling.
       - name: Prepare Android SDK
         shell: bash
         run: |
@@ -153,9 +157,6 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      # The project defaults to an 8 GiB Gradle heap. Hosted GitHub runners
-      # have less physical memory, so cap the release build to reduce the
-      # chance of the runner being killed while R8 is running.
       - name: Build FOSS release APK
         run: ./gradlew assembleFossRelease --stacktrace --no-daemon --max-workers=2 -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
 
