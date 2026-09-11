@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Homa Material 3 semantic color layer.
+        These are intentionally aliases, not new hard-coded colors.
+        API 31+ overrides live in values-v31/m3_colors.xml.
+    -->
+    <color name="m3_primary">@color/color_primary</color>
+    <color name="m3_on_primary">@color/md_grey_white</color>
+    <color name="m3_primary_container">@color/color_primary</color>
+    <color name="m3_on_primary_container">@color/md_grey_white</color>
+
+    <color name="m3_secondary">@color/md_teal_500</color>
+    <color name="m3_on_secondary">@color/md_grey_white</color>
+    <color name="m3_secondary_container">@color/md_teal_500</color>
+    <color name="m3_on_secondary_container">@color/md_grey_white</color>
+
+    <color name="m3_tertiary">@color/md_blue_500</color>
+    <color name="m3_on_tertiary">@color/md_grey_white</color>
+    <color name="m3_tertiary_container">@color/md_blue_500</color>
+    <color name="m3_on_tertiary_container">@color/md_grey_white</color>
+
+    <color name="m3_background">@color/theme_light_background_color</color>
+    <color name="m3_on_background">@color/theme_light_text_color</color>
+    <color name="m3_surface">@color/theme_light_background_color</color>
+    <color name="m3_on_surface">@color/theme_light_text_color</color>
+    <color name="m3_surface_variant">@color/md_grey_300</color>
+    <color name="m3_on_surface_variant">@color/md_grey_700</color>
+
+    <color name="m3_outline">@color/md_grey_500</color>
+    <color name="m3_error">@color/md_red_700</color>
+    <color name="m3_on_error">@color/md_grey_white</color>
+
+    <color name="m3_status_bar">@color/color_primary_dark</color>
+    <color name="m3_navigation_bar">@color/theme_light_background_color</color>
+    <color name="m3_ripple">@color/activated_item_foreground</color>
+</resources>
