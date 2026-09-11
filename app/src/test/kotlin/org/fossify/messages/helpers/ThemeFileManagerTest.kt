@@ -1,5 +1,6 @@
 package org.fossify.messages.helpers
 
+import com.google.gson.JsonParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -61,14 +62,13 @@ class ThemeFileManagerTest {
 
     @Test
     fun embedded_wallpaper_is_preserved_on_import() {
-        val raw = ThemeFileManager.export(theme()).replace(
-            "\"backgroundType\": \"SOLID\"",
-            "\"backgroundType\": \"WALLPAPER\""
-        ).replace(
-            "\"wallpaperUri\": null",
-            "\"wallpaperUri\": null,\n      \"wallpaperBase64\": \"aGVsbG8=\""
-        )
-        val imported = ThemeFileManager.importTheme(raw).getOrThrow()
+        val root = JsonParser.parseString(ThemeFileManager.export(theme())).asJsonObject
+        val item = root.getAsJsonObject("theme")
+        item.addProperty("backgroundType", ThemeManager.BackgroundType.WALLPAPER.name)
+        item.addProperty("wallpaperBase64", "aGVsbG8=")
+        item.add("wallpaperUri", com.google.gson.JsonNull.INSTANCE)
+
+        val imported = ThemeFileManager.importTheme(root.toString()).getOrThrow()
         assertEquals(ThemeManager.BackgroundType.WALLPAPER, imported.backgroundType)
         assertEquals("aGVsbG8=", imported.embeddedWallpaperBase64)
     }
