@@ -38,7 +38,7 @@ class ThemeFileManagerGradientTest {
         assertEquals(ThemeManager.BackgroundType.LINEAR_GRADIENT, imported.backgroundType)
         assertEquals(listOf(0xFF0D47A1.toInt(), 0xFF00ACC1.toInt()), imported.gradientColors)
         assertEquals(135, imported.gradientAngle)
-        assertTrue(raw.contains("\"version\": 2"))
+        assertTrue(raw.contains("\"version\": ${ThemeFileManager.CURRENT_VERSION}"))
     }
 
     @Test
