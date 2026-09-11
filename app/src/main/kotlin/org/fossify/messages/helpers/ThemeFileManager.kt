@@ -20,8 +20,7 @@ object ThemeFileManager {
     private const val MAX_EMBEDDED_WALLPAPER_BYTES = 12 * 1024 * 1024
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
-    fun export(theme: ThemeManager.ThemeDefinition): String = exportInternal(theme, null)
-
+    fun export(theme: ThemeManager.ThemeDefinition): String = exportInternal(theme, ThemeManager.contextForThemeFiles())
     fun export(context: Context, theme: ThemeManager.ThemeDefinition): String = exportInternal(theme, context)
 
     private fun exportInternal(theme: ThemeManager.ThemeDefinition, context: Context?): String = JsonObject().apply {
