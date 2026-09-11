@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Material 3 semantic dark palette for pre-dynamic Android versions. -->
-    <color name="m3_primary">@color/md_green_300</color>
-    <color name="m3_on_primary">@color/md_grey_900</color>
-    <color name="m3_primary_container">@color/md_green_700</color>
-    <color name="m3_on_primary_container">@color/md_grey_white</color>
+    <color name="m3_primary">#FF9ED984</color>
+    <color name="m3_on_primary">#FF1B1B1B</color>
+    <color name="m3_primary_container">#FF50A43B</color>
+    <color name="m3_on_primary_container">#FFFFFFFF</color>
 
-    <color name="m3_secondary">@color/md_teal_300</color>
-    <color name="m3_on_secondary">@color/md_grey_900</color>
-    <color name="m3_secondary_container">@color/md_teal_700</color>
-    <color name="m3_on_secondary_container">@color/md_grey_white</color>
+    <color name="m3_secondary">#FF4DB6AC</color>
+    <color name="m3_on_secondary">#FF1B1B1B</color>
+    <color name="m3_secondary_container">#FF00796B</color>
+    <color name="m3_on_secondary_container">#FFFFFFFF</color>
 
-    <color name="m3_tertiary">@color/md_blue_300</color>
-    <color name="m3_on_tertiary">@color/md_grey_900</color>
-    <color name="m3_tertiary_container">@color/md_blue_700</color>
-    <color name="m3_on_tertiary_container">@color/md_grey_white</color>
+    <color name="m3_tertiary">#FF64B5F6</color>
+    <color name="m3_on_tertiary">#FF1B1B1B</color>
+    <color name="m3_tertiary_container">#FF1976D2</color>
+    <color name="m3_on_tertiary_container">#FFFFFFFF</color>
 
-    <color name="m3_background">@color/theme_dark_background_color</color>
-    <color name="m3_on_background">@color/md_grey_100</color>
-    <color name="m3_surface">@color/theme_dark_background_color</color>
-    <color name="m3_on_surface">@color/md_grey_100</color>
-    <color name="m3_surface_variant">@color/md_grey_700</color>
-    <color name="m3_on_surface_variant">@color/md_grey_200</color>
+    <color name="m3_background">#FF161616</color>
+    <color name="m3_on_background">#FFF5F5F5</color>
+    <color name="m3_surface">#FF161616</color>
+    <color name="m3_on_surface">#FFF5F5F5</color>
+    <color name="m3_surface_variant">#FF424242</color>
+    <color name="m3_on_surface_variant">#FFEEEEEE</color>
 
-    <color name="m3_outline">@color/md_grey_500</color>
-    <color name="m3_error">@color/md_red_300</color>
-    <color name="m3_on_error">@color/md_grey_900</color>
+    <color name="m3_outline">#FF9E9E9E</color>
+    <color name="m3_error">#FFFFB4AB</color>
+    <color name="m3_on_error">#FF690005</color>
 
-    <color name="m3_status_bar">@color/md_green_900</color>
-    <color name="m3_navigation_bar">@color/theme_dark_background_color</color>
-    <color name="m3_ripple">@color/activated_item_foreground</color>
+    <color name="m3_status_bar">#FF106D1F</color>
+    <color name="m3_navigation_bar">#FF161616</color>
+    <color name="m3_ripple">#66888888</color>
 </resources>
