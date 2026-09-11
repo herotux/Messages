@@ -25,16 +25,7 @@ object ThemeManager {
     const val MIDNIGHT_ID = "midnight"
 
     enum class ThemeSource { BUILT_IN, USER, IMPORTED, COMMUNITY }
-    enum class ThemeSort {
-        DEFAULT,
-        FAVORITES_FIRST,
-        NAME_ASC,
-        NAME_DESC,
-        NEWEST,
-        BUILT_IN_FIRST,
-        CUSTOM_FIRST,
-        LAST_USED
-    }
+    enum class ThemeSort { DEFAULT, FAVORITES_FIRST, NAME_ASC, NAME_DESC, NEWEST, BUILT_IN_FIRST, CUSTOM_FIRST, LAST_USED }
     enum class BackgroundType { SOLID, LINEAR_GRADIENT, WALLPAPER }
 
     data class ThemeColors(
@@ -57,7 +48,6 @@ object ThemeManager {
 
     fun contextForThemeFiles(): Context? = applicationContext
     private fun c(value: String): Int = Color.parseColor(value)
-
     private val defaultColors = ThemeColors(c("#388E3C"), c("#4CAF50"), c("#161616"), c("#242424"), c("#FFFFFF"), c("#BDBDBD"), c("#2A2A2A"), c("#388E3C"), c("#388E3C"), c("#388E3C"), c("#4CAF50"))
     private val auroraColors = ThemeColors(c("#6C63FF"), c("#8B80FF"), c("#17152A"), c("#24213D"), c("#FFFFFF"), c("#C9C5E8"), c("#302C4D"), c("#5B54C7"), c("#5B54C7"), c("#8B80FF"), c("#6C63FF"))
     private val oceanColors = ThemeColors(c("#0288D1"), c("#03A9F4"), c("#071A24"), c("#102D3A"), c("#FFFFFF"), c("#B8D5E2"), c("#173846"), c("#0277BD"), c("#0277BD"), c("#03A9F4"), c("#0288D1"))
@@ -86,16 +76,8 @@ object ThemeManager {
     fun userThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.USER }
     fun importedThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.IMPORTED }
     fun communityThemes(context: Context): List<ThemeDefinition> = customThemes(context).filter { it.source == ThemeSource.COMMUNITY }
-    fun libraryThemes(context: Context): Map<ThemeSource, List<ThemeDefinition>> = linkedMapOf(
-        ThemeSource.BUILT_IN to builtInThemes,
-        ThemeSource.USER to userThemes(context),
-        ThemeSource.IMPORTED to importedThemes(context),
-        ThemeSource.COMMUNITY to communityThemes(context)
-    )
-
-    fun selectedThemeId(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        .getString(KEY_THEME_ID, DEFAULT_ID)?.takeIf { it.isNotBlank() } ?: DEFAULT_ID
-
+    fun libraryThemes(context: Context): Map<ThemeSource, List<ThemeDefinition>> = linkedMapOf(ThemeSource.BUILT_IN to builtInThemes, ThemeSource.USER to userThemes(context), ThemeSource.IMPORTED to importedThemes(context), ThemeSource.COMMUNITY to communityThemes(context))
+    fun selectedThemeId(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_THEME_ID, DEFAULT_ID)?.takeIf { it.isNotBlank() } ?: DEFAULT_ID
     fun activeTheme(context: Context): ThemeDefinition = current(context)
     fun current(context: Context): ThemeDefinition = allThemes(context).firstOrNull { it.id == selectedThemeId(context) } ?: builtInThemes.first()
     fun colors(context: Context): ThemeColors = current(context).colors
@@ -103,15 +85,10 @@ object ThemeManager {
     fun select(context: Context, id: String): Boolean {
         if (allThemes(context).none { it.id == id }) return false
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val recent = prefs.getStringSet(KEY_RECENT_THEMES, emptySet())?.toMutableSet() ?: mutableSetOf()
-        // SharedPreferences StringSet has no ordering, so the recent list is encoded separately.
-        val orderedRecent = prefs.getString(KEY_RECENT_THEMES, "")?.split(',')?.filter { it.isNotBlank() }?.toMutableList() ?: mutableListOf()
-        orderedRecent.remove(id)
-        orderedRecent.add(0, id)
-        prefs.edit()
-            .putString(KEY_THEME_ID, id)
-            .putString(KEY_RECENT_THEMES, orderedRecent.distinct().take(MAX_RECENT_THEMES).joinToString(","))
-            .apply()
+        val recent = prefs.getString(KEY_RECENT_THEMES, "")?.split(',')?.filter { it.isNotBlank() }?.toMutableList() ?: mutableListOf()
+        recent.remove(id)
+        recent.add(0, id)
+        prefs.edit().putString(KEY_THEME_ID, id).putString(KEY_RECENT_THEMES, recent.distinct().take(MAX_RECENT_THEMES).joinToString(",")).apply()
         return true
     }
 
@@ -128,27 +105,14 @@ object ThemeManager {
         prefs.edit().putStringSet(KEY_FAVORITES, favorites).apply()
     }
 
-    fun toggleFavorite(context: Context, id: String): Boolean {
-        val next = !isFavorite(context, id)
-        setFavorite(context, id, next)
-        return next
-    }
-
+    fun toggleFavorite(context: Context, id: String): Boolean { val next = !isFavorite(context, id); setFavorite(context, id, next); return next }
     fun favoriteThemes(context: Context): List<ThemeDefinition> = allThemes(context).filter { isFavorite(context, it.id) }
-
-    fun librarySort(context: Context): ThemeSort = ThemeSort.entries.getOrElse(
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_LIBRARY_SORT, ThemeSort.FAVORITES_FIRST.ordinal)
-    ) { ThemeSort.FAVORITES_FIRST }
-
-    fun setLibrarySort(context: Context, sort: ThemeSort) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_LIBRARY_SORT, sort.ordinal).apply()
-    }
+    fun librarySort(context: Context): ThemeSort = ThemeSort.entries.getOrElse(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_LIBRARY_SORT, ThemeSort.FAVORITES_FIRST.ordinal)) { ThemeSort.FAVORITES_FIRST }
+    fun setLibrarySort(context: Context, sort: ThemeSort) { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_LIBRARY_SORT, sort.ordinal).apply() }
 
     fun searchThemes(context: Context, query: String): List<ThemeDefinition> {
         val q = query.trim()
-        val matches = if (q.isEmpty()) allThemes(context) else allThemes(context).filter {
-            it.nameFa.contains(q, true) || it.nameEn.contains(q, true) || it.id.contains(q, true)
-        }
+        val matches = if (q.isEmpty()) allThemes(context) else allThemes(context).filter { it.nameFa.contains(q, true) || it.nameEn.contains(q, true) || it.id.contains(q, true) }
         return sortThemes(context, matches, librarySort(context))
     }
 
@@ -161,8 +125,7 @@ object ThemeManager {
         ThemeSort.BUILT_IN_FIRST -> themes.sortedWith(compareBy<ThemeDefinition> { if (it.source == ThemeSource.BUILT_IN) 0 else 1 }.thenBy { it.nameEn.lowercase() })
         ThemeSort.CUSTOM_FIRST -> themes.sortedWith(compareBy<ThemeDefinition> { if (it.source == ThemeSource.BUILT_IN) 1 else 0 }.thenBy { it.nameEn.lowercase() })
         ThemeSort.LAST_USED -> {
-            val recent = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_RECENT_THEMES, "")
-                ?.split(',')?.filter { it.isNotBlank() }.orEmpty()
+            val recent = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_RECENT_THEMES, "")?.split(',')?.filter { it.isNotBlank() }.orEmpty()
             val rank = recent.withIndex().associate { it.value to it.index }
             themes.sortedWith(compareBy<ThemeDefinition> { rank[it.id] ?: Int.MAX_VALUE }.thenBy { it.nameEn.lowercase() })
         }
@@ -170,9 +133,7 @@ object ThemeManager {
 
     fun queryThemes(context: Context, query: String, sort: ThemeSort = librarySort(context)): List<ThemeDefinition> {
         val q = query.trim()
-        val matches = if (q.isEmpty()) allThemes(context) else allThemes(context).filter {
-            it.nameFa.contains(q, true) || it.nameEn.contains(q, true) || it.id.contains(q, true)
-        }
+        val matches = if (q.isEmpty()) allThemes(context) else allThemes(context).filter { it.nameFa.contains(q, true) || it.nameEn.contains(q, true) || it.id.contains(q, true) }
         return sortThemes(context, matches, sort)
     }
 
