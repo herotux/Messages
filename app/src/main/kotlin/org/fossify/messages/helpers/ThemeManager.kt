@@ -97,5 +97,19 @@ object ThemeManager {
     }
     fun deleteCustomTheme(context: Context, id: String): Boolean { val stored = ThemeStorage.load(context); if (stored.none { it.id == id }) return false; ThemeStorage.save(context, stored.filterNot { it.id == id }); setFavorite(context, id, false); if (selectedThemeId(context) == id) select(context, DEFAULT_ID); return true }
     fun deleteUserTheme(context: Context, id: String): Boolean = deleteCustomTheme(context, id)
-    fun applyBackground(activity: Activity) { val theme = current(activity); val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return; val root = if (content.childCount == 1 && content.getChildAt(0) is ViewGroup) content.getChildAt(0) as ViewGroup else content; if (theme.backgroundDrawable != 0) root.setBackgroundResource(theme.backgroundDrawable) else ThemeBackground.apply(root, theme.backgroundType, theme.colors.background, theme.gradientColors, theme.gradientAngle, theme.wallpaperUri) }
+
+    /** Returns the global theme unless this Activity carries a conversation thread override. */
+    fun themeForActivity(activity: Activity): ThemeDefinition {
+        val threadId = activity.intent?.getLongExtra(THREAD_ID, 0L) ?: 0L
+        if (threadId != 0L) ConversationThemeManager.getTheme(activity, threadId)?.let { return it }
+        return current(activity)
+    }
+
+    fun applyBackground(activity: Activity) {
+        val theme = themeForActivity(activity)
+        val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
+        val root = if (content.childCount == 1 && content.getChildAt(0) is ViewGroup) content.getChildAt(0) as ViewGroup else content
+        if (theme.backgroundDrawable != 0) root.setBackgroundResource(theme.backgroundDrawable)
+        else ThemeBackground.apply(root, theme.backgroundType, theme.colors.background, theme.gradientColors, theme.gradientAngle, theme.wallpaperUri)
+    }
 }
