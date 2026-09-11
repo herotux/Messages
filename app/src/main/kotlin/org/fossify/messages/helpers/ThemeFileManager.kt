@@ -2,12 +2,12 @@ package org.fossify.messages.helpers
 
 import android.content.Context
 import android.net.Uri
+import android.util.Base64
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.File
-import java.util.Base64
 import java.util.UUID
 
 /** Versioned .homa-theme import/export format. */
@@ -33,7 +33,7 @@ object ThemeFileManager {
                 val bytes = readWallpaperBytes(context, theme.wallpaperUri)
                 require(bytes != null) { "تصویر پس‌زمینه قابل خواندن نیست" }
                 require(bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "حجم تصویر پس‌زمینه بیش از حد مجاز است" }
-                addProperty("wallpaperBase64", Base64.getEncoder().encodeToString(bytes))
+                addProperty("wallpaperBase64", Base64.encodeToString(bytes, Base64.NO_WRAP))
             }
             add("gradientColors", JsonArray().apply { theme.gradientColors.forEach { add(hex(it)) } })
             add("colors", JsonObject().apply {
@@ -62,7 +62,7 @@ object ThemeFileManager {
         require(backgroundType != ThemeManager.BackgroundType.LINEAR_GRADIENT || gradientColors.size >= 2) { "رنگ‌های گرادیان کامل نیستند" }
         require(backgroundType != ThemeManager.BackgroundType.WALLPAPER || !wallpaperUri.isNullOrBlank() || !wallpaperBase64.isNullOrBlank()) { "تصویر پس‌زمینه تم وجود ندارد" }
         wallpaperBase64?.let { encoded ->
-            val bytes = runCatching { Base64.getDecoder().decode(encoded) }.getOrElse { error("داده تصویر پس‌زمینه نامعتبر است") }
+            val bytes = runCatching { Base64.decode(encoded, Base64.DEFAULT) }.getOrElse { error("داده تصویر پس‌زمینه نامعتبر است") }
             require(bytes.isNotEmpty() && bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "داده تصویر پس‌زمینه نامعتبر یا بیش از حد بزرگ است" }
         }
         ThemeManager.ThemeDefinition(
@@ -76,7 +76,7 @@ object ThemeFileManager {
 
     fun materializeEmbeddedWallpaper(context: Context, theme: ThemeManager.ThemeDefinition): Result<ThemeManager.ThemeDefinition> = runCatching {
         val encoded = theme.embeddedWallpaperBase64 ?: return@runCatching theme
-        val bytes = Base64.getDecoder().decode(encoded)
+        val bytes = Base64.decode(encoded, Base64.DEFAULT)
         require(bytes.isNotEmpty() && bytes.size <= MAX_EMBEDDED_WALLPAPER_BYTES) { "داده تصویر پس‌زمینه نامعتبر است" }
         val file = File(context.filesDir, "$WALLPAPER_FILE_PREFIX${theme.id}_${UUID.randomUUID()}.img")
         file.writeBytes(bytes)
