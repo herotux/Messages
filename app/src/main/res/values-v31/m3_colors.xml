@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 dynamic color mapping for Android 12+. -->
+    <color name="m3_primary">@color/you_primary_color</color>
+    <color name="m3_on_primary">@color/you_neutral_text_color</color>
+    <color name="m3_primary_container">@color/you_primary_color</color>
+    <color name="m3_on_primary_container">@color/you_neutral_text_color</color>
+
+    <color name="m3_secondary">@color/you_primary_color</color>
+    <color name="m3_on_secondary">@color/you_neutral_text_color</color>
+    <color name="m3_secondary_container">@color/you_primary_color</color>
+    <color name="m3_on_secondary_container">@color/you_neutral_text_color</color>
+
+    <color name="m3_tertiary">@color/you_primary_color</color>
+    <color name="m3_on_tertiary">@color/you_neutral_text_color</color>
+    <color name="m3_tertiary_container">@color/you_primary_color</color>
+    <color name="m3_on_tertiary_container">@color/you_neutral_text_color</color>
+
+    <color name="m3_background">@color/you_background_color</color>
+    <color name="m3_on_background">@color/you_neutral_text_color</color>
+    <color name="m3_surface">@color/you_surface_color</color>
+    <color name="m3_on_surface">@color/you_neutral_text_color</color>
+    <color name="m3_surface_variant">@color/you_surface_color</color>
+    <color name="m3_on_surface_variant">@color/you_neutral_text_color</color>
+
+    <color name="m3_outline">@color/you_ripple_color</color>
+    <color name="m3_error">@color/md_red_700</color>
+    <color name="m3_on_error">@color/md_grey_white</color>
+
+    <color name="m3_status_bar">@color/you_status_bar_color</color>
+    <color name="m3_navigation_bar">@color/you_status_bar_color</color>
+    <color name="m3_ripple">@color/you_ripple_color</color>
+</resources>
