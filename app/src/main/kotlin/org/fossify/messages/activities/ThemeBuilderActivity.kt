@@ -4,7 +4,6 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
-import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
@@ -44,7 +43,14 @@ class ThemeBuilderActivity : SimpleActivity() {
         if (uri == null) return@registerForActivityResult
         runCatching { contentResolver.openInputStream(uri)?.use { it.reader().readText() } ?: error("فایل قابل خواندن نیست") }
             .mapCatching { ThemeFileManager.import(this, it).getOrThrow() }
-            .onSuccess { theme -> if (ThemeFileManager.saveImported(this, theme)) { ThemeManager.select(this, theme.id); renderThemeLibrary() } else showThemeError("ذخیره تم واردشده انجام نشد") }
+            .onSuccess { theme ->
+                if (ThemeFileManager.saveImported(this, theme)) {
+                    ThemeManager.select(this, theme.id)
+                    renderThemeLibrary()
+                } else {
+                    showThemeError("ذخیره تم واردشده انجام نشد")
+                }
+            }
             .onFailure { showThemeError(it.message ?: "فایل تم معتبر نیست") }
     }
 
@@ -59,8 +65,11 @@ class ThemeBuilderActivity : SimpleActivity() {
         val theme = pendingExportTheme ?: return@registerForActivityResult
         pendingExportTheme = null
         if (uri == null) return@registerForActivityResult
-        runCatching { contentResolver.openOutputStream(uri)?.use { it.write(ThemeFileManager.export(theme).toByteArray(Charsets.UTF_8)) } ?: error("فایل قابل ایجاد نیست") }
-            .onFailure { showThemeError(it.message ?: "ذخیره فایل تم انجام نشد") }
+        runCatching {
+            contentResolver.openOutputStream(uri)?.use {
+                it.write(ThemeFileManager.export(theme).toByteArray(Charsets.UTF_8))
+            } ?: error("فایل قابل ایجاد نیست")
+        }.onFailure { showThemeError(it.message ?: "ذخیره فایل تم انجام نشد") }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,18 +82,36 @@ class ThemeBuilderActivity : SimpleActivity() {
     private fun t(fa: String, en: String): String = if (english()) en else fa
 
     private fun openEditor(themeId: String? = null) {
-        startActivity(Intent(this, ThemeBuilderActivity::class.java).apply { putExtra(EXTRA_CREATE, themeId == null); if (themeId != null) putExtra(EXTRA_THEME_ID, themeId) })
+        startActivity(Intent(this, ThemeBuilderActivity::class.java).apply {
+            putExtra(EXTRA_CREATE, themeId == null)
+            if (themeId != null) putExtra(EXTRA_THEME_ID, themeId)
+        })
     }
 
-    private fun attrColor(attr: Int): Int { val value = TypedValue(); theme.resolveAttribute(attr, value, true); return if (value.resourceId != 0) getColor(value.resourceId) else value.data }
+    private fun attrColor(attr: Int): Int {
+        val value = TypedValue()
+        theme.resolveAttribute(attr, value, true)
+        return if (value.resourceId != 0) getColor(value.resourceId) else value.data
+    }
 
     private fun renderThemeLibrary() {
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = if (english()) View.LAYOUT_DIRECTION_LTR else View.LAYOUT_DIRECTION_RTL; setBackgroundColor(attrColor(com.google.android.material.R.attr.colorSurface)) }
-        val toolbar = Toolbar(this).apply { title = t("کتابخانه تم", "Theme library"); setTitleTextColor(attrColor(com.google.android.material.R.attr.colorOnSurface)); navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material); setNavigationOnClickListener { finish() } }
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = if (english()) View.LAYOUT_DIRECTION_LTR else View.LAYOUT_DIRECTION_RTL
+            setBackgroundColor(attrColor(com.google.android.material.R.attr.colorSurface))
+        }
+        val toolbar = Toolbar(this).apply {
+            title = t("کتابخانه تم", "Theme library")
+            setTitleTextColor(attrColor(com.google.android.material.R.attr.colorOnSurface))
+            navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
+            setNavigationOnClickListener { finish() }
+        }
         root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(56)))
         val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false }
         val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(12), dp(18), dp(28)) }
-        scroll.addView(content); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
+        scroll.addView(content)
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        setContentView(root)
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         actions.addView(actionButton(t("＋ ساخت تم", "+ Create theme")) { openEditor() }, LinearLayout.LayoutParams(0, dp(48), 1f))
         actions.addView(actionButton(t("وارد کردن", "Import")) { importThemeFile.launch(arrayOf(ThemeFileManager.MIME_TYPE, "application/octet-stream", "*/*")) }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginStart = dp(8) })
@@ -144,11 +171,11 @@ class ThemeBuilderActivity : SimpleActivity() {
         val editingId = intent.getStringExtra(EXTRA_THEME_ID)
         val existing = editingId?.let { ThemeManager.find(this, it) }
         val source = existing?.colors ?: ThemeManager.colors(this)
-        editingWallpaperUri = existing?.wallpaperUri
+        if (editingWallpaperUri == null) editingWallpaperUri = existing?.wallpaperUri
         val fields = mutableListOf(
             ThemeField("primary", "رنگ اصلی", source.primary), ThemeField("accent", "رنگ تأکیدی", source.accent), ThemeField("background", "پس‌زمینه", source.background), ThemeField("surface", "سطح کارت‌ها", source.surface), ThemeField("toolbar", "نوار ابزار", source.toolbar), ThemeField("incoming", "حباب دریافتی", source.incomingBubble), ThemeField("outgoing", "حباب ارسالی", source.outgoingBubble), ThemeField("text", "متن اصلی", source.textPrimary), ThemeField("secondary", "متن ثانویه", source.textSecondary), ThemeField("fab", "دکمه شناور", source.fab)
         )
-        var backgroundType = existing?.backgroundType ?: ThemeManager.BackgroundType.SOLID
+        var backgroundType = when { !editingWallpaperUri.isNullOrBlank() -> ThemeManager.BackgroundType.WALLPAPER; existing != null -> existing.backgroundType; else -> ThemeManager.BackgroundType.SOLID }
         var gradientStart = existing?.gradientColors?.getOrNull(0) ?: source.background
         var gradientEnd = existing?.gradientColors?.getOrNull(1) ?: source.primary
         var gradientAngle = existing?.gradientAngle ?: 0
@@ -167,20 +194,21 @@ class ThemeBuilderActivity : SimpleActivity() {
         val incoming = TextView(this).apply { text = "سلام 👋 این یک پیام دریافتی است"; textSize = 15f; setPadding(dp(12), dp(10), dp(12), dp(10)) }
         val outgoing = TextView(this).apply { text = "سلام! تم جدید آماده است 😊"; textSize = 15f; gravity = Gravity.END; setPadding(dp(12), dp(10), dp(12), dp(10)) }
         box.addView(title); box.addView(incoming, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(12), dp(28), dp(6)) }); box.addView(outgoing, LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(28), dp(6), 0, 0) }); preview.addView(box); content.addView(preview, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(16), 0, dp(10)) })
-        val backgroundButton = actionButton(backgroundLabel(backgroundType, gradientAngle, editingWallpaperUri)) {
+        fun get(key: String) = fields.first { it.key == key }.color
+        fun buildColors() = ThemeManager.ThemeColors(get("primary"), get("accent"), get("background"), get("surface"), get("text"), get("secondary"), get("incoming"), get("outgoing"), get("toolbar"), get("accent"), get("fab"))
+        val refresh: () -> Unit = { val bg = if (backgroundType == ThemeManager.BackgroundType.LINEAR_GRADIENT) listOf(gradientStart, gradientEnd) else emptyList(); ThemeBackground.apply(box, backgroundType, get("background"), bg, gradientAngle, editingWallpaperUri); title.setTextColor(get("text")); incoming.setTextColor(get("text")); outgoing.setTextColor(if (isLight(get("outgoing"))) Color.BLACK else Color.WHITE); incoming.backgroundTintList = ColorStateList.valueOf(get("incoming")); outgoing.backgroundTintList = ColorStateList.valueOf(get("outgoing")) }
+        lateinit var backgroundButton: TextView
+        backgroundButton = actionButton(backgroundLabel(backgroundType, gradientAngle, editingWallpaperUri)) {
             val choices = arrayOf("رنگ ساده", "گرادیان خطی", "تصویر از گالری")
             MaterialAlertDialogBuilder(this).setTitle("پس‌زمینه تم").setItems(choices) { _, which ->
                 when (which) {
                     0 -> { backgroundType = ThemeManager.BackgroundType.SOLID; editingWallpaperUri = null; refreshBackgroundButton(backgroundButton, backgroundType, gradientAngle, editingWallpaperUri); refresh() }
-                    1 -> showGradientDialog(backgroundButton, backgroundType, gradientStart, gradientEnd, gradientAngle) { start, end, angle -> backgroundType = ThemeManager.BackgroundType.LINEAR_GRADIENT; gradientStart = start; gradientEnd = end; gradientAngle = angle; editingWallpaperUri = null; refreshBackgroundButton(backgroundButton, backgroundType, gradientAngle, editingWallpaperUri); refresh() }
+                    1 -> showGradientDialog(gradientStart, gradientEnd, gradientAngle) { start, end, angle -> backgroundType = ThemeManager.BackgroundType.LINEAR_GRADIENT; gradientStart = start; gradientEnd = end; gradientAngle = angle; editingWallpaperUri = null; refreshBackgroundButton(backgroundButton, backgroundType, gradientAngle, editingWallpaperUri); refresh() }
                     2 -> { backgroundType = ThemeManager.BackgroundType.WALLPAPER; wallpaperPicker.launch(arrayOf("image/*")) }
                 }
             }.show()
         }
         content.addView(backgroundButton, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
-        fun get(key: String) = fields.first { it.key == key }.color
-        fun buildColors() = ThemeManager.ThemeColors(get("primary"), get("accent"), get("background"), get("surface"), get("text"), get("secondary"), get("incoming"), get("outgoing"), get("toolbar"), get("accent"), get("fab"))
-        fun refresh() { val bg = if (backgroundType == ThemeManager.BackgroundType.LINEAR_GRADIENT) listOf(gradientStart, gradientEnd) else emptyList(); ThemeBackground.apply(box, backgroundType, get("background"), bg, gradientAngle, editingWallpaperUri); title.setTextColor(get("text")); incoming.setTextColor(get("text")); outgoing.setTextColor(if (isLight(get("outgoing"))) Color.BLACK else Color.WHITE); incoming.backgroundTintList = ColorStateList.valueOf(get("incoming")); outgoing.backgroundTintList = ColorStateList.valueOf(get("outgoing")) }
         fields.forEach { field -> val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(5), 0, dp(5)) }; row.addView(TextView(this).apply { text = field.label; textSize = 15f }, LinearLayout.LayoutParams(0, dp(52), 1f)); val swatch = View(this).apply { background = makeSwatch(field.color) }; row.addView(swatch, LinearLayout.LayoutParams(dp(58), dp(42))); row.setOnClickListener { chooseThemeColor(field, swatch) { refresh() } }; content.addView(row) }
         val save = TextView(this).apply {
             text = if (existing == null) "ذخیره تم" else "ذخیره تغییرات"; textSize = 16f; gravity = Gravity.CENTER; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE); setPadding(0, dp(14), 0, dp(14)); background = makeSwatch(source.primary); isClickable = true
@@ -191,7 +219,7 @@ class ThemeBuilderActivity : SimpleActivity() {
         setContentView(root); refreshBackgroundButton(backgroundButton, backgroundType, gradientAngle, editingWallpaperUri); refresh()
     }
 
-    private fun showGradientDialog(button: TextView, currentType: ThemeManager.BackgroundType, start: Int, end: Int, angle: Int, onApply: (Int, Int, Int) -> Unit) {
+    private fun showGradientDialog(start: Int, end: Int, angle: Int, onApply: (Int, Int, Int) -> Unit) {
         val startInput = EditText(this).apply { hint = "رنگ شروع #RRGGBB"; setText(String.format("#%06X", 0xFFFFFF and start)); selectAll() }
         val endInput = EditText(this).apply { hint = "رنگ پایان #RRGGBB"; setText(String.format("#%06X", 0xFFFFFF and end)); selectAll() }
         val spinner = Spinner(this); val angles = listOf(0, 45, 90, 135, 180, 225, 270, 315); spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, angles.map { "${it}°" }); spinner.setSelection(angles.indexOf(angle).coerceAtLeast(0))
@@ -202,10 +230,8 @@ class ThemeBuilderActivity : SimpleActivity() {
     private fun backgroundLabel(type: ThemeManager.BackgroundType, angle: Int, wallpaperUri: String?): String = when (type) { ThemeManager.BackgroundType.LINEAR_GRADIENT -> "پس‌زمینه: گرادیان خطی · ${angle}°"; ThemeManager.BackgroundType.WALLPAPER -> "پس‌زمینه: تصویر ${if (wallpaperUri.isNullOrBlank()) "انتخاب نشده" else "✓"}"; else -> "پس‌زمینه: رنگ ساده" }
     private fun refreshBackgroundButton(button: TextView, type: ThemeManager.BackgroundType, angle: Int, wallpaperUri: String?) { button.text = backgroundLabel(type, angle, wallpaperUri) }
     private fun saveTheme(themeName: String, colors: ThemeManager.ThemeColors, editingId: String?, backgroundType: ThemeManager.BackgroundType, gradientStart: Int, gradientEnd: Int, gradientAngle: Int, wallpaperUri: String?) { val id = editingId ?: "user_${UUID.randomUUID()}"; val gradientColors = if (backgroundType == ThemeManager.BackgroundType.LINEAR_GRADIENT) listOf(gradientStart, gradientEnd) else emptyList(); ThemeManager.saveUserTheme(this, ThemeManager.ThemeDefinition(id, themeName, themeName, ThemeManager.ThemeSource.USER, colors = colors, backgroundType = backgroundType, gradientColors = gradientColors, gradientAngle = gradientAngle, wallpaperUri = wallpaperUri)); ThemeManager.select(this, id); finish() }
-    private fun exportThemeFile(theme: ThemeManager.ThemeDefinition) { pendingExportTheme = theme; createThemeFile.launch("${theme.nameEn.ifBlank { "theme" }}${ThemeFileManager.FILE_EXTENSION}") }
     private fun chooseThemeColor(field: ThemeField, swatch: View, changed: () -> Unit) { val input = EditText(this).apply { hint = "#RRGGBB"; setText(String.format("#%06X", 0xFFFFFF and field.color)); selectAll() }; MaterialAlertDialogBuilder(this).setTitle(field.label).setView(input).setPositiveButton("اعمال") { _, _ -> runCatching { Color.parseColor(input.text.toString().trim()) }.onSuccess { field.color = it; swatch.background = makeSwatch(it); changed() } }.setNegativeButton("لغو", null).show() }
     private fun showThemeError(message: String) { MaterialAlertDialogBuilder(this).setTitle("خطا در فایل تم").setMessage(message).setPositiveButton("باشه", null).show() }
-    private fun shareThemeFile(theme: ThemeManager.ThemeDefinition) { val file = runCatching { java.io.File(cacheDir, "${theme.id}${ThemeFileManager.FILE_EXTENSION}").apply { writeText(ThemeFileManager.export(theme), Charsets.UTF_8) } }.getOrNull() ?: return showThemeError("ساخت فایل اشتراک‌گذاری انجام نشد"); val uri = androidx.core.content.FileProvider.getUriForFile(this, "${BuildConfig.APPLICATION_ID}.provider", file); startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = ThemeFileManager.MIME_TYPE; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, t("اشتراک‌گذاری تم", "Share theme"))) }
     private fun makeSwatch(color: Int): android.graphics.drawable.GradientDrawable = android.graphics.drawable.GradientDrawable().apply { setColor(color); cornerRadius = dp(14).toFloat(); setStroke(dp(1), 0x33000000) }
     private fun isLight(color: Int): Boolean { val r = Color.red(color) / 255f; val g = Color.green(color) / 255f; val b = Color.blue(color) / 255f; return 0.2126f * r + 0.7152f * g + 0.0722f * b > 0.55f }
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
