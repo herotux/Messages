@@ -13,6 +13,7 @@ import android.widget.TextView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
+import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.ThemeManager
 import org.fossify.messages.helpers.ThemeScheduleManager
 import java.util.Locale
@@ -31,7 +32,7 @@ class ThemeScheduleActivity : SimpleActivity() {
         if (::content.isInitialized) render()
     }
 
-    private fun english() = org.fossify.messages.extensions.config.useEnglish
+    private fun english() = config.useEnglish
     private fun t(fa: String, en: String) = if (english()) en else fa
 
     private fun render() {
