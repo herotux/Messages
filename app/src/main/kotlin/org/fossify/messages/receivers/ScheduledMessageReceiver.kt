@@ -3,8 +3,6 @@ package org.fossify.messages.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -58,13 +56,22 @@ class ScheduledMessageReceiver : BroadcastReceiver() {
         val attachments = message.attachment?.attachments ?: emptyList()
 
         try {
-            Handler(Looper.getMainLooper()).post {
-                context.sendMessageCompat(message.body, addresses, message.subscriptionId, attachments)
-            }
+            // Send synchronously here. Deleting the scheduled message before the
+            // send operation completes could lose the message when sending fails.
+            // A scheduled message is also a local DB record, so its id must not be
+            // passed as an SMS provider id: the provider needs to create a new row.
+            context.sendMessageCompat(
+                text = message.body,
+                addresses = addresses,
+                subId = message.subscriptionId,
+                attachments = attachments,
+                messageId = null
+            )
 
-            // delete temporary conversation and message as it's already persisted to the telephony db now
+            // The real SMS/MMS is now handed off to the telephony/messaging layer.
+            // Remove the temporary scheduled record and conversation afterwards.
             context.deleteScheduledMessage(messageId)
-            context.conversationsDB.deleteThreadId(messageId)
+            context.conversationsDB.deleteThreadId(threadId)
             refreshMessages()
             refreshConversations()
         } catch (e: Exception) {
