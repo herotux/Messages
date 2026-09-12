@@ -52,6 +52,20 @@ class MessageBodyLinkificationTest {
         }
     }
 
+    @Test
+    fun bankCardNumber_isPreservedInMessageBody() {
+        val body = newMessageBody()
+        val message = "شماره کارت: 6037 9918 1234 5678"
+        body.text = message
+
+        check(body.text.toString() == message) {
+            "Bank card number text must remain visible and preserve spacing"
+        }
+        check(body.text.toString().contains("6037 9918 1234 5678")) {
+            "Formatted 16-digit card number must remain visible"
+        }
+    }
+
     private fun newMessageBody(): TextView {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         return LayoutInflater.from(context)
