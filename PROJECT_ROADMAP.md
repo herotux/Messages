@@ -13,7 +13,9 @@
 - [x] Room / Entity / DAO / migration batch completed
 - [x] Gradle / dependency / toolchain audit completed
 - [x] CI workflow hardening batch completed
-- [ ] Regression audit: Theme / Room / DAO / bank SMS / crash-prone paths
+- [x] Bank SMS false-location regression fix implemented
+- [x] Bank amount linkification regression tests added
+- [ ] Complete remaining regression audit: Theme integration / crash-prone paths
 - [ ] Validate final CI run on `main`
 - [ ] Reconcile long-lived feature branches before merging
 
@@ -21,7 +23,7 @@
 
 | Phase / workstream | Issue | Status |
 |---|---:|---|
-| Phase 0 — Core stabilization & CI | #25 | Open — current priority |
+| Phase 0 — Core stabilization & CI | #25 | Open — final regression/CI gate |
 | Phase 1 — Material 3 Theme System | #26 | Open |
 | Phase 2 — SMS Automation Pro | #27 | Open |
 | Phase 3 — SMS Templates Pro | #28 | Open |
@@ -48,6 +50,7 @@
 - The canonical Android CI workflow runs Core/FOSS/GPlay unit tests and lint. The signed FOSS release build is gated on those jobs for `main`.
 - Duplicate PR validation workflows were removed. Historical self-modifying `perf-optimize-v4` and `extract-minimal-commons` workflows were removed from `main`.
 - CI validation now uses read-only repository permissions and no longer triggers the canonical Android CI on historical `chore/minimal-commons` or `test/foss-release-signed` branches.
+- SMS message bodies now disable smart text classification while retaining explicit `email|web` auto-linking. Regression coverage protects Iranian bank amounts from becoming URL/location actions and verifies normal web URLs remain linkified.
 - The current automation branch contains a minimal `SmsAutomationPlugin` with only `MARK_READ` and `DELETE`, SharedPreferences JSON persistence, simple sender/body matching, and no Forward/Auto Reply/priority/AND-OR-NOT/rate-limit/loop-protection/rule tester. It is an early implementation, not the finished Automation Pro feature. The branch also contains unrelated Plugin Store/license work, so Phase 2 requires reconstruction/isolation.
 - PR #24 (`feat/message-annotations`) is still a draft and currently reports `mergeable=false`; it targets an older `main` SHA, so it requires reconciliation before it can be considered merge-ready.
 
@@ -61,7 +64,7 @@ Tracked in **GitHub Issue #25**.
 - [x] Room / Entity / DAO / migration audit
 - [x] Dependency and Gradle audit
 - [x] Workflow/CI audit
-- [ ] Regression audit
+- [ ] Regression audit — bank SMS/linkification complete; theme/crash-prone paths remain
 - [x] CI hardening
 
 **Gate:** `main` builds, tests and lints successfully with no known blocking regression and unnecessary automation is removed/disabled.
