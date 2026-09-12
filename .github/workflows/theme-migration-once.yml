@@ -15,41 +15,53 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Migrate legacy palette
+      - name: Migrate theme consumers to M3
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import re
-          root = Path('app/src/main')
-          files = [p for p in root.rglob('*') if p.is_file() and p.suffix in {'.xml','.kt','.java'}]
+          root=Path('app/src/main')
+          files=[p for p in root.rglob('*') if p.is_file() and p.suffix in {'.xml','.kt','.java'}]
           def role(name):
               n=name.lower()
               if n in {'black','grey_black'} or n.startswith('grey_7') or n.startswith('grey_8') or n.endswith('_900'): return 'm3_on_surface'
               if n in {'white','grey_white'} or n.startswith('grey_1') or n.startswith('grey_2'): return 'm3_surface'
-              if n.startswith('grey_3') or n.startswith('grey_4') or n.startswith('grey_5') or n.startswith('grey_6'): return 'm3_on_surface_variant'
+              if n.startswith(('grey_3','grey_4','grey_5','grey_6')): return 'm3_on_surface_variant'
               if n.startswith('red'): return 'm3_error'
               if n.startswith('blue'): return 'm3_tertiary'
               if n.startswith(('teal','cyan')): return 'm3_secondary'
               if n.startswith(('green','lime','light_green')): return 'm3_primary'
-              if n.startswith(('purple','deep_purple','pink','indigo','brown','orange','deep_orange','amber','yellow')): return 'm3_tertiary'
-              return 'm3_primary'
-          pat=re.compile(r'(?P<prefix>@color/|R\.color\.)(?:md_)(?P<name>[a-z0-9_]+)')
+              return 'm3_tertiary'
+          pat=re.compile(r'(?P<p>@color/|R\.color\.)(?:md_)(?P<n>[a-z0-9_]+)')
           for p in files:
               s=p.read_text(encoding='utf-8')
-              n=pat.sub(lambda m:m.group('prefix')+role(m.group('name')),s)
+              n=pat.sub(lambda m:m.group('p')+role(m.group('n')),s)
               if n!=s:p.write_text(n,encoding='utf-8')
+          # Theme aliases become semantic M3 roles; palette resources remain available
+          # only for non-theme color-picker infrastructure until that subsystem is migrated.
           for p in Path('app/src/main/res').rglob('*.xml'):
               s=p.read_text(encoding='utf-8')
-              n=re.sub(r'\s*<color name="md_[^"]+">.*?</color>\s*','\n',s,flags=re.S)
-              if n!=s:p.write_text(n,encoding='utf-8')
+              replacements={
+                'color_primary':'m3_primary','color_primary_dark':'m3_primary','color_accent':'m3_secondary',
+                'default_primary_color':'m3_primary','default_accent_color':'m3_secondary',
+                'default_app_icon_color':'m3_primary','default_widget_text_color':'m3_on_surface',
+                'theme_light_text_color':'m3_on_surface','theme_dark_text_color':'m3_on_surface',
+                'theme_light_background_color':'m3_surface','theme_dark_background_color':'m3_background',
+                'default_background_color':'m3_background'
+              }
+              for old,new in replacements.items():
+                  s=re.sub(r'(@color/|R\.color\.)'+old+r'\b',lambda m:m.group(1)+new,s)
+              p.write_text(s,encoding='utf-8')
           PY
-      - name: Verify
+      - name: Verify no legacy theme references remain
+        shell: bash
         run: |
           set -euo pipefail
-          ! grep -RInE --exclude-dir=.git --include='*.kt' --include='*.java' --include='*.xml' 'md_[A-Za-z0-9_]+' app/src/main
+          ! grep -RInE --exclude-dir=.git --include='*.kt' --include='*.java' --include='*.xml' '@color/md_|R\.color\.md_|@color/(color_primary|color_primary_dark|color_accent|theme_light_text_color|theme_dark_text_color|theme_light_background_color|theme_dark_background_color|default_background_color|default_primary_color|default_accent_color)' app/src/main
       - name: Commit result and remove workflow
+        shell: bash
         run: |
           set -euo pipefail
           rm -f .github/workflows/theme-migration-once.yml
@@ -57,6 +69,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add app/src/main .github/workflows/theme-migration-once.yml
           git diff --cached --quiet && exit 0
-          git commit -m 'refactor(theme): complete legacy palette migration'
+          git commit -m 'refactor(theme): migrate theme consumers to M3 semantic roles'
           git push origin HEAD:main
-# trigger migration on the next main push
