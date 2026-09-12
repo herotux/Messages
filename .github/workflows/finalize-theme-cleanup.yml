@@ -88,6 +88,7 @@ jobs:
                   text = text.replace('R.color.'+a, 'R.color.'+b)
               for a,b in renames.items():
                   text = text.replace('@drawable/'+a, '@drawable/'+b)
+                  text = text.replace('R.drawable.'+a, 'R.drawable.'+b)
               if text != old:
                   p.write_text(text, encoding='utf-8')
 
