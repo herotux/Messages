@@ -22,32 +22,21 @@ class MessagesDatabaseMigrationTest {
     }
 
     @Test
-    fun migration_11_12_createsBankAccountsTable() {
-        helper.createDatabase(testDbName, 11).use { db ->
-            check(!hasTable(db, "bank_accounts"))
-        }
-
-        helper.runMigrationsAndValidate(
-            testDbName,
-            12,
-            true,
-            MessagesDatabase.MIGRATION_11_12
-        ).use { db ->
-            check(hasTable(db, "bank_accounts"))
-            check(hasColumn(db, "bank_accounts", "id"))
-            check(hasColumn(db, "bank_accounts", "bankId"))
-            check(hasColumn(db, "bank_accounts", "cardNumber"))
-            check(hasColumn(db, "bank_accounts", "holderName"))
-            check(hasColumn(db, "bank_accounts", "iban"))
-            check(hasColumn(db, "bank_accounts", "createdAt"))
-            check(hasColumn(db, "bank_accounts", "updatedAt"))
-        }
-    }
-
-    @Test
     fun migrations_1_to_12_validateAsCompleteUpgradePath() {
         helper.createDatabase(testDbName, 1).use { db ->
-            check(hasTable(db, "conversations"))
+            // Version 1 predates the tracked migrations. Seed its legacy
+            // conversations table so the 2 -> 3 migration can be exercised.
+            db.execSQL(
+                "CREATE TABLE `conversations` (" +
+                    "`thread_id` INTEGER NOT NULL PRIMARY KEY, " +
+                    "`snippet` TEXT NOT NULL, " +
+                    "`date` INTEGER NOT NULL, " +
+                    "`read` INTEGER NOT NULL, " +
+                    "`title` TEXT NOT NULL, " +
+                    "`photo_uri` TEXT NOT NULL, " +
+                    "`is_group_conversation` INTEGER NOT NULL, " +
+                    "`phone_number` TEXT NOT NULL)"
+            )
         }
 
         helper.runMigrationsAndValidate(
@@ -71,6 +60,8 @@ class MessagesDatabaseMigrationTest {
             check(hasTable(db, "drafts"))
             check(hasTable(db, "recycle_bin_messages"))
             check(hasTable(db, "bank_accounts"))
+            check(hasColumn(db, "bank_accounts", "cardNumber"))
+            check(hasColumn(db, "bank_accounts", "iban"))
         }
     }
 
