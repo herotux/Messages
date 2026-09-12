@@ -22,7 +22,8 @@ class MmsSentReceiver : SendStatusReceiver() {
     override fun updateAndroidDatabase(context: Context, intent: Intent, receiverResultCode: Int) {
         val uri = Uri.parse(intent.getStringExtra(EXTRA_CONTENT_URI))
         val originalResentMessageId = intent.getLongExtra(EXTRA_ORIGINAL_RESENT_MESSAGE_ID, -1L)
-        val messageBox = if (receiverResultCode == Activity.RESULT_OK) {
+        val sendSucceeded = receiverResultCode == Activity.RESULT_OK
+        val messageBox = if (sendSucceeded) {
             Telephony.Mms.MESSAGE_BOX_SENT
         } else {
             val msg = context.getString(R.string.unknown_error_occurred_sending_message, receiverResultCode)
@@ -40,8 +41,9 @@ class MmsSentReceiver : SendStatusReceiver() {
             context.showErrorToast(e)
         }
 
-        // In case of resent message, delete original to prevent duplication
-        if (originalResentMessageId != -1L) {
+        // A resent message can replace the original only after the resend succeeds.
+        // Keep the original on failure so the user can retry instead of losing it.
+        if (sendSucceeded && originalResentMessageId != -1L) {
             context.deleteMessage(originalResentMessageId, true)
         }
 
