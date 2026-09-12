@@ -45,21 +45,31 @@ class MessagesDatabaseMigrationTest {
     }
 
     @Test
-    fun migration_11_12_preservesExistingCoreTables() {
-        helper.createDatabase(testDbName, 11).use { db ->
-            check(hasTable(db, "messages"))
+    fun migrations_1_to_12_validateAsCompleteUpgradePath() {
+        helper.createDatabase(testDbName, 1).use { db ->
             check(hasTable(db, "conversations"))
-            check(!hasTable(db, "bank_accounts"))
         }
 
         helper.runMigrationsAndValidate(
             testDbName,
             12,
             true,
+            MessagesDatabase.MIGRATION_1_2,
+            MessagesDatabase.MIGRATION_2_3,
+            MessagesDatabase.MIGRATION_3_4,
+            MessagesDatabase.MIGRATION_4_5,
+            MessagesDatabase.MIGRATION_5_6,
+            MessagesDatabase.MIGRATION_6_7,
+            MessagesDatabase.MIGRATION_7_8,
+            MessagesDatabase.MIGRATION_8_9,
+            MessagesDatabase.MIGRATION_9_10,
+            MessagesDatabase.MIGRATION_10_11,
             MessagesDatabase.MIGRATION_11_12
         ).use { db ->
             check(hasTable(db, "messages"))
             check(hasTable(db, "conversations"))
+            check(hasTable(db, "drafts"))
+            check(hasTable(db, "recycle_bin_messages"))
             check(hasTable(db, "bank_accounts"))
         }
     }
