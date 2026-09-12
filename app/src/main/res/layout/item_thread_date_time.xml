@@ -33,7 +33,7 @@
         android:layout_alignEnd="@+id/thread_sim_icon"
         android:layout_alignBottom="@+id/thread_sim_icon"
         android:gravity="center"
-        android:textColor="@color/md_grey_black"
+        android:textColor="@color/m3_on_surface"
         android:textSize="@dimen/smaller_text_size"
         tools:text="1" />
 

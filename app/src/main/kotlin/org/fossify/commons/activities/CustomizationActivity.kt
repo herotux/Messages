@@ -220,7 +220,7 @@ class CustomizationActivity : BaseSimpleActivity() {
                     textColorId = R.color.theme_dark_text_color,
                     backgroundColorId = R.color.theme_dark_background_color,
                     primaryColorId = R.color.theme_dark_red_primary_color,
-                    appIconColorId = R.color.md_red_700
+                    appIconColorId = R.color.m3_error
                 )
             )
             put(
@@ -240,7 +240,7 @@ class CustomizationActivity : BaseSimpleActivity() {
                     textColorId = android.R.color.white,
                     backgroundColorId = android.R.color.black,
                     primaryColorId = android.R.color.black,
-                    appIconColorId = R.color.md_grey_black
+                    appIconColorId = R.color.m3_on_surface
                 )
             )
             put(THEME_CUSTOM, MyTheme(R.string.custom, 0, 0, 0, 0))

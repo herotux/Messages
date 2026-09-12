@@ -46,7 +46,7 @@ abstract class BaseSecurityTab(context: Context, attrs: AttributeSet) : Constrai
             onLockedOutChange(lockedOut = true)
             startCountdown()
         } else {
-            updateTitle(context.getString(wrongTextRes), context.getColor(R.color.md_red))
+            updateTitle(context.getString(wrongTextRes), context.getColor(R.color.m3_error))
             handler.postDelayed(delayInMillis = 1000) {
                 updateTitle(context.getString(defaultTextRes), context.getProperTextColor())
             }
@@ -107,7 +107,7 @@ abstract class BaseSecurityTab(context: Context, attrs: AttributeSet) : Constrai
     private fun updateCountdownText(count: Int) {
         removeCallbacks()
         if (count > 0) {
-            updateTitle(context.getString(R.string.too_many_incorrect_attempts, count), context.getColor(R.color.md_red))
+            updateTitle(context.getString(R.string.too_many_incorrect_attempts, count), context.getColor(R.color.m3_error))
         } else {
             updateTitle(context.getString(defaultTextRes), context.getProperTextColor())
         }

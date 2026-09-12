@@ -14,8 +14,8 @@
     <color name="md_lime_100">#F0F4C3</color>
     <color name="md_teal_500">#009688</color>
     <color name="md_red">#F44336</color>
-    <color name="default_text_color">@color/theme_dark_text_color</color>
-    <color name="theme_dark_text_color">@color/md_grey_200</color>
+    <color name="default_text_color">@color/m3_on_surface</color>
+    <color name="theme_dark_text_color">@color/m3_surface</color>
     <color name="md_grey_200">#EEEEEE</color>
     <color name="md_grey_black">#000000</color>
 
@@ -40,7 +40,7 @@
     <color name="md_green_200">#FFBAE4A8</color>
     <color name="md_green_100">#FFD6EFCA</color>
     <color name="dark_grey">#FF333333</color>
-    <color name="theme_light_background_color">@color/md_grey_white</color>
+    <color name="theme_light_background_color">@color/m3_surface</color>
     <color name="theme_dark_background_color">#161616</color>
     <color name="md_grey">#9E9E9E</color>
     <color name="md_blue_grey">#607D8B</color>
@@ -115,8 +115,8 @@
     <color name="md_light_green_300">#AED581</color>
     <color name="md_light_green_200">#C5E1A5</color>
     <color name="md_light_green_100">#DCEDC8</color>
-    <color name="default_accent_color">@color/color_primary</color>
-    <color name="color_primary">@color/md_green_900</color>
+    <color name="default_accent_color">@color/m3_primary</color>
+    <color name="color_primary">@color/m3_on_surface</color>
     <color name="md_teal_900">#004D40</color>
 
     <color name="md_teal_800">#00695C</color>
@@ -152,10 +152,10 @@
     <color name="md_deep_orange_300">#FF8A65</color>
     <color name="md_deep_orange_200">#FFAB91</color>
     <color name="md_deep_orange_100">#FFCCBC</color>
-    <color name="theme_light_text_color">@color/md_grey_800_dark</color>
+    <color name="theme_light_text_color">@color/m3_on_surface</color>
     <color name="md_grey_800_dark">#2D2D2D</color>
-    <color name="default_primary_color">@color/color_primary</color>
-    <color name="default_widget_text_color">@color/color_primary</color>
+    <color name="default_primary_color">@color/m3_primary</color>
+    <color name="default_widget_text_color">@color/m3_primary</color>
 
     
     <color name="md_pink_900">#880E4F</color>
@@ -202,7 +202,7 @@
     <color name="md_amber_300">#FFD54F</color>
     <color name="md_amber_200">#FFE082</color>
     <color name="md_amber_100">#FFECB3</color>
-    <color name="default_app_icon_color">@color/color_primary</color>
+    <color name="default_app_icon_color">@color/m3_primary</color>
     <color name="md_cyan_900">#006064</color>
 
     <color name="md_cyan_800">#00838F</color>
@@ -213,9 +213,9 @@
     <color name="md_cyan_200">#80DEEA</color>
     <color name="md_cyan_100">#B2EBF2</color>
     <color name="default_widget_bg_color">#AA000000</color>
-    <color name="default_background_color">@color/theme_dark_background_color</color>
+    <color name="default_background_color">@color/m3_background</color>
     <color name="divider_grey">#55808080</color>
-    <color name="theme_dark_red_primary_color">@color/md_red_700</color>
+    <color name="theme_dark_red_primary_color">@color/m3_error</color>
 
     
     <color name="md_deep_purple_900">#311B92</color>
@@ -265,7 +265,7 @@
     <color name="md_green_300_dark">#65BB69</color>
     <color name="md_teal_100_dark">#95D3CE</color>
     <color name="md_orange_300_dark">#FFA724</color>
-    <color name="color_accent">@color/color_primary</color>
+    <color name="color_accent">@color/m3_primary</color>
 
     <color name="md_pink_600_dark">#B4154F</color>
     <color name="md_light_green_100_dark">#C9E3A9</color>
@@ -310,7 +310,7 @@
     <color name="md_deep_purple_400_dark">#693FB0</color>
     <color name="md_yellow_300_dark">#FFED4D</color>
     <color name="md_purple_700_dark">#611880</color>
-    <color name="color_primary_dark">@color/md_green_200_dark</color>
+    <color name="color_primary_dark">@color/m3_primary</color>
     <color name="md_deep_purple_500_dark">#563098</color>
     <color name="md_light_green_900_dark">#234915</color>
 

@@ -15,7 +15,7 @@
             android:id="@+id/customization_toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/color_primary"
+            android:background="@color/m3_primary"
             app:menu="@menu/menu_customization"
             app:title="@string/customize_colors"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />

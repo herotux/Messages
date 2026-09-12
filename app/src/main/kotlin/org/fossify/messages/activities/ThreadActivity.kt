@@ -2071,14 +2071,14 @@ class ThreadActivity : SimpleActivity() {
 
     private fun setupAttachmentPickerView() = binding.messageHolder.attachmentPicker.apply {
         val buttonColors = arrayOf(
-            org.fossify.messages.R.color.md_red_500,
-            org.fossify.messages.R.color.md_brown_500,
-            org.fossify.messages.R.color.md_pink_500,
-            org.fossify.messages.R.color.md_purple_500,
-            org.fossify.messages.R.color.md_teal_500,
-            org.fossify.messages.R.color.md_green_500,
-            org.fossify.messages.R.color.md_indigo_500,
-            org.fossify.messages.R.color.md_blue_500
+            org.fossify.messages.R.color.m3_error,
+            org.fossify.messages.R.color.m3_tertiary,
+            org.fossify.messages.R.color.m3_tertiary,
+            org.fossify.messages.R.color.m3_tertiary,
+            org.fossify.messages.R.color.m3_secondary,
+            org.fossify.messages.R.color.m3_primary,
+            org.fossify.messages.R.color.m3_tertiary,
+            org.fossify.messages.R.color.m3_tertiary
         ).map { ResourcesCompat.getColor(resources, it, theme) }
         arrayOf(
             choosePhotoIcon,

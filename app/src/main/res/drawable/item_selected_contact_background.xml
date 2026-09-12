@@ -3,7 +3,7 @@
     <item android:id="@+id/selected_contact_bg">
         <shape android:shape="rectangle">
             <corners android:radius="@dimen/material_button_corner_radius" />
-            <solid android:color="@color/md_grey_white" />
+            <solid android:color="@color/m3_surface" />
         </shape>
     </item>
 </layer-list>

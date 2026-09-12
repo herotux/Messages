@@ -473,11 +473,11 @@ open class BaseConfig(val context: Context) {
     var colorPickerRecentColors: LinkedList<Int>
         get(): LinkedList<Int> {
             val defaultList = arrayListOf(
-                ContextCompat.getColor(context, R.color.md_red_700),
-                ContextCompat.getColor(context, R.color.md_blue_700),
-                ContextCompat.getColor(context, R.color.md_green_700),
-                ContextCompat.getColor(context, R.color.md_yellow_700),
-                ContextCompat.getColor(context, R.color.md_orange_700)
+                ContextCompat.getColor(context, R.color.m3_error),
+                ContextCompat.getColor(context, R.color.m3_tertiary),
+                ContextCompat.getColor(context, R.color.m3_primary),
+                ContextCompat.getColor(context, R.color.m3_tertiary),
+                ContextCompat.getColor(context, R.color.m3_tertiary)
             )
             return LinkedList(prefs.getString(COLOR_PICKER_RECENT_COLORS, null)?.lines()?.map { it.toInt() } ?: defaultList)
         }
