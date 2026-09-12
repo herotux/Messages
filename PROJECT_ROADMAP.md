@@ -1,6 +1,6 @@
 # Messages — Project Roadmap
 
-> Living project tracker. GitHub Issues would normally be the source of truth, but Issues are currently disabled for this repository. Until they are enabled, this file is the canonical tracker and every meaningful change must update it.
+> Living project tracker. **GitHub Issues are now the source of truth for active work.** This file mirrors the phase structure and key decisions so the repository remains self-documenting.
 
 ## Current state — 2026-09-12
 
@@ -9,29 +9,47 @@
 - [x] M3 theme migration committed on `main`
 - [x] Branch inventory completed
 - [x] Feature divergence audit completed
+- [x] GitHub Issues enabled and phase trackers created
 - [ ] Full `main` audit: Theme / Room / DAO / CI / regressions
 - [ ] Validate latest CI run on `main`
 - [ ] Reconcile long-lived feature branches before merging
 
-### Branch audit
+### GitHub issue trackers
+
+| Phase / workstream | Issue | Status |
+|---|---:|---|
+| Phase 0 — Core stabilization & CI | #25 | Open — current priority |
+| Phase 1 — Material 3 Theme System | #26 | Open |
+| Phase 2 — SMS Automation Pro | #27 | Open |
+| Phase 3 — SMS Templates Pro | #28 | Open |
+| Phase 4 — SMS Backup Pro | #29 | Open |
+| Phase 5 — Scheduled SMS Pro | #30 | Open |
+| Phase 6 — Encrypted SMS | #31 | Open — protocol review before production crypto |
+| Phase 7 — Secure Sessions / Ratchet | #32 | Open — blocked by Phase 6 design |
+| Phase 8 — Testing / hardening / release | #33 | Open |
+| Branch reconciliation | #34 | Open |
+
+## Branch audit
 
 | Branch | Relation to `main` | Decision |
 |---|---|---|
 | `feat/plugin-sms-automation` | 95 ahead / 173 behind; diverged | Do not merge blindly. Rebase/reconstruct from current `main` and isolate plugin work. |
 | `feat/message-annotations` | 37 ahead / 161 behind; diverged | Keep draft; rebase/reconstruct against current `main` before validation. |
 | `chore/theme-library-ui-patch` | 2 ahead / 121 behind; diverged | Re-evaluate whether the tiny Settings change is still needed on current `main`; cherry-pick only if required. |
-| `chore/minimal-commons` | 0 ahead / 260 behind | Historical branch; no current delta against `main`. Keep only if needed for history. |
+| `chore/minimal-commons` | 0 ahead / 260 behind | Historical branch; no current delta against `main`. |
 | `tmp-unused` | temporary | Confirm it is unused, then delete. |
 
 ### Important findings
 
 - `main` has a centralized `ThemeManager` with built-in/user/imported/community themes, favorites, search/sort/recent support, and theme selection. `ThemeScheduleManager` handles scheduled day/night theme switching. These exist, but integration coverage across all screens still needs verification.
 - The active Android CI workflow runs Core/FOSS/GPlay unit tests and lint; the FOSS release APK build is gated on those jobs for `main`. The workflow also contains several branch-specific triggers that should be reviewed during CI hardening.
-- The repository currently has a relatively large collection of workflow files. They need classification into required, historical/maintenance, and removable automation before we call Phase 0 complete.
-- The current automation branch contains a minimal `SmsAutomationPlugin` with only `MARK_READ` and `DELETE`, SharedPreferences JSON persistence, simple sender/body matching, and no Forward/Auto Reply/priority/AND-OR-NOT/rate-limit/loop-protection/rule tester. It is therefore an early implementation, not the finished Automation Pro feature.
+- The repository currently has a relatively large collection of workflow files. They need classification into required, historical/maintenance, and removable automation before Phase 0 is complete.
+- The current automation branch contains a minimal `SmsAutomationPlugin` with only `MARK_READ` and `DELETE`, SharedPreferences JSON persistence, simple sender/body matching, and no Forward/Auto Reply/priority/AND-OR-NOT/rate-limit/loop-protection/rule tester. It is an early implementation, not the finished Automation Pro feature. The branch also contains unrelated Plugin Store/license work, so Phase 2 requires reconstruction/isolation.
 - PR #24 (`feat/message-annotations`) is still a draft and currently reports `mergeable=false`; it targets an older `main` SHA, so it requires reconciliation before it can be considered merge-ready.
 
 ## Phase 0 — Stabilization
+
+Tracked in **GitHub Issue #25**.
 
 - [x] Git/branch audit
 - [ ] Build matrix validation (Core/FOSS/GPlay)
@@ -46,6 +64,8 @@
 
 ## Phase 1 — Theme System
 
+Tracked in **GitHub Issue #26**.
+
 - [x] Central `ThemeManager`
 - [x] Built-in/custom/imported/community theme sources
 - [x] Favorites/search/sort/recent theme support
@@ -58,6 +78,8 @@
 **Gate:** Theme behavior is consistent across supported screens and CI is green.
 
 ## Phase 2 — SMS Automation Pro
+
+Tracked in **GitHub Issue #27**.
 
 - [ ] Rebase/reconstruct automation branch from current `main`
 - [ ] Rule data model / persistence
@@ -80,6 +102,8 @@
 
 ## Phase 3 — SMS Templates Pro
 
+Tracked in **GitHub Issue #28**.
+
 - [ ] Template CRUD
 - [ ] Categories
 - [ ] Favorites
@@ -90,6 +114,8 @@
 - [ ] Import/Export
 
 ## Phase 4 — SMS Backup Pro
+
+Tracked in **GitHub Issue #29**.
 
 - [ ] Full/selective backup
 - [ ] Date/contact filtering
@@ -103,6 +129,8 @@
 
 ## Phase 5 — Scheduled SMS Pro
 
+Tracked in **GitHub Issue #30**.
+
 - [ ] One-time scheduling
 - [ ] Daily/weekly/monthly/custom recurrence
 - [ ] End date/count
@@ -114,6 +142,8 @@
 - [ ] Quiet hours
 
 ## Phase 6 — Encrypted SMS
+
+Tracked in **GitHub Issue #31**.
 
 - [ ] Threat model and trust model
 - [ ] Protocol specification before implementation
@@ -137,6 +167,8 @@
 
 ## Phase 7 — Secure Sessions / Advanced Crypto
 
+Tracked in **GitHub Issue #32**.
+
 - [ ] Session architecture
 - [ ] Per-message key evolution
 - [ ] Forward secrecy design
@@ -144,6 +176,8 @@
 - [ ] Ratchet design and security review
 
 ## Phase 8 — Release Hardening
+
+Tracked in **GitHub Issue #33**.
 
 - [ ] Unit tests
 - [ ] Integration tests
@@ -156,11 +190,11 @@
 
 ## Workflow rules
 
-1. Work starts from a tracked task. GitHub Issues are preferred, but are disabled in this repository at the moment; use this roadmap until enabled.
+1. Work starts from a tracked GitHub Issue.
 2. Each feature gets its own branch.
 3. `main` is stabilization-first; unfinished features do not merge.
 4. Never merge a heavily diverged branch blindly; compare/rebase/reconstruct first.
-5. Every completed task records validation evidence and the resulting commit/PR.
-6. After each meaningful change, update this roadmap.
+5. Every completed task records validation evidence and the resulting commit/PR in its issue.
+6. After each meaningful change, update the relevant issue; update this roadmap when phase structure/status changes.
 7. A phase is complete only after its acceptance gate passes.
 8. Encrypted SMS must not be improvised; protocol design precedes code.
