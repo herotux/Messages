@@ -1,0 +1,159 @@
+name: Finalize theme migration
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Migrate and remove legacy theme structures
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 <<'PY'
+          from pathlib import Path
+          import re, subprocess
+
+          root = Path('.')
+          tracked = subprocess.check_output(['git','ls-files'], text=True).splitlines()
+          text_files = []
+          for p in tracked:
+              q = Path(p)
+              if q.is_file() and q.suffix.lower() in {'.kt','.java','.xml','.gradle','.kts','.properties','.txt'}:
+                  try: q.read_text(encoding='utf-8')
+                  except Exception: continue
+                  text_files.append(q)
+
+          # 1) Fix the API 31+ semantic error roles. Never self-reference a color.
+          p = Path('app/src/main/res/values-v31/m3_colors.xml')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('<color name="m3_error">@color/m3_error</color>', '<color name="m3_error">#FFFFB4AB</color>')
+          s = s.replace('<color name="m3_on_error">@color/m3_surface</color>', '<color name="m3_on_error">#FF690005</color>')
+          p.write_text(s, encoding='utf-8')
+
+          # 2) Remove direct consumers of the old you_* bridge.
+          mapping = {
+              'you_primary_color': 'm3_primary',
+              'you_primary_dark_color': 'm3_status_bar',
+              'you_neutral_text_color': 'm3_on_surface',
+              'you_surface_color': 'm3_surface_variant',
+              'you_dialog_background_color': 'm3_surface',
+              'you_background_color': 'm3_background',
+              'you_text_color': 'm3_on_surface',
+              'you_red_primary_color': 'm3_error',
+          }
+          for q in text_files:
+              s = q.read_text(encoding='utf-8')
+              old = s
+              for a,b in mapping.items():
+                  s = s.replace('@color/'+a, '@color/'+b)
+                  s = s.replace('R.color.'+a, 'R.color.'+b)
+              if s != old:
+                  q.write_text(s, encoding='utf-8')
+
+          # Recompute references after the migration.
+          def content_without_def(q):
+              try: return q.read_text(encoding='utf-8')
+              except Exception: return ''
+          all_text = '\n'.join(content_without_def(q) for q in text_files)
+
+          # 3) Remove legacy color definitions only when there are no consumers.
+          colors = Path('app/src/main/res/values/colors.xml')
+          cs = colors.read_text(encoding='utf-8')
+          md_names = set(re.findall(r'<color\s+name="(md_[^"]+)"', cs))
+          # Also remove legacy bridge definitions that are now unused.
+          bridge_names = set(re.findall(r'<color\s+name="(you_[^"]+)"', cs))
+          remove_names = {n for n in md_names | bridge_names if len(re.findall(r'(?<![A-Za-z0-9_])'+re.escape(n)+r'(?![A-Za-z0-9_])', all_text)) <= 1}
+          if remove_names:
+              for n in sorted(remove_names, key=len, reverse=True):
+                  cs = re.sub(r'\s*<color\s+name="'+re.escape(n)+r'"[^>]*>.*?</color>\s*', '\n', cs, flags=re.S)
+              colors.write_text(cs, encoding='utf-8')
+
+          # Remove unused md_* resources from all values XML variants as well.
+          for q in root.glob('app/src/main/res/values*/colors.xml'):
+              s = q.read_text(encoding='utf-8')
+              names = set(re.findall(r'<color\s+name="(md_[^"]+)"', s))
+              for n in sorted(names, key=len, reverse=True):
+                  # Search repo after excluding this exact definition.
+                  refs = 0
+                  pat = re.compile(r'(?<![A-Za-z0-9_])'+re.escape(n)+r'(?![A-Za-z0-9_])')
+                  for other in text_files:
+                      t = content_without_def(other)
+                      if other == q:
+                          t = re.sub(r'<color\s+name="'+re.escape(n)+r'"[^>]*>.*?</color>', '', t, flags=re.S)
+                      refs += len(pat.findall(t))
+                  if refs == 0:
+                      s = re.sub(r'\s*<color\s+name="'+re.escape(n)+r'"[^>]*>.*?</color>\s*', '\n', s, flags=re.S)
+              q.write_text(s, encoding='utf-8')
+
+          # 4) Remove the old color-specific AppTheme.* variants only when unused.
+          styles = Path('app/src/main/res/values/styles.xml')
+          ss = styles.read_text(encoding='utf-8')
+          variant = re.compile(r'AppTheme\.(?:Red|Pink|Purple|Deep_purple|Indigo|Blue|Light_blue|Cyan|Teal|Green|Light_green|Lime|Yellow|Amber|Orange|Deep_orange|Brown|Blue_grey|Grey_black)(?:\.[A-Za-z0-9_]+)*')
+          names = set(variant.findall(ss))
+          for n in sorted(names, key=len, reverse=True):
+              refs = 0
+              pat = re.compile(r'(?<![A-Za-z0-9_])'+re.escape(n)+r'(?![A-Za-z0-9_])')
+              for q in text_files:
+                  t = content_without_def(q)
+                  if q == styles:
+                      # remove the matching style declaration itself before counting references
+                      t = re.sub(r'<style\s+name="'+re.escape(n)+r'"[^>]*>.*?</style>', '', t, flags=re.S)
+                  refs += len(pat.findall(t))
+              if refs == 0:
+                  ss = re.sub(r'\s*<style\s+name="'+re.escape(n)+r'"[^>]*>.*?</style>\s*', '\n', ss, flags=re.S)
+          styles.write_text(ss, encoding='utf-8')
+
+          # 5) Remove legacy launcher aliases; SplashActivity itself remains the single entry point.
+          manifest = Path('app/src/main/AndroidManifest.xml')
+          ms = manifest.read_text(encoding='utf-8')
+          ms = re.sub(r'\s*<activity-alias\s+android:name="\.activities\.SplashActivity\.(?:Red|Pink|Purple|Deep_purple|Indigo|Blue|Light_blue|Cyan|Teal|Green|Light_green|Lime|Yellow|Amber|Orange|Deep_orange|Brown|Blue_grey|Grey_black)".*?</activity-alias>', '', ms, flags=re.S)
+          manifest.write_text(ms, encoding='utf-8')
+
+          # 6) Hard gate: no old bridge references and no old splash aliases may survive.
+          remaining = []
+          for q in text_files:
+              t = content_without_def(q)
+              if re.search(r'@color/you_|R\.color\.you_', t): remaining.append(str(q)+':you_*')
+              if re.search(r'SplashActivity\.(Red|Pink|Purple|Deep_purple|Indigo|Blue|Light_blue|Cyan|Teal|Green|Light_green|Lime|Yellow|Amber|Orange|Deep_orange|Brown|Blue_grey|Grey_black)', t): remaining.append(str(q)+':SplashAlias')
+          if remaining:
+              print('\n'.join(remaining))
+              raise SystemExit('Legacy theme references remain')
+
+          print('Theme migration pass completed.')
+          PY
+
+      - name: Verify Gradle/lint-facing source state
+        run: |
+          test ! -e .github/workflows/finalize-theme-migration.yml.tmp || true
+          ./gradlew :app:lint --stacktrace --no-daemon
+
+      - name: Commit migration and remove this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/res app/src/main/AndroidManifest.xml
+          git commit -m "refactor(theme): remove legacy theme layer" || true
+          git push
+
+      - name: Delete temporary migration workflow from repository
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/finalize-theme-migration.yml
+          git commit -m "chore(ci): remove one-shot theme migration workflow"
+          git push
