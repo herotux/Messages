@@ -1,23 +1,16 @@
 package org.fossify.messages.databases
 
-import android.content.Context
 import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.ActivityTestRule
-import org.fossify.messages.models.BankAccount
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 
 @RunWith(AndroidJUnit4::class)
 class MessagesDatabaseMigrationTest {
     private val testDbName = "migration-test.db"
-
-    private val context: Context
-        get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     private val helper by lazy {
         MigrationTestHelper(
@@ -31,7 +24,7 @@ class MessagesDatabaseMigrationTest {
     @Test
     fun migration_11_12_createsBankAccountsTable() {
         helper.createDatabase(testDbName, 11).use { db ->
-            assert(!hasTable(db, "bank_accounts"))
+            check(!hasTable(db, "bank_accounts"))
         }
 
         helper.runMigrationsAndValidate(
