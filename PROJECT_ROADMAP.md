@@ -10,8 +10,11 @@
 - [x] Branch inventory completed
 - [x] Feature divergence audit completed
 - [x] GitHub Issues enabled and phase trackers created
-- [ ] Full `main` audit: Theme / Room / DAO / CI / regressions
-- [ ] Validate latest CI run on `main`
+- [x] Room / Entity / DAO / migration batch completed
+- [x] Gradle / dependency / toolchain audit completed
+- [x] CI workflow hardening batch completed
+- [ ] Regression audit: Theme / Room / DAO / bank SMS / crash-prone paths
+- [ ] Validate final CI run on `main`
 - [ ] Reconcile long-lived feature branches before merging
 
 ### GitHub issue trackers
@@ -42,8 +45,9 @@
 ### Important findings
 
 - `main` has a centralized `ThemeManager` with built-in/user/imported/community themes, favorites, search/sort/recent support, and theme selection. `ThemeScheduleManager` handles scheduled day/night theme switching. These exist, but integration coverage across all screens still needs verification.
-- The active Android CI workflow runs Core/FOSS/GPlay unit tests and lint; the FOSS release APK build is gated on those jobs for `main`. The workflow also contains several branch-specific triggers that should be reviewed during CI hardening.
-- The repository currently has a relatively large collection of workflow files. They need classification into required, historical/maintenance, and removable automation before Phase 0 is complete.
+- The canonical Android CI workflow runs Core/FOSS/GPlay unit tests and lint. The signed FOSS release build is gated on those jobs for `main`.
+- Duplicate PR validation workflows were removed. Historical self-modifying `perf-optimize-v4` and `extract-minimal-commons` workflows were removed from `main`.
+- CI validation now uses read-only repository permissions and no longer triggers the canonical Android CI on historical `chore/minimal-commons` or `test/foss-release-signed` branches.
 - The current automation branch contains a minimal `SmsAutomationPlugin` with only `MARK_READ` and `DELETE`, SharedPreferences JSON persistence, simple sender/body matching, and no Forward/Auto Reply/priority/AND-OR-NOT/rate-limit/loop-protection/rule tester. It is an early implementation, not the finished Automation Pro feature. The branch also contains unrelated Plugin Store/license work, so Phase 2 requires reconstruction/isolation.
 - PR #24 (`feat/message-annotations`) is still a draft and currently reports `mergeable=false`; it targets an older `main` SHA, so it requires reconciliation before it can be considered merge-ready.
 
@@ -52,13 +56,13 @@
 Tracked in **GitHub Issue #25**.
 
 - [x] Git/branch audit
-- [ ] Build matrix validation (Core/FOSS/GPlay)
-- [ ] Lint validation
-- [ ] Unit/integration test audit
-- [ ] Dependency and Gradle audit
-- [ ] Workflow/CI audit
+- [ ] Build matrix validation (Core/FOSS/GPlay) — final post-hardening CI pending
+- [ ] Lint validation — final post-hardening CI pending
+- [x] Room / Entity / DAO / migration audit
+- [x] Dependency and Gradle audit
+- [x] Workflow/CI audit
 - [ ] Regression audit
-- [ ] CI hardening
+- [x] CI hardening
 
 **Gate:** `main` builds, tests and lints successfully with no known blocking regression and unnecessary automation is removed/disabled.
 
