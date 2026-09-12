@@ -51,6 +51,7 @@ android {
         targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
         versionName = project.property("VERSION_NAME").toString()
         versionCode = project.property("VERSION_CODE").toString().toInt()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "TAPSELL_APP_KEY", buildConfigStringFromEnv("TAPSELL_APP_KEY"))
         buildConfigField("String", "TAPSELL_BANNER_ZONE", buildConfigStringFromEnv("TAPSELL_BANNER_ZONE"))
@@ -227,4 +228,9 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     detektPlugins(libs.compose.detekt)
     testImplementation("junit:junit:4.13.2")
+
+    // Room schema migration tests run on a device/emulator against real SQLite.
+    androidTestImplementation("androidx.room:room-testing:${libs.versions.room.get()}")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
 }
