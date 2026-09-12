@@ -1,0 +1,61 @@
+name: One-time theme migration
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Migrate legacy palette
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path('app/src/main')
+          files = [p for p in root.rglob('*') if p.is_file() and p.suffix in {'.xml','.kt','.java'}]
+          def role(name):
+              n=name.lower()
+              if n in {'black','grey_black'} or n.startswith('grey_7') or n.startswith('grey_8') or n.endswith('_900'): return 'm3_on_surface'
+              if n in {'white','grey_white'} or n.startswith('grey_1') or n.startswith('grey_2'): return 'm3_surface'
+              if n.startswith('grey_3') or n.startswith('grey_4') or n.startswith('grey_5') or n.startswith('grey_6'): return 'm3_on_surface_variant'
+              if n.startswith('red'): return 'm3_error'
+              if n.startswith('blue'): return 'm3_tertiary'
+              if n.startswith(('teal','cyan')): return 'm3_secondary'
+              if n.startswith(('green','lime','light_green')): return 'm3_primary'
+              if n.startswith(('purple','deep_purple','pink','indigo','brown','orange','deep_orange','amber','yellow')): return 'm3_tertiary'
+              return 'm3_primary'
+          pat=re.compile(r'(?P<prefix>@color/|R\.color\.)(?:md_)(?P<name>[a-z0-9_]+)')
+          for p in files:
+              s=p.read_text(encoding='utf-8')
+              n=pat.sub(lambda m:m.group('prefix')+role(m.group('name')),s)
+              if n!=s:p.write_text(n,encoding='utf-8')
+          for p in Path('app/src/main/res').rglob('*.xml'):
+              s=p.read_text(encoding='utf-8')
+              n=re.sub(r'\s*<color name="md_[^"]+">.*?</color>\s*','\n',s,flags=re.S)
+              if n!=s:p.write_text(n,encoding='utf-8')
+          PY
+      - name: Verify
+        run: |
+          set -euo pipefail
+          ! grep -RInE --exclude-dir=.git --include='*.kt' --include='*.java' --include='*.xml' 'md_[A-Za-z0-9_]+' app/src/main
+      - name: Commit result and remove workflow
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/theme-migration-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main .github/workflows/theme-migration-once.yml
+          git diff --cached --quiet && exit 0
+          git commit -m 'refactor(theme): complete legacy palette migration'
+          git push origin HEAD:main
