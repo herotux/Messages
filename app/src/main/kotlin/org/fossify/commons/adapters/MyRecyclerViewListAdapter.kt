@@ -87,7 +87,7 @@ abstract class MyRecyclerViewListAdapter<T>(
 
                 activity.menuInflater.inflate(getActionMenuId(), menu)
                 val bgColor = if (activity.isDynamicTheme()) {
-                    ResourcesCompat.getColor(resources, R.color.you_contextual_status_bar_color, activity.theme)
+                    ResourcesCompat.getColor(resources, R.color.m3_status_bar, activity.theme)
                 } else {
                     resources.getColor(R.color.dark_grey, activity.theme)
                 }

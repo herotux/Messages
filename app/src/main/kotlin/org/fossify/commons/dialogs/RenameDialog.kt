@@ -29,7 +29,7 @@ class RenameDialog(val activity: BaseSimpleActivity, val paths: ArrayList<String
             viewPager.currentItem = activity.baseConfig.lastRenameUsed
 
             if (activity.isDynamicTheme()) {
-                dialogTabLayout.setBackgroundColor(activity.resources.getColor(R.color.you_dialog_background_color))
+                dialogTabLayout.setBackgroundColor(activity.resources.getColor(R.color.m3_surface))
             } else {
                 dialogTabLayout.setBackgroundColor(root.context.getProperBackgroundColor())
             }
@@ -39,7 +39,7 @@ class RenameDialog(val activity: BaseSimpleActivity, val paths: ArrayList<String
             dialogTabLayout.setSelectedTabIndicatorColor(root.context.getProperPrimaryColor())
 
             if (activity.isDynamicTheme()) {
-                dialogTabLayout.setBackgroundColor(activity.resources.getColor(R.color.you_dialog_background_color))
+                dialogTabLayout.setBackgroundColor(activity.resources.getColor(R.color.m3_surface))
             }
 
             dialogTabLayout.onTabSelectionChanged(tabSelectedAction = {

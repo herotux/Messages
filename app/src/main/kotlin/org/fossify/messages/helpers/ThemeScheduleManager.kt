@@ -85,7 +85,7 @@ object ThemeScheduleManager {
         val safeDay = day.coerceIn(0, 1439)
         val safeNight = night.coerceIn(0, 1439)
         val safeNow = now.coerceIn(0, 1439)
-        if (safeDay == safeNight) return true
+        if (safeDay == safeNight) return safeNow < safeDay
         return if (safeDay < safeNight) safeNow in safeDay until safeNight else safeNow >= safeDay || safeNow < safeNight
     }
 

@@ -2169,7 +2169,7 @@ class ThreadActivity : SimpleActivity() {
     }
 
     private fun getBottomBarColor() = if (isDynamicTheme()) {
-        resources.getColor(org.fossify.messages.R.color.you_bottom_bar_color)
+        resources.getColor(org.fossify.messages.R.color.m3_navigation_bar)
     } else {
         getBottomNavigationBackgroundColor()
     }

@@ -4,9 +4,9 @@
     <item>
         <selector>
             <item
-                android:drawable="@color/you_selected_item_background_color"
+                android:drawable="@color/m3_surface_variant"
                 android:state_selected="true" />
-            <item android:drawable="@drawable/ripple_selector_you_background" />
+            <item android:drawable="@drawable/ripple_selector_m3_background" />
         </selector>
     </item>
 </layer-list>

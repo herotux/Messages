@@ -1626,7 +1626,7 @@ fun Activity.setupDialogStuff(
 
             val bgDrawable = when {
                 isBlackAndWhiteTheme() -> resources.getDrawable(R.drawable.black_dialog_background, theme)
-                isDynamicTheme() -> resources.getDrawable(R.drawable.dialog_you_background, theme)
+                isDynamicTheme() -> resources.getDrawable(R.drawable.dialog_m3_background, theme)
                 else -> resources.getColoredDrawableWithColor(R.drawable.dialog_bg, baseConfig.backgroundColor)
             }
 

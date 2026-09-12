@@ -106,7 +106,7 @@ class ThemeBuilderActivity : SimpleActivity() {
         val search = EditText(this).apply { hint = t("جستجوی نام تم…", "Search themes…"); setSingleLine(true); setPadding(dp(14), 0, dp(14), 0); setBackgroundColor(attrColor(com.google.android.material.R.attr.colorSurfaceVariant)) }
         content.addView(search, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
         val filterRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        listOf(t("همه", "All"), t("ساخته من", "My themes"), t("واردشده", "Imported"), t("پسندیده", "Favorites")).forEachIndexed { index, label -> filterRow.addView(actionButton(label) { themeFilter = index; renderThemeCards(content, search.text.toString()) }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { if (index > 0) marginStart = dp(5) }) }
+        listOf(t("همه", "All"), t("ساخته من", "My themes"), t("واردشده", "Imported"), t("جامعه", "Community"), t("پسندیده", "Favorites")).forEachIndexed { index, label -> filterRow.addView(actionButton(label) { themeFilter = index; renderThemeCards(content, search.text.toString()) }, LinearLayout.LayoutParams(0, dp(42), 1f).apply { if (index > 0) marginStart = dp(5) }) }
         content.addView(filterRow, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(8) })
         search.addTextChangedListener(object : android.text.TextWatcher { override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit; override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { renderThemeCards(content, s?.toString().orEmpty()) }; override fun afterTextChanged(s: android.text.Editable?) = Unit })
         renderThemeCards(content, "")
@@ -135,7 +135,7 @@ class ThemeBuilderActivity : SimpleActivity() {
     private fun renderThemeCards(content: LinearLayout, query: String) {
         while (content.childCount > 3) content.removeViewAt(3)
         val all = ThemeManager.queryThemes(this, query, ThemeManager.librarySort(this))
-        val themes = when (themeFilter) { 1 -> all.filter { it.source == ThemeManager.ThemeSource.USER }; 2 -> all.filter { it.source == ThemeManager.ThemeSource.IMPORTED }; 3 -> all.filter { ThemeManager.isFavorite(this, it.id) }; else -> all }
+        val themes = when (themeFilter) { 1 -> all.filter { it.source == ThemeManager.ThemeSource.USER }; 2 -> all.filter { it.source == ThemeManager.ThemeSource.IMPORTED }; 3 -> all.filter { it.source == ThemeManager.ThemeSource.COMMUNITY }; 4 -> all.filter { ThemeManager.isFavorite(this, it.id) }; else -> all }
         val groups = listOf(ThemeManager.ThemeSource.BUILT_IN to t("تم‌های آماده", "Built-in themes"), ThemeManager.ThemeSource.USER to t("تم‌های من", "My themes"), ThemeManager.ThemeSource.IMPORTED to t("تم‌های واردشده", "Imported themes"), ThemeManager.ThemeSource.COMMUNITY to t("تم‌های جامعه", "Community themes"))
         var count = 0
         groups.forEach { (source, title) -> val group = themes.filter { it.source == source }; if (group.isEmpty()) return@forEach; content.addView(sectionTitle(title), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(16) }); group.forEach { theme -> content.addView(themeCard(theme), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) }); count++ } }

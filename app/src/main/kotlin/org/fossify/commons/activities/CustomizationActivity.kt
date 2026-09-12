@@ -885,23 +885,23 @@ class CustomizationActivity : BaseSimpleActivity() {
     }
 
     private fun getCurrentTextColor() = when (binding.customizationTheme.value) {
-        getMaterialYouString() -> resources.getColor(R.color.you_neutral_text_color)
+        getMaterialYouString() -> resources.getColor(R.color.m3_on_surface)
         else -> curTextColor
     }
 
     private fun getCurrentBackgroundColor() = when (binding.customizationTheme.value) {
-        getMaterialYouString() -> resources.getColor(R.color.you_background_color)
+        getMaterialYouString() -> resources.getColor(R.color.m3_background)
         else -> curBackgroundColor
     }
 
     private fun getCurrentPrimaryColor() = when (binding.customizationTheme.value) {
-        getMaterialYouString() -> resources.getColor(R.color.you_primary_color)
+        getMaterialYouString() -> resources.getColor(R.color.m3_primary)
         else -> curPrimaryColor
     }
 
     private fun getCurrentTopBarColor() = when {
         binding.customizationTheme.value == getMaterialYouString() -> {
-            resources.getColor(R.color.you_status_bar_color)
+            resources.getColor(R.color.m3_status_bar)
         }
 
         isCurrentWhiteTheme() || isCurrentBlackAndWhiteTheme() -> curAccentColor
