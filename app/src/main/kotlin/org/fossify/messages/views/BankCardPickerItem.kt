@@ -69,6 +69,14 @@ class BankCardPickerItem @JvmOverloads constructor(
                 insertCardIntoComposer(context, account)
             }
         }
+
+        // Install SMS card/IBAN linkification once the message list exists.
+        // The picker is part of ThreadActivity's layout, so this gives the
+        // feature a reliable lifecycle entry point without changing the
+        // adapter's message-click behavior.
+        (context as? Activity)?.let { activity ->
+            post { BankAccountsFeature.installMessageCardLinks(activity) }
+        }
     }
 
     private fun insertCardIntoComposer(context: Context, account: BankAccount) {
