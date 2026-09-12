@@ -59,7 +59,6 @@
             android:layout_marginVertical="@dimen/tiny_margin"
             android:layout_toEndOf="@id/thread_message_sender_photo"
             android:autoLink="email|web"
-            android:textClassifier="none"
             android:textDirection="anyRtl"
             android:textAlignment="viewStart"
             android:background="@drawable/item_received_background"
