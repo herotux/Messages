@@ -14,33 +14,33 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class MessageBodyLinkificationTest {
     @Test
-    fun iranianBankAmount_isNotLinkifiedAsLocationOrUrl() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val body = LayoutInflater.from(context)
-            .inflate(R.layout.item_message, null)
-            .findViewById<TextView>(R.id.thread_message_body)
+    fun iranianBankAmounts_areNotLinkifiedAsLocationOrUrl() {
+        val amounts = listOf(
+            "مبلغ 160,000,000 ريال",
+            "مبلغ 160000000 ريال",
+            "مبلغ ۱۶۰,۰۰۰,۰۰۰ ریال",
+            "مبلغ ۱۶۰۰۰۰۰۰۰ تومان"
+        )
 
-        val message = "انتقال وجه آنی\nمبلغ 160,000,000 ريال"
-        body.text = message
+        amounts.forEach { message ->
+            val body = newMessageBody()
+            body.text = "انتقال وجه آنی\n$message"
 
-        val spanned = body.text as? Spanned
-        val spans = spanned?.getSpans(0, message.length, URLSpan::class.java).orEmpty()
+            val spanned = body.text as? Spanned
+            val spans = spanned?.getSpans(0, body.length(), URLSpan::class.java).orEmpty()
 
-        check(spans.isEmpty()) {
-            "Financial amount must not be converted into a URL/location action: $spans"
-        }
-        check(body.textClassifier == TextClassifier.NO_OP) {
-            "SMS message bodies must not use smart text classification"
+            check(spans.isEmpty()) {
+                "Financial amount must not be converted into a URL/location action: $message"
+            }
+            check(body.textClassifier == TextClassifier.NO_OP) {
+                "SMS message bodies must not use smart text classification"
+            }
         }
     }
 
     @Test
     fun normalWebUrl_remainsLinkified() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val body = LayoutInflater.from(context)
-            .inflate(R.layout.item_message, null)
-            .findViewById<TextView>(R.id.thread_message_body)
-
+        val body = newMessageBody()
         val message = "https://example.com"
         body.text = message
 
@@ -50,5 +50,12 @@ class MessageBodyLinkificationTest {
         check(spans.isNotEmpty()) {
             "Normal web URLs must remain linkified"
         }
+    }
+
+    private fun newMessageBody(): TextView {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        return LayoutInflater.from(context)
+            .inflate(R.layout.item_message, null)
+            .findViewById(R.id.thread_message_body)
     }
 }
