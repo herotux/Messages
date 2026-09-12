@@ -1,0 +1,51 @@
+name: Fix remaining theme reference
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Replace remaining legacy theme color
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/kotlin/org/fossify/messages/activities/ThreadActivity.kt')
+          s = p.read_text(encoding='utf-8')
+          old = 'org.fossify.messages.R.color.you_bottom_bar_color'
+          new = 'org.fossify.messages.R.color.m3_navigation_bar'
+          if old not in s:
+              raise SystemExit('Expected remaining you_bottom_bar_color reference not found')
+          p.write_text(s.replace(old, new), encoding='utf-8')
+          PY
+
+          if grep -RInE '@color/you_|R\.color\.you_' app/src/main --include='*.kt' --include='*.java' --include='*.xml'; then
+            echo 'Legacy theme color references remain'
+            exit 1
+          fi
+
+      - name: Run lint
+        run: ./gradlew :app:lint --stacktrace --no-daemon
+
+      - name: Commit fix and remove workflow
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/org/fossify/messages/activities/ThreadActivity.kt
+          git commit -m "fix(theme): migrate remaining ThreadActivity color" 
+          git push
+          git rm .github/workflows/fix-thread-theme.yml
+          git commit -m "chore(ci): remove temporary theme fix workflow"
+          git push
