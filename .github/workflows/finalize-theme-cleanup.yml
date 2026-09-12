@@ -1,0 +1,168 @@
+name: Finalize theme cleanup
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Complete M3 theme migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+
+          root = Path('.')
+          tracked = subprocess.check_output(['git','ls-files'], text=True).splitlines()
+          files = []
+          for name in tracked:
+              p = Path(name)
+              if p.is_file() and p.suffix.lower() in {'.kt','.java','.xml','.gradle','.kts','.properties','.txt'}:
+                  try: p.read_text(encoding='utf-8')
+                  except Exception: continue
+                  files.append(p)
+
+          # Feature audit fixes.
+          builder = Path('app/src/main/kotlin/org/fossify/messages/activities/ThemeBuilderActivity.kt')
+          bs = builder.read_text(encoding='utf-8')
+          old_filters = 'listOf(t("همه", "All"), t("ساخته من", "My themes"), t("واردشده", "Imported"), t("پسندیده", "Favorites"))'
+          new_filters = 'listOf(t("همه", "All"), t("ساخته من", "My themes"), t("واردشده", "Imported"), t("جامعه", "Community"), t("پسندیده", "Favorites"))'
+          if old_filters in bs:
+              bs = bs.replace(old_filters, new_filters, 1)
+          old_when = 'when (themeFilter) { 1 -> all.filter { it.source == ThemeManager.ThemeSource.USER }; 2 -> all.filter { it.source == ThemeManager.ThemeSource.IMPORTED }; 3 -> all.filter { ThemeManager.isFavorite(this, it.id) }; else -> all }'
+          new_when = 'when (themeFilter) { 1 -> all.filter { it.source == ThemeManager.ThemeSource.USER }; 2 -> all.filter { it.source == ThemeManager.ThemeSource.IMPORTED }; 3 -> all.filter { it.source == ThemeManager.ThemeSource.COMMUNITY }; 4 -> all.filter { ThemeManager.isFavorite(this, it.id) }; else -> all }'
+          if old_when in bs:
+              bs = bs.replace(old_when, new_when, 1)
+          builder.write_text(bs, encoding='utf-8')
+
+          schedule = Path('app/src/main/kotlin/org/fossify/messages/helpers/ThemeScheduleManager.kt')
+          ss = schedule.read_text(encoding='utf-8')
+          ss = ss.replace('if (safeDay == safeNight) return true', 'if (safeDay == safeNight) return safeNow < safeDay', 1)
+          schedule.write_text(ss, encoding='utf-8')
+
+          v31 = Path('app/src/main/res/values-v31/m3_colors.xml')
+          s = v31.read_text(encoding='utf-8')
+          s = s.replace('<color name="m3_error">@color/m3_error</color>', '<color name="m3_error">#FFFFB4AB</color>')
+          s = s.replace('<color name="m3_on_error">@color/m3_surface</color>', '<color name="m3_on_error">#FF690005</color>')
+          v31.write_text(s, encoding='utf-8')
+
+          mapping = {
+              'you_primary_color': 'm3_primary',
+              'you_primary_dark_color': 'm3_status_bar',
+              'you_neutral_text_color': 'm3_on_surface',
+              'you_surface_color': 'm3_surface_variant',
+              'you_dialog_background_color': 'm3_surface',
+              'you_background_color': 'm3_background',
+              'you_text_color': 'm3_on_surface',
+              'you_red_primary_color': 'm3_error',
+              'you_status_bar_color': 'm3_status_bar',
+              'you_contextual_status_bar_color': 'm3_status_bar',
+              'you_ripple_color': 'm3_ripple',
+              'you_selected_item_background_color': 'm3_surface_variant',
+              'you_bottom_bar_color': 'm3_navigation_bar',
+          }
+          renames = {
+              'dialog_you_background': 'dialog_m3_background',
+              'popup_menu_bg_you': 'popup_menu_bg_m3',
+              'ripple_selector_you_background': 'ripple_selector_m3_background',
+              'selector_clickable_you': 'selector_clickable_m3',
+          }
+
+          for p in list(files):
+              text = p.read_text(encoding='utf-8')
+              old = text
+              for a,b in mapping.items():
+                  text = text.replace('@color/'+a, '@color/'+b)
+                  text = text.replace('R.color.'+a, 'R.color.'+b)
+              for a,b in renames.items():
+                  text = text.replace('@drawable/'+a, '@drawable/'+b)
+              if text != old:
+                  p.write_text(text, encoding='utf-8')
+
+          for a,b in renames.items():
+              src = root / 'app/src/main/res/drawable' / (a+'.xml')
+              dst = root / 'app/src/main/res/drawable' / (b+'.xml')
+              if src.exists() and not dst.exists():
+                  src.rename(dst)
+
+          # Remove unused legacy color definitions, but never remove a referenced color.
+          text_files = [p for p in files if p.exists()]
+          for p in root.glob('app/src/main/res/values*/colors.xml'):
+              if p not in text_files:
+                  text_files.append(p)
+          def read(p):
+              try: return p.read_text(encoding='utf-8')
+              except Exception: return ''
+          for p in list(root.glob('app/src/main/res/values*/colors.xml')):
+              text = read(p)
+              names = set(re.findall(r'<color\s+name="(md_[^"]+)"', text))
+              for name in sorted(names, key=len, reverse=True):
+                  pattern = re.compile(r'(?<![A-Za-z0-9_])'+re.escape(name)+r'(?![A-Za-z0-9_])')
+                  refs = 0
+                  for q in text_files:
+                      t = read(q)
+                      if q == p:
+                          t = re.sub(r'<color\s+name="'+re.escape(name)+r'"[^>]*>.*?</color>', '', t, flags=re.S)
+                      refs += len(pattern.findall(t))
+                  if refs == 0:
+                      text = re.sub(r'\s*<color\s+name="'+re.escape(name)+r'"[^>]*>.*?</color>\s*', '\n', text, flags=re.S)
+              p.write_text(text, encoding='utf-8')
+
+          # Remove unused old color-specific AppTheme styles. Keep launcher aliases intact.
+          styles = Path('app/src/main/res/values/styles.xml')
+          text = styles.read_text(encoding='utf-8')
+          variant = re.compile(r'AppTheme\.(?:Red|Pink|Purple|Deep_purple|Indigo|Blue|Light_blue|Cyan|Teal|Green|Light_green|Lime|Yellow|Amber|Orange|Deep_orange|Brown|Blue_grey|Grey_black)(?:\.[A-Za-z0-9_]+)*')
+          names = set(variant.findall(text))
+          for name in sorted(names, key=len, reverse=True):
+              pattern = re.compile(r'(?<![A-Za-z0-9_])'+re.escape(name)+r'(?![A-Za-z0-9_])')
+              refs = 0
+              for q in text_files:
+                  t = read(q)
+                  if q == styles:
+                      t = re.sub(r'<style\s+name="'+re.escape(name)+r'"[^>]*>.*?</style>', '', t, flags=re.S)
+                  refs += len(pattern.findall(t))
+              if refs == 0:
+                  text = re.sub(r'\s*<style\s+name="'+re.escape(name)+r'"[^>]*>.*?</style>\s*', '\n', text, flags=re.S)
+          styles.write_text(text, encoding='utf-8')
+
+          # Hard gate: no Material You bridge color references may remain.
+          remaining = []
+          for p in root.rglob('*'):
+              if p.is_file() and p.suffix.lower() in {'.kt','.java','.xml','.gradle','.kts','.properties','.txt'}:
+                  t = read(p)
+                  if re.search(r'@color/you_|R\.color\.you_', t):
+                      remaining.append(str(p))
+          if remaining:
+              print('\n'.join(remaining))
+              raise SystemExit('Legacy theme color references remain')
+
+          print('Complete M3 theme migration passed.')
+          PY
+
+      - name: Validate
+        run: ./gradlew :app:lint --stacktrace --no-daemon
+
+      - name: Commit migration and remove workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main
+          git commit -m "refactor(theme): complete M3 theme migration"
+          git push
+          git rm .github/workflows/finalize-theme-cleanup.yml
+          git commit -m "chore(ci): remove one-shot theme cleanup workflow"
+          git push
