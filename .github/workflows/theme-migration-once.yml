@@ -59,3 +59,4 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m 'refactor(theme): complete legacy palette migration'
           git push origin HEAD:main
+# trigger migration on the next main push
