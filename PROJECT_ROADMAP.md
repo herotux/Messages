@@ -1,27 +1,48 @@
 # Messages — Project Roadmap
 
-> Living project tracker. GitHub Issues are the source of truth for actionable work; this file records the phase order and acceptance gates.
+> Living project tracker. GitHub Issues would normally be the source of truth, but Issues are currently disabled for this repository. Until they are enabled, this file is the canonical tracker and every meaningful change must update it.
 
 ## Current state — 2026-09-12
 
 - [x] `main` stabilization baseline exists
 - [x] One-shot theme cleanup workflow removed
 - [x] M3 theme migration committed on `main`
+- [x] Branch inventory completed
+- [x] Feature divergence audit completed
 - [ ] Full `main` audit: Theme / Room / DAO / CI / regressions
 - [ ] Validate latest CI run on `main`
 - [ ] Reconcile long-lived feature branches before merging
 
+### Branch audit
+
+| Branch | Relation to `main` | Decision |
+|---|---|---|
+| `feat/plugin-sms-automation` | 95 ahead / 173 behind; diverged | Do not merge blindly. Rebase/reconstruct from current `main` and isolate plugin work. |
+| `feat/message-annotations` | 37 ahead / 161 behind; diverged | Keep draft; rebase/reconstruct against current `main` before validation. |
+| `chore/theme-library-ui-patch` | 2 ahead / 121 behind; diverged | Re-evaluate whether the tiny Settings change is still needed on current `main`; cherry-pick only if required. |
+| `chore/minimal-commons` | 0 ahead / 260 behind | Historical branch; no current delta against `main`. Keep only if needed for history. |
+| `tmp-unused` | temporary | Confirm it is unused, then delete. |
+
+### Important findings
+
+- `main` has a centralized `ThemeManager` with built-in/user/imported/community themes, favorites, search/sort/recent support, and theme selection. `ThemeScheduleManager` handles scheduled day/night theme switching. These exist, but integration coverage across all screens still needs verification.
+- The active Android CI workflow runs Core/FOSS/GPlay unit tests and lint; the FOSS release APK build is gated on those jobs for `main`. The workflow also contains several branch-specific triggers that should be reviewed during CI hardening.
+- The repository currently has a relatively large collection of workflow files. They need classification into required, historical/maintenance, and removable automation before we call Phase 0 complete.
+- The current automation branch contains a minimal `SmsAutomationPlugin` with only `MARK_READ` and `DELETE`, SharedPreferences JSON persistence, simple sender/body matching, and no Forward/Auto Reply/priority/AND-OR-NOT/rate-limit/loop-protection/rule tester. It is therefore an early implementation, not the finished Automation Pro feature.
+- PR #24 (`feat/message-annotations`) is still a draft and currently reports `mergeable=false`; it targets an older `main` SHA, so it requires reconciliation before it can be considered merge-ready.
+
 ## Phase 0 — Stabilization
 
-- [ ] Git/branch audit
+- [x] Git/branch audit
 - [ ] Build matrix validation (Core/FOSS/GPlay)
 - [ ] Lint validation
 - [ ] Unit/integration test audit
 - [ ] Dependency and Gradle audit
+- [ ] Workflow/CI audit
 - [ ] Regression audit
 - [ ] CI hardening
 
-**Gate:** `main` builds, tests and lints successfully with no known blocking regression.
+**Gate:** `main` builds, tests and lints successfully with no known blocking regression and unnecessary automation is removed/disabled.
 
 ## Phase 1 — Theme System
 
@@ -38,6 +59,7 @@
 
 ## Phase 2 — SMS Automation Pro
 
+- [ ] Rebase/reconstruct automation branch from current `main`
 - [ ] Rule data model / persistence
 - [ ] Rule Engine
 - [ ] Conditions: sender/contact/message
@@ -134,10 +156,11 @@
 
 ## Workflow rules
 
-1. Work starts from an Issue.
+1. Work starts from a tracked task. GitHub Issues are preferred, but are disabled in this repository at the moment; use this roadmap until enabled.
 2. Each feature gets its own branch.
 3. `main` is stabilization-first; unfinished features do not merge.
-4. Every completed Issue records validation evidence and the resulting commit/PR.
-5. After each meaningful change, update this roadmap and the related Issue.
-6. A phase is complete only after its acceptance gate passes.
-7. Encrypted SMS must not be improvised; protocol design precedes code.
+4. Never merge a heavily diverged branch blindly; compare/rebase/reconstruct first.
+5. Every completed task records validation evidence and the resulting commit/PR.
+6. After each meaningful change, update this roadmap.
+7. A phase is complete only after its acceptance gate passes.
+8. Encrypted SMS must not be improvised; protocol design precedes code.
