@@ -20,8 +20,8 @@ on:
 permissions:
   contents: read
 
-# Normal commits/PRs run validation only. Release APK creation is explicit via
-# workflow_dispatch with build_apk=true, so ordinary commits never build APKs.
+# Main is treated as the stabilization branch: validation plus a real signed
+# FOSS release build. Other branches/PRs keep the lighter validation path.
 jobs:
   unit-tests:
     name: Unit tests (${{ matrix.variant }})
@@ -85,7 +85,7 @@ jobs:
 
   build-apk:
     name: Build FOSS release APK
-    if: github.event_name == 'workflow_dispatch' && inputs.build_apk == true
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.build_apk == true)
     needs:
       - unit-tests
       - lint
