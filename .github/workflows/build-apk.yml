@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - main
-      - chore/minimal-commons
-      - test/foss-release-signed
-      - feat/iranian-bank-registry
       - 'fix/**'
   pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       build_apk:
@@ -20,8 +18,8 @@ on:
 permissions:
   contents: read
 
-# Main is treated as the stabilization branch: validation plus a real signed
-# FOSS release build. Other branches/PRs keep the lighter validation path.
+# Canonical Android validation for main and pull requests.
+# A signed FOSS release build runs only on main pushes or explicit dispatch.
 jobs:
   unit-tests:
     name: Unit tests (${{ matrix.variant }})
