@@ -29,11 +29,12 @@ class DirectReplyReceiver : BroadcastReceiver() {
             var subscriptionId: Int? = null
             val availableSIMs = context.subscriptionManagerCompat().activeSubscriptionInfoList
             if ((availableSIMs?.size ?: 0) > 1) {
-                val currentSIMCardIndex = context.config.getUseSIMIdAtNumber(address)
-                val wantedId = availableSIMs?.getOrNull(currentSIMCardIndex)
-                if (wantedId != null) {
-                    subscriptionId = wantedId.subscriptionId
-                }
+                // config stores the actual subscription id, not the zero-based
+                // position in the active SIM list.
+                val preferredSubscriptionId = context.config.getUseSIMIdAtNumber(address)
+                subscriptionId = availableSIMs
+                    ?.firstOrNull { it.subscriptionId == preferredSubscriptionId }
+                    ?.subscriptionId
             }
 
             ensureBackgroundThread {
