@@ -21,12 +21,14 @@ object SmsTemplatesPlugin {
     }
 
     fun save(context: Context, template: Template) {
+        require(isAvailable(context)) { "SMS Templates is not licensed" }
         val values = list(context).filterNot { it.id == template.id } + template
         val a = JSONArray(); values.forEach { a.put(JSONObject().apply { put("id", it.id); put("name", it.name); put("body", it.body); put("category", it.category) }) }
         context.getSharedPreferences(PREFS, 0).edit().putString(KEY, a.toString()).apply()
     }
 
     fun delete(context: Context, id: Long) {
+        require(isAvailable(context)) { "SMS Templates is not licensed" }
         saveAll(context, list(context).filterNot { it.id == id })
     }
 
