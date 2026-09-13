@@ -2,16 +2,18 @@ package org.fossify.messages.helpers
 
 import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import android.view.ViewGroup
 import org.fossify.messages.R
 
-/** Central theme definition for built-in and user-created themes. */
+/** Central theme definition and persisted theme state for Homa. */
 object ThemeManager {
     private const val PREFS = "messages_theme"
     private const val KEY_THEME_ID = "selected_theme_id"
     private const val KEY_FAVORITES = "favorite_theme_ids"
     private const val KEY_LIBRARY_SORT = "library_sort"
     private const val KEY_RECENT_THEMES = "recent_theme_ids"
+    private const val KEY_BACKGROUND_IMAGE_URI = "background_image_uri"
     private const val MAX_RECENT_THEMES = 12
     private var applicationContext: Context? = null
 
@@ -41,13 +43,11 @@ object ThemeManager {
         val backgroundType: BackgroundType = BackgroundType.SOLID,
         val gradientColors: List<Int> = emptyList(), val gradientAngle: Int = 0,
         val wallpaperUri: String? = null,
-        /** Temporary payload used while importing an embedded wallpaper. */
         val embeddedWallpaperBase64: String? = null
     )
 
     fun contextForThemeFiles(): Context? = applicationContext
 
-    /** Parses the limited CSS-style hex colors used by the built-in themes without Android APIs. */
     private fun c(value: String): Int {
         val hex = value.trim().removePrefix("#")
         val rgb = when (hex.length) {
@@ -93,6 +93,14 @@ object ThemeManager {
     fun activeTheme(context: Context): ThemeDefinition = current(context)
     fun current(context: Context): ThemeDefinition = allThemes(context).firstOrNull { it.id == selectedThemeId(context) } ?: builtInThemes.first()
     fun colors(context: Context): ThemeColors = current(context).colors
+
+    fun getBackgroundImageUri(context: Context): Uri? = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_BACKGROUND_IMAGE_URI, null).orEmpty().takeIf { it.isNotBlank() }?.let(Uri::parse)
+
+    fun setBackgroundImageUri(context: Context, uri: Uri?) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_BACKGROUND_IMAGE_URI, uri?.toString().orEmpty()).apply()
+    }
+
+    fun clearBackgroundImage(context: Context) = setBackgroundImageUri(context, null)
 
     fun select(context: Context, id: String): Boolean {
         if (allThemes(context).none { it.id == id }) return false
@@ -175,7 +183,6 @@ object ThemeManager {
 
     fun deleteUserTheme(context: Context, id: String): Boolean = deleteCustomTheme(context, id)
 
-    /** Returns the global theme unless this Activity carries a conversation thread override. */
     fun themeForActivity(activity: Activity): ThemeDefinition {
         val threadId = activity.intent?.getLongExtra(THREAD_ID, 0L) ?: 0L
         if (threadId != 0L) ConversationThemeManager.getTheme(activity, threadId)?.let { return it }
@@ -186,7 +193,8 @@ object ThemeManager {
         val theme = themeForActivity(activity)
         val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
         val root = if (content.childCount == 1 && content.getChildAt(0) is ViewGroup) content.getChildAt(0) as ViewGroup else content
+        val legacyWallpaper = if (theme.backgroundType == BackgroundType.SOLID && theme.wallpaperUri == null) getBackgroundImageUri(activity) else null
         if (theme.backgroundDrawable != 0) root.setBackgroundResource(theme.backgroundDrawable)
-        else ThemeBackground.apply(root, theme.backgroundType, theme.colors.background, theme.gradientColors, theme.gradientAngle, theme.wallpaperUri)
+        else ThemeBackground.apply(root, theme.backgroundType, theme.colors.background, theme.gradientColors, theme.gradientAngle, theme.wallpaperUri ?: legacyWallpaper?.toString())
     }
 }
