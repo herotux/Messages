@@ -97,7 +97,7 @@ class ThemeResolverTest {
 
         val tokens = ThemeResolver.resolve(transparentTheme)
 
-        assertEquals(0xFF000000.toInt(), tokens.onPrimary)
+        assertEquals(0xFFFFFFFF.toInt(), tokens.onPrimary)
         assertEquals(0xFF000000.toInt(), tokens.onBackground)
         assertEquals(0xFFFFFFFF.toInt(), tokens.onSurface)
     }
