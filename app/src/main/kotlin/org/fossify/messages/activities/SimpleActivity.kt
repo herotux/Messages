@@ -26,7 +26,8 @@ import org.fossify.messages.helpers.ThemeManager
 
 open class SimpleActivity : BaseSimpleActivity() {
     private var appliedFontSize = -1
-    private var chromeObserverInstalled = false
+    private var chromeHierarchyListenersInstalled = false
+    private var appliedThemeId: String? = null
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
@@ -53,12 +54,14 @@ open class SimpleActivity : BaseSimpleActivity() {
     private fun applyVisualTheme() {
         ThemeManager.applyBackground(this)
         applyThemeChrome()
-        installThemeChromeObserver()
+        installThemeChromeHierarchyListeners()
     }
 
     /** Applies the active global or conversation-specific ThemeManager palette. */
     private fun applyThemeChrome() {
-        val colors = ThemeManager.themeForActivity(this).colors
+        val theme = ThemeManager.themeForActivity(this)
+        val colors = theme.colors
+        appliedThemeId = theme.id
         supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.toolbar))
         supportActionBar?.setStackedBackgroundDrawable(ColorDrawable(colors.toolbar))
         window.statusBarColor = colors.toolbar
@@ -183,16 +186,32 @@ open class SimpleActivity : BaseSimpleActivity() {
         }
     }
 
-    private fun installThemeChromeObserver() {
-        if (chromeObserverInstalled) return
+    /**
+     * Themes views when they enter an already-created hierarchy. This avoids the old
+     * global-layout callback, which recursively walked the entire window on every layout.
+     */
+    private fun installThemeChromeHierarchyListeners() {
+        if (chromeHierarchyListenersInstalled) return
         val content = window.decorView as? ViewGroup ?: return
-        chromeObserverInstalled = true
-        content.viewTreeObserver.addOnGlobalLayoutListener {
-            val colors = ThemeManager.themeForActivity(this).colors
-            val tabs = findViewById<View>(R.id.folder_tabs)
-            if (tabs is ViewGroup) styleFolderTabs(tabs, colors)
-            applyPaletteToCommonViews(content, colors)
-            clearToolbarBackgrounds(content, colors)
+        chromeHierarchyListenersInstalled = true
+        installHierarchyListener(content)
+    }
+
+    private fun installHierarchyListener(group: ViewGroup) {
+        group.setOnHierarchyChangeListener(object : ViewGroup.OnHierarchyChangeListener {
+            override fun onChildViewAdded(parent: View?, child: View?) {
+                val added = child ?: return
+                val colors = ThemeManager.themeForActivity(this@SimpleActivity).colors
+                applyPaletteToCommonViews(added, colors)
+                if (added is ViewGroup) installHierarchyListener(added)
+            }
+
+            override fun onChildViewRemoved(parent: View?, child: View?) = Unit
+        })
+
+        for (index in 0 until group.childCount) {
+            val child = group.getChildAt(index)
+            if (child is ViewGroup) installHierarchyListener(child)
         }
     }
 
