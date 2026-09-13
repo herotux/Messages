@@ -53,6 +53,14 @@ object ThemeApplier {
                 window.statusBarColor = tokens.toolbar
                 window.navigationBarColor = tokens.background
             }
+            var flags = window.decorView.systemUiVisibility
+            flags = if (isLight(tokens.toolbar)) flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            else flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                flags = if (isLight(tokens.background)) flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                else flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+            }
+            window.decorView.systemUiVisibility = flags
             applyPaletteToViewTree(activity ?: (dialog.context as? Activity), window.decorView, tokens)
         }
     }
