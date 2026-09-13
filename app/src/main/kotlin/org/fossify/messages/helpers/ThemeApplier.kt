@@ -1,6 +1,7 @@
 package org.fossify.messages.helpers
 
 import android.app.Activity
+import android.app.Dialog
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -42,6 +43,20 @@ object ThemeApplier {
         clearToolbarBackgrounds(decor, tokens)
     }
 
+    /** Applies the same resolved theme to a dialog after its content is inflated. */
+    fun apply(dialog: Dialog, activity: Activity? = null) {
+        val theme = activity?.let(ThemeManager::themeForActivity) ?: ThemeManager.current(dialog.context)
+        val tokens = ThemeResolver.resolve(theme)
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(ColorDrawable(tokens.surface))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                window.statusBarColor = tokens.toolbar
+                window.navigationBarColor = tokens.background
+            }
+            applyPaletteToViewTree(activity ?: (dialog.context as? Activity), window.decorView, tokens)
+        }
+    }
+
     private fun applySystemBars(activity: Activity, tokens: HomaThemeTokens) {
         activity.window.statusBarColor = tokens.toolbar
         activity.window.navigationBarColor = tokens.background
@@ -55,7 +70,7 @@ object ThemeApplier {
         activity.window.decorView.systemUiVisibility = flags
     }
 
-    private fun applyPaletteToViewTree(activity: Activity, view: View, tokens: HomaThemeTokens) {
+    private fun applyPaletteToViewTree(activity: Activity?, view: View, tokens: HomaThemeTokens) {
         when (view) {
             is Toolbar -> {
                 view.setBackgroundColor(tokens.toolbar)
