@@ -1,7 +1,5 @@
 package org.fossify.messages.helpers
 
-import android.graphics.Color
-
 /**
  * Converts a persisted ThemeDefinition into stable Homa semantic roles.
  *
@@ -50,11 +48,12 @@ object ThemeResolver {
 
     /** Returns a readable Material foreground for a solid background color. */
     private fun contrastColor(background: Int): Int {
-        val luminance = (
-            0.299 * Color.red(background) +
-                0.587 * Color.green(background) +
-                0.114 * Color.blue(background)
-            ) / 255.0
-        return if (luminance > 0.55) Color.BLACK else Color.WHITE
+        // Keep the resolver platform-independent so its semantic mapping can be
+        // exercised by JVM unit tests without relying on Android framework APIs.
+        val red = (background shr 16) and 0xFF
+        val green = (background shr 8) and 0xFF
+        val blue = background and 0xFF
+        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
+        return if (luminance > 0.55) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
     }
 }
