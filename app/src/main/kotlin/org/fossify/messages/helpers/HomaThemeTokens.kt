@@ -3,9 +3,8 @@ package org.fossify.messages.helpers
 /**
  * Semantic, app-owned design tokens derived from the active visual theme.
  *
- * These tokens intentionally describe meaning rather than individual widgets,
- * so future screens and features can depend on stable Homa semantics instead
- * of reaching into ThemeManager's storage model.
+ * These tokens describe meaning rather than individual widgets, while retaining
+ * the existing theme palette exactly during the migration to the central applier.
  */
 data class HomaThemeTokens(
     val primary: Int,
@@ -20,6 +19,8 @@ data class HomaThemeTokens(
     val onSurfaceVariant: Int,
     val outline: Int,
     val error: Int,
+    val toolbar: Int,
+    val fab: Int,
     val incomingMessage: Int,
     val outgoingMessage: Int,
     val messageText: Int,
