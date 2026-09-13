@@ -17,9 +17,14 @@ import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.ProgressBar
 import androidx.appcompat.widget.Toolbar
-import org.fossify.commons.extensions.baseConfig
 
-/** App-owned visual theme state, independent from device Light/Dark mode. */
+/**
+ * Applies the app-owned visual theme to an Activity.
+ *
+ * ThemeManager is the single source of truth for the selected visual theme;
+ * legacy Fossify baseConfig colors are intentionally not used here because
+ * they can override the Material 3 semantic palette on every Activity resume.
+ */
 object AppThemeManager {
     private const val PREFS = "app_visual_theme"
     private const val KEY_BACKGROUND_IMAGE_URI = "background_image_uri"
@@ -37,10 +42,11 @@ object AppThemeManager {
     fun clearBackgroundImage(context: Context) = setBackgroundImageUri(context, null)
 
     fun apply(activity: Activity) {
-        val config = activity.baseConfig
-        val primary = config.primaryColor
-        val background = config.backgroundColor
-        val accent = config.accentColor
+        val theme = ThemeManager.themeForActivity(activity)
+        val colors = theme.colors
+        val primary = colors.primary
+        val background = colors.background
+        val accent = colors.accent
         val contrast = contrastColor(primary)
 
         activity.window.statusBarColor = darken(primary, 0.82f)
@@ -50,7 +56,7 @@ object AppThemeManager {
         flags = if (contrast == Color.DKGRAY) flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         else flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            flags = if (contrast == Color.DKGRAY) flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            flags = if (isLight(background)) flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
             else flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
         }
         activity.window.decorView.systemUiVisibility = flags
@@ -91,8 +97,12 @@ object AppThemeManager {
     }
 
     private fun contrastColor(color: Int): Int {
+        return if (isLight(color)) Color.DKGRAY else Color.WHITE
+    }
+
+    private fun isLight(color: Int): Boolean {
         val luminance = (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255.0
-        return if (luminance > 0.58) Color.DKGRAY else Color.WHITE
+        return luminance > 0.58
     }
 
     private fun darken(color: Int, factor: Float): Int = Color.rgb(
