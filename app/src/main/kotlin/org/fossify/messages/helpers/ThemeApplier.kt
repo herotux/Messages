@@ -135,9 +135,25 @@ object ThemeApplier {
 
         styleMessageBubble(view, tokens)
 
-        if (view is TextView && view !is EditText && view.id != R.id.folder_tabs && view.id != R.id.thread_message_body) {
+        // Generic legacy TextView normalization must never overwrite a control
+        // whose semantic Material role was already applied above or by ID.
+        val hasSemanticTextColor = view is MaterialButton ||
+            view.id == R.id.thread_type_message ||
+            view.id == R.id.thread_send_message ||
+            view.id == R.id.thread_add_attachment ||
+            view.id == R.id.thread_select_sim_icon ||
+            view.id == R.id.thread_character_counter
+        if (view is TextView &&
+            view !is EditText &&
+            view !is MaterialButton &&
+            !hasSemanticTextColor &&
+            view.id != R.id.folder_tabs &&
+            view.id != R.id.thread_message_body
+        ) {
             val current = view.currentTextColor
-            if (current == Color.WHITE || current == Color.BLACK || current == Color.GRAY) view.setTextColor(tokens.onSurface)
+            if (current == Color.WHITE || current == Color.BLACK || current == Color.GRAY) {
+                view.setTextColor(tokens.onSurface)
+            }
         }
 
         if (view is ViewGroup) {
