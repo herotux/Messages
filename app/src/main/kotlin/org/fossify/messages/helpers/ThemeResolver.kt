@@ -8,9 +8,6 @@ object ThemeResolver {
         val onBackground = colors.textPrimary
         val onSurface = colors.textPrimary
         val onSurfaceVariant = colors.textSecondary
-        val selectedItem = withAlpha(colors.primary, 0x24)
-        val unreadIndicator = colors.accent
-        val error = 0xFFB3261E.toInt()
 
         return HomaThemeTokens(
             primary = colors.primary,
@@ -24,13 +21,15 @@ object ThemeResolver {
             surfaceVariant = colors.surface,
             onSurfaceVariant = onSurfaceVariant,
             outline = colors.divider,
-            error = error,
+            error = 0xFFB3261E.toInt(),
+            toolbar = colors.toolbar,
+            fab = colors.fab,
             incomingMessage = colors.incomingBubble,
             outgoingMessage = colors.outgoingBubble,
             messageText = colors.textPrimary,
             messageSecondaryText = colors.textSecondary,
-            unreadIndicator = unreadIndicator,
-            selectedItem = selectedItem,
+            unreadIndicator = colors.accent,
+            selectedItem = withAlpha(colors.primary, 0x24),
             link = colors.accent,
             divider = colors.divider
         )
