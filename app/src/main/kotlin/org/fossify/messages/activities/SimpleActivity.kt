@@ -4,6 +4,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -63,12 +64,29 @@ open class SimpleActivity : BaseSimpleActivity() {
         supportActionBar?.setStackedBackgroundDrawable(ColorDrawable(colors.toolbar))
         window.statusBarColor = colors.toolbar
         window.navigationBarColor = colors.background
+        applySystemBarIconContrast(colors.toolbar, colors.background)
 
         val tabs = findViewById<View>(R.id.folder_tabs)
         if (tabs is ViewGroup) styleFolderTabs(tabs, colors)
 
         applyPaletteToCommonViews(window.decorView, colors)
         clearToolbarBackgrounds(window.decorView, colors)
+    }
+
+    private fun applySystemBarIconContrast(statusBarColor: Int, navigationBarColor: Int) {
+        var flags = window.decorView.systemUiVisibility
+        flags = if (isLight(statusBarColor)) flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        else flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            flags = if (isLight(navigationBarColor)) flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            else flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+        }
+        window.decorView.systemUiVisibility = flags
+    }
+
+    private fun isLight(color: Int): Boolean {
+        val luminance = (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255.0
+        return luminance > 0.58
     }
 
     private fun applyPaletteToCommonViews(view: View, colors: ThemeManager.ThemeColors) {
