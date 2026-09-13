@@ -96,10 +96,7 @@ object ThemeApplier {
                 view.setCardBackgroundColor(tokens.surface)
                 view.strokeColor = tokens.divider
             }
-            is MaterialButton -> {
-                view.backgroundTintList = ColorStateList.valueOf(tokens.primary)
-                view.setTextColor(tokens.onPrimary)
-            }
+            is MaterialButton -> applyMaterialButton(view, tokens)
             is TextInputLayout -> {
                 view.setBoxStrokeColorStateList(ColorStateList.valueOf(tokens.primary))
                 view.hintTextColor = ColorStateList.valueOf(tokens.onSurfaceVariant)
@@ -169,6 +166,32 @@ object ThemeApplier {
         }
     }
 
+    /**
+     * Theme a MaterialButton without flattening its Material 3 variant.
+     * Filled buttons receive the resolved primary role; outlined/text buttons
+     * keep their transparent/background semantics and only receive semantic
+     * foreground/stroke colors.
+     */
+    private fun applyMaterialButton(view: MaterialButton, tokens: HomaThemeTokens) {
+        val hasStroke = view.strokeWidth > 0
+        val existingTint = view.backgroundTintList
+        val hasVisibleBackground = existingTint?.defaultColor?.let { Color.alpha(it) != 0 } == true
+
+        if (hasStroke) {
+            view.strokeColor = ColorStateList.valueOf(tokens.primary)
+            view.backgroundTintList = ColorStateList.valueOf(Color.TRANSPARENT)
+            view.setTextColor(tokens.primary)
+            view.iconTint = ColorStateList.valueOf(tokens.primary)
+        } else if (hasVisibleBackground) {
+            view.backgroundTintList = ColorStateList.valueOf(tokens.primary)
+            view.setTextColor(tokens.onPrimary)
+            view.iconTint = ColorStateList.valueOf(tokens.onPrimary)
+        } else {
+            view.setTextColor(tokens.primary)
+            view.iconTint = ColorStateList.valueOf(tokens.primary)
+        }
+    }
+
     private fun styleMessageBubble(view: View, tokens: HomaThemeTokens) {
         if (view.id != R.id.thread_message_body || view !is TextView) return
         val wrapper = view.parent as? RelativeLayout ?: return
@@ -213,12 +236,18 @@ object ThemeApplier {
     private fun dp(activity: Activity, value: Int): Float = value * activity.resources.displayMetrics.density
 
     private fun isLight(color: Int): Boolean {
-        val luminance = (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255.0
+        val red = (color shr 16) and 0xFF
+        val green = (color shr 8) and 0xFF
+        val blue = color and 0xFF
+        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
         return luminance > 0.58
     }
 
     private fun Int.contrastColor(): Int {
-        val luminance = (0.299 * Color.red(this) + 0.587 * Color.green(this) + 0.114 * Color.blue(this)) / 255.0
+        val red = (this shr 16) and 0xFF
+        val green = (this shr 8) and 0xFF
+        val blue = this and 0xFF
+        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
         return if (luminance > 0.55) Color.BLACK else Color.WHITE
     }
 }
