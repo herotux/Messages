@@ -86,6 +86,23 @@ class ThemeResolverTest {
     }
 
     @Test
+    fun resolve_handlesOpaqueAndTransparentArgbWithoutAndroidColorApis() {
+        val transparentTheme = theme.copy(
+            colors = colors.copy(
+                primary = 0x00112233,
+                background = 0x00FFFFFF,
+                surface = 0x00000000
+            )
+        )
+
+        val tokens = ThemeResolver.resolve(transparentTheme)
+
+        assertEquals(0xFF000000.toInt(), tokens.onPrimary)
+        assertEquals(0xFF000000.toInt(), tokens.onBackground)
+        assertEquals(0xFFFFFFFF.toInt(), tokens.onSurface)
+    }
+
+    @Test
     fun resolve_keepsErrorRoleStable() {
         assertEquals(0xFFB3261E.toInt(), ThemeResolver.resolve(theme).error)
     }
