@@ -7,27 +7,15 @@ import android.net.Uri
 /**
  * Backwards-compatible facade for legacy callers.
  *
- * ThemeManager owns theme state and ThemeApplier owns runtime UI application.
- * Keeping this facade avoids breaking older call sites while preventing a
- * second, competing theme engine from surviving in the app.
+ * ThemeManager owns persisted theme state and ThemeApplier owns runtime UI
+ * application. This class intentionally contains no independent theme state.
  */
 object AppThemeManager {
-    private const val PREFS = "messages_theme"
-    private const val KEY_BACKGROUND_IMAGE_URI = "background_image_uri"
+    fun getBackgroundImageUri(context: Context): Uri? = ThemeManager.getBackgroundImageUri(context)
 
-    private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    fun setBackgroundImageUri(context: Context, uri: Uri?) = ThemeManager.setBackgroundImageUri(context, uri)
 
-    fun getBackgroundImageUri(context: Context): Uri? =
-        prefs(context).getString(KEY_BACKGROUND_IMAGE_URI, null).orEmpty()
-            .takeIf { it.isNotEmpty() }
-            ?.let(Uri::parse)
+    fun clearBackgroundImage(context: Context) = ThemeManager.clearBackgroundImage(context)
 
-    fun setBackgroundImageUri(context: Context, uri: Uri?) {
-        prefs(context).edit().putString(KEY_BACKGROUND_IMAGE_URI, uri?.toString().orEmpty()).apply()
-    }
-
-    fun clearBackgroundImage(context: Context) = setBackgroundImageUri(context, null)
-
-    /** Delegates all runtime visual application to the central ThemeApplier. */
     fun apply(activity: Activity) = ThemeApplier.apply(activity)
 }
