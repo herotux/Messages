@@ -1,6 +1,7 @@
 package org.fossify.messages.helpers
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class ThemeResolverTest {
@@ -51,5 +52,22 @@ class ThemeResolverTest {
 
         assertEquals(first, second)
         assertEquals(0x24112233, first)
+    }
+
+    @Test
+    fun resolve_mapsMaterial3OnColorsFromReadableThemeText() {
+        val tokens = ThemeResolver.resolve(theme)
+
+        assertEquals(colors.textPrimary, tokens.onPrimary)
+        assertEquals(colors.textPrimary, tokens.onSecondary)
+        assertEquals(colors.textPrimary, tokens.onBackground)
+        assertEquals(colors.textPrimary, tokens.onSurface)
+        assertEquals(colors.textSecondary, tokens.onSurfaceVariant)
+        assertNotEquals(tokens.primary, tokens.onPrimary)
+    }
+
+    @Test
+    fun resolve_keepsErrorRoleStable() {
+        assertEquals(0xFFB3261E.toInt(), ThemeResolver.resolve(theme).error)
     }
 }
