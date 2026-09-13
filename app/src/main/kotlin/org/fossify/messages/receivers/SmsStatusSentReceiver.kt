@@ -17,6 +17,7 @@ import org.fossify.messages.extensions.getThreadId
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.messagingUtils
 import org.fossify.messages.extensions.notificationHelper
+import org.fossify.messages.extensions.updateLastConversationMessage
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
 
@@ -53,6 +54,19 @@ class SmsStatusSentReceiver : SendStatusReceiver() {
                 }
 
                 context.messagesDB.updateType(messageId, type)
+
+                // The telephony provider owns the canonical conversation date/snippet.
+                // Force it to recalculate the thread after a successful send, then
+                // mirror that state into our Room conversation so the main list can
+                // immediately sort the conversation to the top.
+                if (shouldUpdateConversationAfterSuccessfulSend(receiverResultCode)) {
+                    val address = context.getMessageRecipientAddress(messageId)
+                    val threadId = context.getThreadId(address)
+                    if (threadId != 0L) {
+                        context.updateLastConversationMessage(threadId)
+                    }
+                }
+
                 refreshMessages()
                 refreshConversations()
             }
@@ -72,5 +86,10 @@ class SmsStatusSentReceiver : SendStatusReceiver() {
                 context.notificationHelper.showSendingFailedNotification(recipientName, threadId)
             }
         }
+    }
+
+    companion object {
+        internal fun shouldUpdateConversationAfterSuccessfulSend(resultCode: Int): Boolean =
+            resultCode == Activity.RESULT_OK
     }
 }
