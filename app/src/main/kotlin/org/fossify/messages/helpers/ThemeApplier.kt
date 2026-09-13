@@ -32,8 +32,8 @@ object ThemeApplier {
         ThemeManager.applyBackground(activity)
         applySystemBars(activity, tokens)
         (activity as? AppCompatActivity)?.supportActionBar?.let { actionBar ->
-            actionBar.setBackgroundDrawable(ColorDrawable(tokens.primary))
-            actionBar.setStackedBackgroundDrawable(ColorDrawable(tokens.primary))
+            actionBar.setBackgroundDrawable(ColorDrawable(tokens.toolbar))
+            actionBar.setStackedBackgroundDrawable(ColorDrawable(tokens.toolbar))
         }
         val tabs = activity.findViewById<View>(R.id.folder_tabs)
         if (tabs is ViewGroup) styleFolderTabs(activity, tabs, tokens)
@@ -43,10 +43,10 @@ object ThemeApplier {
     }
 
     private fun applySystemBars(activity: Activity, tokens: HomaThemeTokens) {
-        activity.window.statusBarColor = tokens.primary
+        activity.window.statusBarColor = tokens.toolbar
         activity.window.navigationBarColor = tokens.background
         var flags = activity.window.decorView.systemUiVisibility
-        flags = if (isLight(tokens.primary)) flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        flags = if (isLight(tokens.toolbar)) flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         else flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             flags = if (isLight(tokens.background)) flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
@@ -58,16 +58,16 @@ object ThemeApplier {
     private fun applyPaletteToViewTree(activity: Activity, view: View, tokens: HomaThemeTokens) {
         when (view) {
             is Toolbar -> {
-                view.setBackgroundColor(tokens.primary)
+                view.setBackgroundColor(tokens.toolbar)
                 view.setTitleTextColor(tokens.onPrimary)
                 view.setSubtitleTextColor(tokens.messageSecondaryText)
                 view.navigationIcon?.setTint(tokens.onPrimary)
                 for (index in 0 until view.menu.size()) view.menu.getItem(index).icon?.setTint(tokens.onPrimary)
             }
-            is AppBarLayout -> view.setBackgroundColor(tokens.primary)
+            is AppBarLayout -> view.setBackgroundColor(tokens.toolbar)
             is FloatingActionButton -> {
-                view.backgroundTintList = ColorStateList.valueOf(tokens.secondary)
-                view.imageTintList = ColorStateList.valueOf(tokens.onSecondary)
+                view.backgroundTintList = ColorStateList.valueOf(tokens.fab)
+                view.imageTintList = ColorStateList.valueOf(tokens.onPrimary)
             }
             is MaterialCardView -> {
                 view.setCardBackgroundColor(tokens.surface)
@@ -110,8 +110,8 @@ object ThemeApplier {
                 view.setHintTextColor(tokens.messageSecondaryText)
             }
             R.id.thread_send_message -> {
-                view.backgroundTintList = ColorStateList.valueOf(tokens.secondary)
-                if (view is TextView) view.setTextColor(tokens.onSecondary)
+                view.backgroundTintList = ColorStateList.valueOf(tokens.fab)
+                if (view is TextView) view.setTextColor(tokens.onPrimary)
             }
             R.id.thread_add_attachment,
             R.id.thread_select_sim_icon,
@@ -146,10 +146,10 @@ object ThemeApplier {
 
     private fun clearToolbarBackgrounds(view: View, tokens: HomaThemeTokens) {
         if (view is AppBarLayout) {
-            view.setBackgroundColor(tokens.primary)
+            view.setBackgroundColor(tokens.toolbar)
             view.elevation = 0f
         } else if (view.javaClass.name.contains("ActionBarContainer")) {
-            view.background = ColorDrawable(tokens.primary)
+            view.background = ColorDrawable(tokens.toolbar)
             view.elevation = 0f
         }
         if (view is ViewGroup) {
