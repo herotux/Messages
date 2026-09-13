@@ -13,6 +13,7 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -34,7 +35,7 @@ object ThemeApplier {
         val theme = ThemeManager.themeForActivity(activity)
         ThemeManager.applyBackground(activity)
         applySystemBars(activity, theme.colors)
-        activity.supportActionBar()?.let { actionBar ->
+        (activity as? AppCompatActivity)?.supportActionBar?.let { actionBar ->
             actionBar.setBackgroundDrawable(ColorDrawable(theme.colors.toolbar))
             actionBar.setStackedBackgroundDrawable(ColorDrawable(theme.colors.toolbar))
         }
@@ -185,7 +186,4 @@ object ThemeApplier {
         val luminance = (0.299 * Color.red(this) + 0.587 * Color.green(this) + 0.114 * Color.blue(this)) / 255.0
         return if (luminance > 0.55) Color.BLACK else Color.WHITE
     }
-
-    private fun android.app.ActionBar.setBackgroundDrawable(drawable: ColorDrawable) = Unit
-    private fun android.app.ActionBar.setStackedBackgroundDrawable(drawable: ColorDrawable) = Unit
 }
