@@ -8,7 +8,10 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CompoundButton
 import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
@@ -119,6 +122,23 @@ open class SimpleActivity : BaseSimpleActivity() {
                 view.setTextColor(colors.textPrimary)
                 view.setHintTextColor(colors.textSecondary)
                 view.highlightColor = colors.accent
+            }
+            is CompoundButton -> {
+                view.buttonTintList = ColorStateList(
+                    arrayOf(
+                        intArrayOf(android.R.attr.state_checked),
+                        intArrayOf(-android.R.attr.state_enabled),
+                        intArrayOf()
+                    ),
+                    intArrayOf(colors.primary, colors.divider, colors.textSecondary)
+                )
+            }
+            is ProgressBar -> {
+                view.progressTintList = ColorStateList.valueOf(colors.primary)
+                view.indeterminateTintList = ColorStateList.valueOf(colors.accent)
+            }
+            is ImageButton -> {
+                view.imageTintList = ColorStateList.valueOf(colors.textPrimary)
             }
         }
 
