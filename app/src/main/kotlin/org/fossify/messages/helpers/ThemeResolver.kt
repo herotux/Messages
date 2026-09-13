@@ -1,6 +1,13 @@
 package org.fossify.messages.helpers
 
-/** Converts a persisted ThemeDefinition into stable Homa semantic UI tokens. */
+/**
+ * Converts a persisted ThemeDefinition into stable Homa semantic roles.
+ *
+ * The project is View/Material based rather than Compose based, so these roles
+ * are the app's runtime equivalent of a Material 3 ColorScheme. Widgets consume
+ * semantic roles through ThemeApplier instead of reaching into legacy palette
+ * values directly.
+ */
 object ThemeResolver {
     fun resolve(theme: ThemeManager.ThemeDefinition): HomaThemeTokens {
         val colors = theme.colors
