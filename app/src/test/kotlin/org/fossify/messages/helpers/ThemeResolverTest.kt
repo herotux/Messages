@@ -55,15 +55,34 @@ class ThemeResolverTest {
     }
 
     @Test
-    fun resolve_mapsMaterial3OnColorsFromReadableThemeText() {
+    fun resolve_mapsMaterial3OnColorsFromBackgroundContrast() {
         val tokens = ThemeResolver.resolve(theme)
 
-        assertEquals(colors.textPrimary, tokens.onPrimary)
-        assertEquals(colors.textPrimary, tokens.onSecondary)
-        assertEquals(colors.textPrimary, tokens.onBackground)
-        assertEquals(colors.textPrimary, tokens.onSurface)
+        assertEquals(0xFFFFFFFF.toInt(), tokens.onPrimary)
+        assertEquals(0xFFFFFFFF.toInt(), tokens.onSecondary)
+        assertEquals(0xFFFFFFFF.toInt(), tokens.onBackground)
+        assertEquals(0xFFFFFFFF.toInt(), tokens.onSurface)
         assertEquals(colors.textSecondary, tokens.onSurfaceVariant)
         assertNotEquals(tokens.primary, tokens.onPrimary)
+    }
+
+    @Test
+    fun resolve_usesDarkForegroundOnLightSemanticSurfaces() {
+        val lightTheme = theme.copy(
+            colors = colors.copy(
+                primary = 0xFFE8F5E9.toInt(),
+                accent = 0xFFFFF59D.toInt(),
+                background = 0xFFFFFFFF.toInt(),
+                surface = 0xFFF7F7F7.toInt()
+            )
+        )
+
+        val tokens = ThemeResolver.resolve(lightTheme)
+
+        assertEquals(0xFF000000.toInt(), tokens.onPrimary)
+        assertEquals(0xFF000000.toInt(), tokens.onSecondary)
+        assertEquals(0xFF000000.toInt(), tokens.onBackground)
+        assertEquals(0xFF000000.toInt(), tokens.onSurface)
     }
 
     @Test
