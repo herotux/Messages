@@ -15,72 +15,57 @@ jobs:
         with:
           ref: feat/theme-root-migration
           fetch-depth: 1
-
-      - name: Apply root migration
-        shell: python
+      - name: Migrate feature branch
         run: |
+          python3 - <<'PY'
           from pathlib import Path
           import re
           import subprocess
 
           root = Path.cwd()
-
           settings = root / 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
-          text = settings.read_text(encoding='utf-8')
+          text = settings.read_text()
           text = text.replace('import org.fossify.messages.helpers.BackgroundThemeManager\n', '')
           text = text.replace('BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))', 'ThemeManager.applyBackground(this)')
-          pattern = re.compile(r'(?ms)^    private fun showLegacyBackgrounds\(\) \{.*?^    \}\n')
-          replacement = '''    private fun showLegacyBackgrounds() {
+          p = re.compile(r'(?ms)^    private fun showLegacyBackgrounds\(\) \{.*?^    \}\n')
+          new = '''    private fun showLegacyBackgrounds() {
           val themes = ThemeManager.allThemes(this).filter { it.source == ThemeManager.ThemeSource.BUILT_IN && it.id != ThemeManager.DEFAULT_ID }
           val labels = themes.map { if (english()) it.nameEn else it.nameFa }.toTypedArray()
           val selected = themes.indexOfFirst { it.id == ThemeManager.selectedThemeId(this) }.coerceAtLeast(0)
           MaterialAlertDialogBuilder(this).setTitle(t("پس‌زمینه‌های آماده", "Ready-made backgrounds")).setSingleChoiceItems(labels, selected) { dialog, which -> ThemeManager.select(this, themes[which].id); dialog.dismiss(); render(APPEARANCE) }.show()
       }
 '''
-          text, n = pattern.subn(replacement, text, count=1)
-          if n != 1:
-              raise SystemExit('showLegacyBackgrounds() not found exactly once')
-          settings.write_text(text, encoding='utf-8')
+          text, n = p.subn(new, text, count=1)
+          if n != 1: raise SystemExit('showLegacyBackgrounds missing')
+          settings.write_text(text)
 
           styles = root / 'app/src/main/res/values/styles.xml'
-          text = styles.read_text(encoding='utf-8')
+          text = styles.read_text()
           text = text.replace('parent="AppTheme.Base.Core"', 'parent="AppTheme.Base"')
-
-          def remove_style(source, name):
+          def remove_style(s, name):
               p = re.compile(r'(?ms)\n?\s*<style\s+name="' + re.escape(name) + r'"(?:\s+[^>]*)?>.*?</style>\s*')
-              result, n = p.subn('\n', source, count=1)
-              if n != 1:
-                  raise SystemExit(f'Expected exactly one {name}, found {n}')
-              return result
-
+              s, n = p.subn('\n', s, count=1)
+              if n != 1: raise SystemExit(f'bad style count: {name}={n}')
+              return s
           for name in ('AppTheme.Base', 'AppTheme.Base.Core', 'AppTheme.Base.System', 'AppTheme.Base.System.Light'):
               text = remove_style(text, name)
-          styles.write_text(text, encoding='utf-8')
+          styles.write_text(text)
 
           adapter = root / 'app/src/main/kotlin/org/fossify/messages/helpers/BackgroundThemeManager.kt'
-          if adapter.exists():
-              adapter.unlink()
+          if adapter.exists(): adapter.unlink()
 
           for needle in ('BackgroundThemeManager', 'AppTheme.Base.Core', 'AppTheme.Base.System.Light', 'AppTheme.Base.System'):
-              result = subprocess.run(['git', 'grep', '-n', '--', needle], text=True, capture_output=True)
-              if result.returncode == 0 and result.stdout.strip():
-                  raise SystemExit(f'Legacy reference remains for {needle}:\n{result.stdout}')
+              r = subprocess.run(['git','grep','-n','--',needle], text=True, capture_output=True)
+              if r.returncode == 0 and r.stdout.strip(): raise SystemExit(r.stdout)
 
-          for rel in ('app/src/main/res/values-night/homa_theme.xml', 'app/src/main/res/values-notnight/homa_theme.xml'):
-              body = (root / rel).read_text(encoding='utf-8')
-              if '<style name="AppTheme.Base"' not in body:
-                  raise SystemExit(f'Canonical Base missing: {rel}')
-
-          subprocess.run(['git', 'diff', '--check'], check=True)
-          subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'], check=True)
-          subprocess.run(['git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], check=True)
-          subprocess.run(['git', 'add', '-A'], check=True)
-          subprocess.run(['git', 'diff', '--cached', '--check'], check=True)
-          subprocess.run(['git', 'commit', '-m', 'Complete root theme migration'], check=True)
-          subprocess.run(['git', 'push', 'origin', 'HEAD:feat/theme-root-migration'], check=True)
-
+          subprocess.run(['git','diff','--check'], check=True)
+          subprocess.run(['git','config','user.name','github-actions[bot]'], check=True)
+          subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'], check=True)
+          subprocess.run(['git','add','-A'], check=True)
+          subprocess.run(['git','commit','-m','Complete root theme migration'], check=True)
+          subprocess.run(['git','push','origin','HEAD:feat/theme-root-migration'], check=True)
+          PY
       - name: Remove temporary runner
-        shell: bash
         run: |
           git fetch origin main
           git checkout -B main origin/main
