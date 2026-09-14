@@ -159,7 +159,7 @@ jobs:
           [ -n "$VERSION_NAME" ] || VERSION_NAME="${GITHUB_SHA::7}"
           CAPTION=$(printf 'Homa Messages — FOSS Release v%s\nCommit: %s\nBuild: %s' "$VERSION_NAME" "${GITHUB_SHA::7}" "$GITHUB_RUN_NUMBER")
           RESPONSE_FILE="$RUNNER_TEMP/bale-response.json"
-          HTTP_CODE=$(curl --silent --show-error --output "$RESPONSE_FILE" --write-out '%{http_code}' --connect-timeout 30 --max-time 1800 -X POST "https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendDocument" --form "chat_id=${BALE_CHAT_ID}" --form "document=@${APK_PATH};type=application/vnd.android.package-archive" --form "caption=${CAPTION}")
+          HTTP_CODE=$(curl --silent --show-error --output "$RESPONSE_FILE" --write-out '%{http_code}' --connect-timeout 30 --max-time 1800 -X POST "https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendDocument" --form-string "chat_id=${BALE_CHAT_ID}" --form "document=@${APK_PATH};type=application/vnd.android.package-archive" --form-string "caption=${CAPTION}")
           echo "Bale HTTP status: $HTTP_CODE"
           cat "$RESPONSE_FILE"
           echo
