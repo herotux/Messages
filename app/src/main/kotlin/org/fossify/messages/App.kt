@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import org.fossify.commons.FossifyApp
 import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -20,7 +19,6 @@ import org.fossify.messages.activities.MainActivity
 import org.fossify.messages.activities.ThreadActivity
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.helpers.AppLanguageManager
-import org.fossify.messages.helpers.AppThemeManager
 import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.BankCardsCrashLogger
 import org.fossify.messages.helpers.ConversationFolderManager
@@ -53,12 +51,6 @@ class App : FossifyApp() {
 
         override fun onActivityResumed(activity: Activity) {
             AppLanguageManager.apply(activity)
-            AppThemeManager.apply(activity)
-
-            // Keep the system bars in the same visual family as the selected app theme.
-            val backgroundColor = activity.getProperBackgroundColor()
-            activity.window.statusBarColor = backgroundColor
-            activity.window.navigationBarColor = backgroundColor
 
             if (activity is MainActivity) {
                 activity.findViewById<android.view.View>(R.id.folder_tabs)?.visibility =
