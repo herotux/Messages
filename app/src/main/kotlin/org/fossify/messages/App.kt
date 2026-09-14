@@ -10,8 +10,9 @@ import android.os.Looper
 import android.provider.ContactsContract
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatDelegate
 import org.fossify.commons.FossifyApp
-import org.fossify.commons.extensions.hasPermission
+import org.fossify.commons.helpers.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.activities.MainActivity
@@ -32,6 +33,7 @@ class App : FossifyApp() {
         super.onCreate()
         // Initialize the app language before the first Activity is created.
         AppLanguageManager.initialize(this)
+        applyUiNightModePreference()
         BankCardsCrashLogger.install(this)
         TapsellAds.initialize()
         registerActivityLifecycleCallbacks(folderUiLifecycleCallbacks)
@@ -41,6 +43,18 @@ class App : FossifyApp() {
             }
         }
         ensureBackgroundThread { rescheduleAllScheduledMessages() }
+    }
+
+    private fun applyUiNightModePreference() {
+        val prefs = getSharedPreferences("messages_settings_ui", MODE_PRIVATE)
+        if (!prefs.contains("dark_mode")) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            return
+        }
+        AppCompatDelegate.setDefaultNightMode(
+            if (prefs.getBoolean("dark_mode", false)) AppCompatDelegate.MODE_NIGHT_YES
+            else AppCompatDelegate.MODE_NIGHT_NO
+        )
     }
 
     private val folderUiLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
