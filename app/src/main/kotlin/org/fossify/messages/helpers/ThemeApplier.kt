@@ -75,7 +75,7 @@ object ThemeApplier {
             flags = if (isLight(tokens.background)) flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
             else flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
         }
-        activity.window.systemUiVisibility = flags
+        activity.window.decorView.systemUiVisibility = flags
     }
 
     private fun applyPaletteToViewTree(activity: Activity?, view: View, tokens: HomaThemeTokens) {
@@ -140,8 +140,6 @@ object ThemeApplier {
 
         styleMessageBubble(view, tokens)
 
-        // Generic legacy TextView normalization must never overwrite a control
-        // whose semantic Material role was already applied above or by ID.
         val hasSemanticTextColor = view is MaterialButton ||
             view.id == R.id.thread_type_message ||
             view.id == R.id.thread_send_message ||
