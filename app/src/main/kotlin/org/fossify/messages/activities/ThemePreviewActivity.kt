@@ -1,6 +1,5 @@
 package org.fossify.messages.activities
 
-import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -9,9 +8,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import com.google.android.material.card.MaterialCardView
+import org.fossify.messages.helpers.HomaThemeTokens
 import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.ThemeBackground
 import org.fossify.messages.helpers.ThemeManager
+import org.fossify.messages.helpers.ThemeResolver
 
 /** Full-screen conversation preview for a theme. */
 class ThemePreviewActivity : SimpleActivity() {
@@ -24,16 +25,17 @@ class ThemePreviewActivity : SimpleActivity() {
 
     private fun render(theme: ThemeManager.ThemeDefinition) {
         val english = config.useEnglish
+        val tokens = ThemeResolver.resolve(theme)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = if (english) View.LAYOUT_DIRECTION_LTR else View.LAYOUT_DIRECTION_RTL
         }
         val toolbar = Toolbar(this).apply {
             title = if (english) theme.nameEn else theme.nameFa
-            setTitleTextColor(theme.colors.textPrimary)
-            setBackgroundColor(theme.colors.toolbar)
+            setTitleTextColor(tokens.onPrimary)
+            setBackgroundColor(tokens.toolbar)
             navigationIcon = getDrawable(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-            navigationIcon?.setTint(theme.colors.textPrimary)
+            navigationIcon?.setTint(tokens.onPrimary)
             setNavigationOnClickListener { finish() }
         }
         root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(56)))
@@ -45,7 +47,7 @@ class ThemePreviewActivity : SimpleActivity() {
         ThemeBackground.apply(
             conversation,
             theme.backgroundType,
-            theme.colors.background,
+            tokens.background,
             theme.gradientColors,
             theme.gradientAngle,
             theme.wallpaperUri
@@ -54,33 +56,33 @@ class ThemePreviewActivity : SimpleActivity() {
 
         conversation.addView(messageBubble(
             text = if (english) "Hi 👋 This is an incoming message." else "سلام 👋 این یک پیام دریافتی است",
-            background = theme.colors.incomingBubble,
-            textColor = theme.colors.textPrimary,
+            background = tokens.incomingMessage,
+            textColor = tokens.messageText,
             alignEnd = false
         ), LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, dp(56), dp(8)) })
         conversation.addView(TextView(this).apply {
             text = if (english) "Today · 10:24" else "امروز · ۱۰:۲۴"
             textSize = 11f
-            setTextColor(theme.colors.textSecondary)
+            setTextColor(tokens.messageSecondaryText)
             gravity = if (english) Gravity.START else Gravity.END
         }, LinearLayout.LayoutParams(-1, dp(24)))
         conversation.addView(messageBubble(
             text = if (english) "Hello! The new theme is ready 😊" else "سلام! تم جدید آماده است 😊",
-            background = theme.colors.outgoingBubble,
-            textColor = readableText(theme.colors.outgoingBubble),
+            background = tokens.outgoingMessage,
+            textColor = contrastColor(tokens.outgoingMessage),
             alignEnd = true
         ), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(56), 0, 0, dp(6)) })
         conversation.addView(TextView(this).apply {
             text = if (english) "10:25  ✓✓" else "۱۰:۲۵  ✓✓"
             textSize = 11f
-            setTextColor(theme.colors.textSecondary)
+            setTextColor(tokens.messageSecondaryText)
             gravity = if (english) Gravity.END else Gravity.START
         }, LinearLayout.LayoutParams(-1, dp(24)))
 
         val composer = MaterialCardView(this).apply {
             radius = dp(22).toFloat()
             cardElevation = 0f
-            setCardBackgroundColor(theme.colors.surface)
+            setCardBackgroundColor(tokens.surface)
         }
         val composerRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -89,8 +91,8 @@ class ThemePreviewActivity : SimpleActivity() {
         }
         composerRow.addView(EditText(this).apply {
             hint = if (english) "Type a message…" else "نوشتن پیام…"
-            setTextColor(theme.colors.textPrimary)
-            setHintTextColor(theme.colors.textSecondary)
+            setTextColor(tokens.onSurface)
+            setHintTextColor(tokens.onSurfaceVariant)
             background = null
             setSingleLine(true)
             setPadding(dp(8), 0, dp(8), 0)
@@ -99,8 +101,8 @@ class ThemePreviewActivity : SimpleActivity() {
             text = "➤"
             textSize = 22f
             gravity = Gravity.CENTER
-            setTextColor(readableText(theme.colors.fab))
-            setBackgroundColor(theme.colors.fab)
+            setTextColor(contrastColor(tokens.fab))
+            setBackgroundColor(tokens.fab)
             setPadding(dp(10), 0, dp(10), 0)
         }, LinearLayout.LayoutParams(dp(48), dp(42)))
         composer.addView(composerRow)
@@ -120,9 +122,12 @@ class ThemePreviewActivity : SimpleActivity() {
         }
     }
 
-    private fun readableText(background: Int): Int {
-        val luminance = (0.299 * Color.red(background) + 0.587 * Color.green(background) + 0.114 * Color.blue(background)) / 255.0
-        return if (luminance > 0.55) Color.BLACK else Color.WHITE
+    private fun contrastColor(background: Int): Int {
+        val red = (background shr 16) and 0xFF
+        val green = (background shr 8) and 0xFF
+        val blue = background and 0xFF
+        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
+        return if (luminance > 0.55) android.graphics.Color.BLACK else android.graphics.Color.WHITE
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
