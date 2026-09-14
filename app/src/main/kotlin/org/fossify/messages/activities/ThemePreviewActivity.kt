@@ -8,7 +8,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import com.google.android.material.card.MaterialCardView
-import org.fossify.messages.helpers.HomaThemeTokens
 import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.ThemeBackground
 import org.fossify.messages.helpers.ThemeManager
