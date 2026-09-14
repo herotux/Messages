@@ -1,8 +1,9 @@
 name: Finalize Homa theme root migration
 
 on:
-  push:
-    branches: [feat/theme-root-migration]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -15,6 +16,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          ref: ${{ github.head_ref }}
 
       - name: Migrate theme ownership and remove legacy theme definitions
         shell: python
@@ -24,14 +26,10 @@ jobs:
           import subprocess
 
           root = Path.cwd()
-
           settings = root / 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
           text = settings.read_text(encoding='utf-8')
           text = text.replace('import org.fossify.messages.helpers.BackgroundThemeManager\n', '')
-          text = text.replace(
-              'BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))',
-              'ThemeManager.applyBackground(this)'
-          )
+          text = text.replace('BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))', 'ThemeManager.applyBackground(this)')
           old = '''    private fun showLegacyBackgrounds() {
           val themes = BackgroundThemeManager.themes.filter { it.id != BackgroundThemeManager.NONE }
           val labels = themes.map { if (english()) it.titleEn else it.titleFa }.toTypedArray()
@@ -48,55 +46,34 @@ jobs:
 '''
           if old not in text:
               raise SystemExit('SettingsActivity legacy background block not found')
-          text = text.replace(old, new)
-          settings.write_text(text, encoding='utf-8')
+          settings.write_text(text.replace(old, new), encoding='utf-8')
 
           styles = root / 'app/src/main/res/values/styles.xml'
           text = styles.read_text(encoding='utf-8')
-
-          # The canonical AppTheme.Base now lives exclusively in values-night/ and
-          # values-notnight/. Remove the default and the obsolete theme variants.
-          names = [
-              'AppTheme.Base',
-              'AppTheme.Base.Core',
-              'AppTheme.Base.System',
-              'AppTheme.Base.System.Light',
-          ]
-          for name in names:
-              pattern = re.compile(r'\\n?\\s*<style\\s+name="' + re.escape(name) + r'"(?:\\s+[^>]*)?>.*?</style>\\s*', re.S)
-              text, n = pattern.subn('\\n', text, count=1)
+          for name in ['AppTheme.Base', 'AppTheme.Base.Core', 'AppTheme.Base.System', 'AppTheme.Base.System.Light']:
+              pattern = re.compile(r'\n?\s*<style\s+name="' + re.escape(name) + r'"(?:\s+[^>]*)?>.*?</style>\s*', re.S)
+              text, n = pattern.subn('\n', text, count=1)
               if n != 1:
                   raise SystemExit(f'Expected exactly one legacy style definition for {name}, found {n}')
 
-          # Remove clearly legacy app-wide variants only when nothing outside
-          # styles.xml references them. This keeps unrelated component styles intact.
-          candidates = [
-              'AppTheme.White', 'AppTheme.White.LightTextColor', 'AppTheme.White.TextStyle',
-              'AppTheme.White.NoActionBar', 'AppTheme.BlackAndWhite',
-              'AppTheme.BlackAndWhite.DarkTextColor', 'AppTheme.BlackAndWhite.TextStyle',
-              'BottomSheetDialogTheme', 'BottomSheetModalStyle',
-          ]
+          candidates = ['AppTheme.White', 'AppTheme.White.LightTextColor', 'AppTheme.White.TextStyle', 'AppTheme.White.NoActionBar', 'AppTheme.BlackAndWhite', 'AppTheme.BlackAndWhite.DarkTextColor', 'AppTheme.BlackAndWhite.TextStyle', 'BottomSheetDialogTheme', 'BottomSheetModalStyle']
           all_files = [p for p in root.rglob('*') if p.is_file() and '.git' not in p.parts and p != styles]
-          corpus = '\\n'.join(p.read_text(encoding='utf-8', errors='ignore') for p in all_files)
+          corpus = '\n'.join(p.read_text(encoding='utf-8', errors='ignore') for p in all_files)
           for name in candidates:
               if re.search(r'(?<![A-Za-z0-9_.])' + re.escape(name) + r'(?![A-Za-z0-9_.])', corpus):
                   continue
-              pattern = re.compile(r'\\n?\\s*<style\\s+name="' + re.escape(name) + r'"(?:\\s+[^>]*)?>.*?</style>\\s*', re.S)
-              text, n = pattern.subn('\\n', text, count=1)
+              pattern = re.compile(r'\n?\s*<style\s+name="' + re.escape(name) + r'"(?:\s+[^>]*)?>.*?</style>\s*', re.S)
+              text, n = pattern.subn('\n', text, count=1)
               if n:
                   print('removed unused legacy style:', name)
-
           styles.write_text(text, encoding='utf-8')
 
           adapter = root / 'app/src/main/kotlin/org/fossify/messages/helpers/BackgroundThemeManager.kt'
-          if adapter.exists():
-              adapter.unlink()
+          if adapter.exists(): adapter.unlink()
 
-          # Hard guard: no source code may continue to reference the deleted adapter
-          # or the removed legacy AppTheme variants.
-          tracked = subprocess.check_output(['git', 'grep', '-nE', 'BackgroundThemeManager|AppTheme\\.Base\\.(Core|System|System\\.Light)'], text=True, stderr=subprocess.DEVNULL).strip()
-          if tracked:
-              raise SystemExit('Legacy theme references remain:\\n' + tracked)
+          result = subprocess.run(['git', 'grep', '-nE', 'BackgroundThemeManager|AppTheme\\.Base\\.(Core|System|System\\.Light)'], text=True, capture_output=True)
+          if result.returncode == 0 and result.stdout.strip():
+              raise SystemExit('Legacy theme references remain:\n' + result.stdout)
 
       - name: Commit migration
         shell: bash
@@ -106,6 +83,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git diff --cached --check
-          git diff --cached --quiet && exit 0
+          if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Complete root theme migration'
-          git push
+          git push origin HEAD:${{ github.head_ref }}
