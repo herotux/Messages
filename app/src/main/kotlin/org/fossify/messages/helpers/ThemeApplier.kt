@@ -75,7 +75,7 @@ object ThemeApplier {
             flags = if (isLight(tokens.background)) flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
             else flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
         }
-        activity.window.decorView.systemUiVisibility = flags
+        activity.window.systemUiVisibility = flags
     }
 
     private fun applyPaletteToViewTree(activity: Activity?, view: View, tokens: HomaThemeTokens) {
@@ -166,12 +166,7 @@ object ThemeApplier {
         }
     }
 
-    /**
-     * Theme a MaterialButton without flattening its Material 3 variant.
-     * Filled buttons receive the resolved primary role; outlined/text buttons
-     * keep their transparent/background semantics and only receive semantic
-     * foreground/stroke colors.
-     */
+    /** Theme a MaterialButton without flattening its Material 3 variant. */
     private fun applyMaterialButton(view: MaterialButton, tokens: HomaThemeTokens) {
         val hasStroke = view.strokeWidth > 0
         val existingTint = view.backgroundTintList
@@ -200,7 +195,7 @@ object ThemeApplier {
         val isIncoming = params.startToStart == ConstraintSet.PARENT_ID && params.endToEnd != ConstraintSet.PARENT_ID
         if (!isOutgoing && !isIncoming) return
         val bubbleColor = if (isOutgoing) tokens.outgoingMessage else tokens.incomingMessage
-        val textColor = if (isOutgoing) bubbleColor.contrastColor() else tokens.messageText
+        val textColor = if (isOutgoing) ThemeResolver.contrastColor(bubbleColor) else tokens.messageText
         view.backgroundTintList = ColorStateList.valueOf(bubbleColor)
         view.setTextColor(textColor)
         view.setLinkTextColor(tokens.link)
@@ -241,13 +236,5 @@ object ThemeApplier {
         val blue = color and 0xFF
         val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
         return luminance > 0.58
-    }
-
-    private fun Int.contrastColor(): Int {
-        val red = (this shr 16) and 0xFF
-        val green = (this shr 8) and 0xFF
-        val blue = this and 0xFF
-        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
-        return if (luminance > 0.55) Color.BLACK else Color.WHITE
     }
 }
