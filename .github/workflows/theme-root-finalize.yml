@@ -25,15 +25,10 @@ jobs:
           import subprocess
 
           root = Path.cwd()
-
-          # Move the last SettingsActivity background path onto ThemeManager.
           settings = root / 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
           text = settings.read_text(encoding='utf-8')
           text = text.replace('import org.fossify.messages.helpers.BackgroundThemeManager\n', '')
-          text = text.replace(
-              'BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))',
-              'ThemeManager.applyBackground(this)'
-          )
+          text = text.replace('BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))', 'ThemeManager.applyBackground(this)')
           pattern = re.compile(r'(?ms)^    private fun showLegacyBackgrounds\(\) \{.*?^    \}\n')
           replacement = '''    private fun showLegacyBackgrounds() {
           val themes = ThemeManager.allThemes(this).filter { it.source == ThemeManager.ThemeSource.BUILT_IN && it.id != ThemeManager.DEFAULT_ID }
@@ -47,9 +42,6 @@ jobs:
               raise SystemExit('Could not locate showLegacyBackgrounds()')
           settings.write_text(text, encoding='utf-8')
 
-          # Preserve every color theme definition, but eliminate the obsolete
-          # Base.Core inheritance layer: all of those variants now inherit the
-          # canonical Base selected by values-night/values-notnight.
           styles = root / 'app/src/main/res/values/styles.xml'
           text = styles.read_text(encoding='utf-8')
           text = text.replace('parent="AppTheme.Base.Core"', 'parent="AppTheme.Base"')
@@ -63,31 +55,19 @@ jobs:
 
           for name in ('AppTheme.Base', 'AppTheme.Base.Core', 'AppTheme.Base.System', 'AppTheme.Base.System.Light'):
               text = remove_style(text, name)
-
           styles.write_text(text, encoding='utf-8')
 
-          # The compatibility adapter is no longer part of the architecture.
           adapter = root / 'app/src/main/kotlin/org/fossify/messages/helpers/BackgroundThemeManager.kt'
           if adapter.exists():
               adapter.unlink()
 
-          # Hard architectural guards. If anything still depends on the removed
-          # layers, fail instead of producing a partially migrated tree.
-          checks = [
-              'BackgroundThemeManager',
-              'AppTheme.Base.Core',
-              'AppTheme.Base.System.Light',
-              'AppTheme.Base.System',
-          ]
-          for needle in checks:
+          for needle in ('BackgroundThemeManager', 'AppTheme.Base.Core', 'AppTheme.Base.System.Light', 'AppTheme.Base.System'):
               result = subprocess.run(['git', 'grep', '-n', '--', needle], text=True, capture_output=True)
               if result.returncode == 0 and result.stdout.strip():
                   raise SystemExit(f'Legacy theme reference remains for {needle}:\n{result.stdout}')
 
-          # Ensure the canonical Base exists exactly in the two configuration layers.
           for rel in ('app/src/main/res/values-night/homa_theme.xml', 'app/src/main/res/values-notnight/homa_theme.xml'):
-              p = root / rel
-              body = p.read_text(encoding='utf-8')
+              body = (root / rel).read_text(encoding='utf-8')
               if '<style name="AppTheme.Base"' not in body:
                   raise SystemExit(f'Canonical AppTheme.Base missing from {rel}')
 
@@ -95,7 +75,6 @@ jobs:
         shell: bash
         run: |
           git diff --check
-          git status --short
           git add -A
           git diff --cached --check
           git config user.name 'github-actions[bot]'
@@ -104,3 +83,5 @@ jobs:
           git rm .github/workflows/theme-root-finalize.yml
           git commit -m 'chore(ci): remove temporary theme migration workflow'
           git push origin HEAD:${{ github.ref_name }}
+
+          # This workflow intentionally self-removes after the guarded migration.
