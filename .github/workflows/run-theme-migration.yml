@@ -16,16 +16,13 @@ jobs:
         with:
           ref: feat/theme-root-migration
           fetch-depth: 1
-
       - name: Migrate feature branch
         shell: python
         run: |
           from pathlib import Path
           import re
           import subprocess
-
           root = Path.cwd()
-
           settings = root / 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
           text = settings.read_text(encoding='utf-8')
           text = text.replace('import org.fossify.messages.helpers.BackgroundThemeManager\n', '')
@@ -39,52 +36,33 @@ jobs:
       }
 '''
           text, n = pattern.subn(replacement, text, count=1)
-          if n != 1:
-              raise SystemExit('showLegacyBackgrounds() was not found exactly once')
+          if n != 1: raise SystemExit('showLegacyBackgrounds() not found')
           settings.write_text(text, encoding='utf-8')
-
           styles = root / 'app/src/main/res/values/styles.xml'
           text = styles.read_text(encoding='utf-8')
-          # Every legacy *_core theme is retained as a selectable theme, but now
-          # inherits the canonical Homa Base rather than a deleted compatibility layer.
           text = text.replace('parent="AppTheme.Base.Core"', 'parent="AppTheme.Base"')
-
           def remove_style(source, name):
               p = re.compile(r'(?ms)\n?\s*<style\s+name="' + re.escape(name) + r'"(?:\s+[^>]*)?>.*?</style>\s*')
               result, n = p.subn('\n', source, count=1)
-              if n != 1:
-                  raise SystemExit(f'Expected exactly one {name}, found {n}')
+              if n != 1: raise SystemExit(f'Expected exactly one {name}, found {n}')
               return result
-
           for name in ('AppTheme.Base', 'AppTheme.Base.Core', 'AppTheme.Base.System', 'AppTheme.Base.System.Light'):
               text = remove_style(text, name)
           styles.write_text(text, encoding='utf-8')
-
           adapter = root / 'app/src/main/kotlin/org/fossify/messages/helpers/BackgroundThemeManager.kt'
-          if adapter.exists():
-              adapter.unlink()
-
-          # Do not guess about any remaining style consumers. The migration is
-          # allowed to finish only when the deleted architecture has zero refs.
+          if adapter.exists(): adapter.unlink()
           for needle in ('BackgroundThemeManager', 'AppTheme.Base.Core', 'AppTheme.Base.System.Light', 'AppTheme.Base.System'):
               result = subprocess.run(['git', 'grep', '-n', '--', needle], text=True, capture_output=True)
-              if result.returncode == 0 and result.stdout.strip():
-                  raise SystemExit(f'Legacy reference remains for {needle}:\n{result.stdout}')
-
+              if result.returncode == 0 and result.stdout.strip(): raise SystemExit(f'Legacy reference remains for {needle}:\n{result.stdout}')
           for rel in ('app/src/main/res/values-night/homa_theme.xml', 'app/src/main/res/values-notnight/homa_theme.xml'):
-              body = (root / rel).read_text(encoding='utf-8')
-              if '<style name="AppTheme.Base"' not in body:
-                  raise SystemExit(f'Canonical AppTheme.Base missing from {rel}')
-
-          subprocess.run(['git', 'diff', '--check'], check=True)
-          subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'], check=True)
-          subprocess.run(['git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], check=True)
-          subprocess.run(['git', 'add', '-A'], check=True)
-          subprocess.run(['git', 'diff', '--cached', '--check'], check=True)
-          subprocess.run(['git', 'commit', '-m', 'Complete root theme migration'], check=True)
-          subprocess.run(['git', 'push', 'origin', 'HEAD:feat/theme-root-migration'], check=True)
-
-      - name: Remove runner workflow from main
+              if '<style name="AppTheme.Base"' not in (root / rel).read_text(encoding='utf-8'): raise SystemExit(f'Canonical Base missing: {rel}')
+          subprocess.run(['git','diff','--check'], check=True)
+          subprocess.run(['git','config','user.name','github-actions[bot]'], check=True)
+          subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'], check=True)
+          subprocess.run(['git','add','-A'], check=True)
+          subprocess.run(['git','commit','-m','Complete root theme migration'], check=True)
+          subprocess.run(['git','push','origin','HEAD:feat/theme-root-migration'], check=True)
+      - name: Remove temporary runner
         shell: bash
         run: |
           git fetch origin main
