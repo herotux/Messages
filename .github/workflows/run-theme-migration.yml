@@ -17,54 +17,22 @@ jobs:
           fetch-depth: 1
       - name: Migrate feature branch
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          import subprocess
+          set -euo pipefail
+          FILE=app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt
+          sed -i '/import org\.fossify\.messages\.helpers\.BackgroundThemeManager$/d' "$FILE"
+          sed -i 's/BackgroundThemeManager\.applyToRoot(root, BackgroundThemeManager\.selectedId(this))/ThemeManager.applyBackground(this)/' "$FILE"
+          perl -0pi -e 's/\n    private fun showLegacyBackgrounds\(\) \{.*?\n    \}\n/\n    private fun showLegacyBackgrounds() {\n        val themes = ThemeManager.allThemes(this).filter { it.source == ThemeManager.ThemeSource.BUILT_IN && it.id != ThemeManager.DEFAULT_ID }\n        val labels = themes.map { if (english()) it.nameEn else it.nameFa }.toTypedArray()\n        val selected = themes.indexOfFirst { it.id == ThemeManager.selectedThemeId(this) }.coerceAtLeast(0)\n        MaterialAlertDialogBuilder(this).setTitle(t("پس‌زمینه‌های آماده", "Ready-made backgrounds")).setSingleChoiceItems(labels, selected) { dialog, which -> ThemeManager.select(this, themes[which].id); dialog.dismiss(); render(APPEARANCE) }.show()\n    }\n/s' "$FILE"
 
-          root = Path.cwd()
-          settings = root / 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
-          text = settings.read_text()
-          text = text.replace('import org.fossify.messages.helpers.BackgroundThemeManager\n', '')
-          text = text.replace('BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))', 'ThemeManager.applyBackground(this)')
-          p = re.compile(r'(?ms)^    private fun showLegacyBackgrounds\(\) \{.*?^    \}\n')
-          new = '''    private fun showLegacyBackgrounds() {
-          val themes = ThemeManager.allThemes(this).filter { it.source == ThemeManager.ThemeSource.BUILT_IN && it.id != ThemeManager.DEFAULT_ID }
-          val labels = themes.map { if (english()) it.nameEn else it.nameFa }.toTypedArray()
-          val selected = themes.indexOfFirst { it.id == ThemeManager.selectedThemeId(this) }.coerceAtLeast(0)
-          MaterialAlertDialogBuilder(this).setTitle(t("پس‌زمینه‌های آماده", "Ready-made backgrounds")).setSingleChoiceItems(labels, selected) { dialog, which -> ThemeManager.select(this, themes[which].id); dialog.dismiss(); render(APPEARANCE) }.show()
-      }
-'''
-          text, n = p.subn(new, text, count=1)
-          if n != 1: raise SystemExit('showLegacyBackgrounds missing')
-          settings.write_text(text)
-
-          styles = root / 'app/src/main/res/values/styles.xml'
-          text = styles.read_text()
-          text = text.replace('parent="AppTheme.Base.Core"', 'parent="AppTheme.Base"')
-          def remove_style(s, name):
-              p = re.compile(r'(?ms)\n?\s*<style\s+name="' + re.escape(name) + r'"(?:\s+[^>]*)?>.*?</style>\s*')
-              s, n = p.subn('\n', s, count=1)
-              if n != 1: raise SystemExit(f'bad style count: {name}={n}')
-              return s
-          for name in ('AppTheme.Base', 'AppTheme.Base.Core', 'AppTheme.Base.System', 'AppTheme.Base.System.Light'):
-              text = remove_style(text, name)
-          styles.write_text(text)
-
-          adapter = root / 'app/src/main/kotlin/org/fossify/messages/helpers/BackgroundThemeManager.kt'
-          if adapter.exists(): adapter.unlink()
-
-          for needle in ('BackgroundThemeManager', 'AppTheme.Base.Core', 'AppTheme.Base.System.Light', 'AppTheme.Base.System'):
-              r = subprocess.run(['git','grep','-n','--',needle], text=True, capture_output=True)
-              if r.returncode == 0 and r.stdout.strip(): raise SystemExit(r.stdout)
-
-          subprocess.run(['git','diff','--check'], check=True)
-          subprocess.run(['git','config','user.name','github-actions[bot]'], check=True)
-          subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'], check=True)
-          subprocess.run(['git','add','-A'], check=True)
-          subprocess.run(['git','commit','-m','Complete root theme migration'], check=True)
-          subprocess.run(['git','push','origin','HEAD:feat/theme-root-migration'], check=True)
-          PY
+          STYLES=app/src/main/res/values/styles.xml
+          perl -0pi -e 's/parent="AppTheme\.Base\.Core"/parent="AppTheme.Base"/g; s/\n?\s*<style name="AppTheme\.Base"(?:\s+[^>]*)?>.*?<\/style>\s*/\n/sg; s/\n?\s*<style name="AppTheme\.Base\.Core"(?:\s+[^>]*)?>.*?<\/style>\s*/\n/sg; s/\n?\s*<style name="AppTheme\.Base\.System"(?:\s+[^>]*)?>.*?<\/style>\s*/\n/sg; s/\n?\s*<style name="AppTheme\.Base\.System\.Light"(?:\s+[^>]*)?>.*?<\/style>\s*/\n/sg' "$STYLES"
+          rm -f app/src/main/kotlin/org/fossify/messages/helpers/BackgroundThemeManager.kt
+          ! git grep -n -E 'BackgroundThemeManager|AppTheme\.Base\.(Core|System|System\.Light)'
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Complete root theme migration'
+          git push origin HEAD:feat/theme-root-migration
       - name: Remove temporary runner
         run: |
           git fetch origin main
