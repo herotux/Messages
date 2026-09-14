@@ -47,7 +47,7 @@ object ThemeResolver {
         (color and 0x00FFFFFF) or ((alpha and 0xFF) shl 24)
 
     /** Returns a readable Material foreground for a solid background color. */
-    private fun contrastColor(background: Int): Int {
+    internal fun contrastColor(background: Int): Int {
         // Keep the resolver platform-independent so its semantic mapping can be
         // exercised by JVM unit tests without relying on Android framework APIs.
         val red = (background shr 16) and 0xFF
