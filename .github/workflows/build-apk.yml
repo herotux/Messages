@@ -173,6 +173,31 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Publish APK to Bale
+        env:
+          BALE_BOT_TOKEN: ${{ secrets.BALE_BOT_TOKEN }}
+          BALE_CHAT_ID: '@homaapp'
+        run: |
+          set -euo pipefail
+          test -n "$BALE_BOT_TOKEN"
+          test -s "artifact/Messages-foss-release.apk"
+
+          VERSION_NAME=$(grep -E '^versionName\s*=' app/build.gradle.kts | head -n 1 | sed -E 's/.*versionName\s*=\s*["\x27]([^"\x27]+)["\x27].*/\1/' || true)
+          if [ -z "$VERSION_NAME" ]; then
+            VERSION_NAME="${GITHUB_SHA::7}"
+          fi
+
+          CAPTION="Homa Messages — FOSS Release v${VERSION_NAME}\nCommit: ${GITHUB_SHA::7}\nBuild: ${GITHUB_RUN_NUMBER}"
+
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 30 \
+            --max-time 1800 \
+            -X POST \
+            "https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendDocument" \
+            -F "chat_id=${BALE_CHAT_ID}" \
+            -F "document=@artifact/Messages-foss-release.apk;type=application/vnd.android.package-archive" \
+            -F "caption=${CAPTION}"
+
       - name: Remove release keystore
         if: always()
         run: rm -f "$SIGNING_STORE_FILE"
