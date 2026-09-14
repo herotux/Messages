@@ -20,7 +20,7 @@ import org.fossify.messages.helpers.ConversationFolderManager
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-class FixedConversationFolderTabsView @JvmOverloads constructor(
+open class FixedConversationFolderTabsView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : ConversationFolderTabsView(context, attrs) {
     private var lastSelected: String? = null
