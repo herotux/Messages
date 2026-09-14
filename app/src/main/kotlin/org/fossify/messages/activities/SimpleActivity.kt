@@ -12,7 +12,6 @@ import org.fossify.messages.helpers.ThemeApplier
 
 open class SimpleActivity : BaseSimpleActivity() {
     private var appliedFontSize = -1
-    private var themeObserverInstalled = false
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
@@ -38,17 +37,6 @@ open class SimpleActivity : BaseSimpleActivity() {
 
     private fun applyVisualTheme() {
         ThemeApplier.apply(this)
-        installThemeObserver()
-    }
-
-    /** Re-applies the central theme after dynamic content such as tabs/messages is attached. */
-    private fun installThemeObserver() {
-        if (themeObserverInstalled) return
-        val content = window.decorView as? ViewGroup ?: return
-        themeObserverInstalled = true
-        content.viewTreeObserver.addOnGlobalLayoutListener {
-            ThemeApplier.apply(this)
-        }
     }
 
     private fun applyLocaleLayoutDirection() {
