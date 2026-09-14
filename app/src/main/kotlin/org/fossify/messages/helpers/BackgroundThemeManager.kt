@@ -9,8 +9,8 @@ import org.fossify.messages.R
 import org.fossify.messages.activities.HerotuxAboutActivity
 
 /**
- * Backwards-compatible facade for the old background-only theme API.
- * It now also exposes user themes to the existing Appearance screen.
+ * Compatibility adapter for the Appearance screen.
+ * All theme state and rendering remain owned by ThemeManager and ThemeApplier.
  */
 object BackgroundThemeManager {
     const val NONE = ThemeManager.DEFAULT_ID
@@ -36,18 +36,9 @@ object BackgroundThemeManager {
     )
 
     val themes: List<Theme>
-        get() = ThemeManager.builtInThemes.map {
-            Theme(it.id, it.backgroundDrawable, it.nameFa, it.nameEn)
-        } + Theme(
-            CREATE_USER_THEME,
-            R.drawable.bg_theme_custom_placeholder,
-            "＋ ساخت تم جدید",
-            "+ Create new theme"
-        ) + (lastContext?.let { context ->
-            ThemeStorage.load(context).map {
-                Theme(it.id, R.drawable.bg_theme_custom_placeholder, it.nameFa, it.nameEn)
-            }
-        } ?: emptyList())
+        get() = lastContext?.let { context ->
+            ThemeManager.allThemes(context).map { Theme(it.id, it.backgroundDrawable, it.nameFa, it.nameEn) }
+        } ?: ThemeManager.builtInThemes.map { Theme(it.id, it.backgroundDrawable, it.nameFa, it.nameEn) }
 
     fun selectedId(activity: Activity): String {
         lastContext = activity
@@ -55,10 +46,11 @@ object BackgroundThemeManager {
     }
 
     fun select(activity: Activity, id: String) {
+        lastContext = activity
         when {
             id == CREATE_USER_THEME -> openBuilder(activity, null)
             id.startsWith(USER_PREFIX) -> showUserThemeActions(activity, id)
-            ThemeManager.selectBuiltIn(activity, id) -> apply(activity)
+            ThemeManager.selectBuiltIn(activity, id) -> ThemeApplier.apply(activity)
         }
     }
 
@@ -70,7 +62,7 @@ object BackgroundThemeManager {
                 when (which) {
                     0 -> {
                         ThemeManager.select(activity, id)
-                        apply(activity)
+                        ThemeApplier.apply(activity)
                     }
                     1 -> openBuilder(activity, id)
                     2 -> confirmDelete(activity, id, theme.nameFa)
@@ -87,7 +79,7 @@ object BackgroundThemeManager {
             .setNegativeButton("لغو", null)
             .setPositiveButton("حذف") { _, _ ->
                 ThemeManager.deleteUserTheme(activity, id)
-                apply(activity)
+                ThemeApplier.apply(activity)
             }
             .show()
     }
@@ -99,16 +91,17 @@ object BackgroundThemeManager {
         })
     }
 
-    fun apply(activity: Activity) {
-        ThemeManager.applyBackground(activity)
-    }
+    fun apply(activity: Activity) = ThemeApplier.apply(activity)
 
     fun applyToRoot(root: ViewGroup, themeId: String) {
         val theme = ThemeManager.find(root.context, themeId) ?: return
-        if (theme.backgroundDrawable != 0) {
-            root.setBackgroundResource(theme.backgroundDrawable)
-        } else {
-            root.setBackgroundColor(theme.colors.background)
-        }
+        ThemeBackground.apply(
+            root,
+            theme.backgroundType,
+            theme.colors.background,
+            theme.gradientColors,
+            theme.gradientAngle,
+            theme.wallpaperUri
+        )
     }
 }
