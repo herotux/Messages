@@ -16,97 +16,13 @@ on:
         type: boolean
 
 permissions:
-  contents: write
+  contents: read
 
 # Canonical Android validation for main and pull requests.
 # A signed FOSS release build runs only on main pushes or explicit dispatch.
 jobs:
-  migrate-theme:
-    name: Finalize Homa theme root migration
-    if: github.event_name == 'pull_request' && github.head_ref == 'feat/theme-root-migration'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout branch
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 1
-
-      - name: Apply root theme migration
-        shell: python
-        run: |
-          from pathlib import Path
-          import re
-          import subprocess
-
-          root = Path.cwd()
-          settings = root / 'app/src/main/kotlin/org/fossify/messages/activities/SettingsActivity.kt'
-          text = settings.read_text(encoding='utf-8')
-          text = text.replace('import org.fossify.messages.helpers.BackgroundThemeManager\n', '')
-          text = text.replace('BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))', 'ThemeManager.applyBackground(this)')
-          old = '''    private fun showLegacyBackgrounds() {
-          val themes = BackgroundThemeManager.themes.filter { it.id != BackgroundThemeManager.NONE }
-          val labels = themes.map { if (english()) it.titleEn else it.titleFa }.toTypedArray()
-          val selected = themes.indexOfFirst { it.id == BackgroundThemeManager.selectedId(this) }.coerceAtLeast(0)
-          MaterialAlertDialogBuilder(this).setTitle(t("پس‌زمینه‌های آماده", "Ready-made backgrounds")).setSingleChoiceItems(labels, selected) { dialog, which -> BackgroundThemeManager.select(this, themes[which].id); dialog.dismiss(); render(APPEARANCE) }.show()
-      }
-'''
-          new = '''    private fun showLegacyBackgrounds() {
-          val themes = ThemeManager.allThemes(this).filter { it.source == ThemeManager.ThemeSource.BUILT_IN && it.id != ThemeManager.DEFAULT_ID }
-          val labels = themes.map { if (english()) it.nameEn else it.nameFa }.toTypedArray()
-          val selected = themes.indexOfFirst { it.id == ThemeManager.selectedThemeId(this) }.coerceAtLeast(0)
-          MaterialAlertDialogBuilder(this).setTitle(t("پس‌زمینه‌های آماده", "Ready-made backgrounds")).setSingleChoiceItems(labels, selected) { dialog, which -> ThemeManager.select(this, themes[which].id); dialog.dismiss(); render(APPEARANCE) }.show()
-      }
-'''
-          if old not in text:
-              raise SystemExit('SettingsActivity legacy background block not found')
-          settings.write_text(text.replace(old, new), encoding='utf-8')
-
-          styles = root / 'app/src/main/res/values/styles.xml'
-          text = styles.read_text(encoding='utf-8')
-          for name in ['AppTheme.Base', 'AppTheme.Base.Core', 'AppTheme.Base.System', 'AppTheme.Base.System.Light']:
-              pattern = re.compile(r'\n?\s*<style\s+name="' + re.escape(name) + r'"(?:\s+[^>]*)?>.*?</style>\s*', re.S)
-              text, n = pattern.subn('\n', text, count=1)
-              if n != 1:
-                  raise SystemExit(f'Expected exactly one legacy style definition for {name}, found {n}')
-
-          candidates = ['AppTheme.White', 'AppTheme.White.LightTextColor', 'AppTheme.White.TextStyle', 'AppTheme.White.NoActionBar', 'AppTheme.BlackAndWhite', 'AppTheme.BlackAndWhite.DarkTextColor', 'AppTheme.BlackAndWhite.TextStyle', 'BottomSheetDialogTheme', 'BottomSheetModalStyle']
-          all_files = [p for p in root.rglob('*') if p.is_file() and '.git' not in p.parts and p != styles]
-          corpus = '\n'.join(p.read_text(encoding='utf-8', errors='ignore') for p in all_files)
-          for name in candidates:
-              if re.search(r'(?<![A-Za-z0-9_.])' + re.escape(name) + r'(?![A-Za-z0-9_.])', corpus):
-                  continue
-              pattern = re.compile(r'\n?\s*<style\s+name="' + re.escape(name) + r'"(?:\s+[^>]*)?>.*?</style>\s*', re.S)
-              text, n = pattern.subn('\n', text, count=1)
-              if n:
-                  print('removed unused legacy style:', name)
-          styles.write_text(text, encoding='utf-8')
-
-          adapter = root / 'app/src/main/kotlin/org/fossify/messages/helpers/BackgroundThemeManager.kt'
-          if adapter.exists():
-              adapter.unlink()
-          finalize_workflow = root / '.github/workflows/theme-root-finalize.yml'
-          if finalize_workflow.exists():
-              finalize_workflow.unlink()
-
-          result = subprocess.run(['git', 'grep', '-nE', 'BackgroundThemeManager|AppTheme\.Base\.(Core|System|System\.Light)'], text=True, capture_output=True)
-          if result.returncode == 0 and result.stdout.strip():
-              raise SystemExit('Legacy theme references remain:\n' + result.stdout)
-
-      - name: Commit migration if needed
-        shell: bash
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git diff --cached --check
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'Complete root theme migration'
-          git push origin HEAD:${{ github.head_ref }}
-
   unit-tests:
     name: Unit tests (${{ matrix.variant }})
-    needs: migrate-theme
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -121,10 +37,8 @@ jobs:
             task: testGplayDebugUnitTest
 
     steps:
-      - name: Checkout final branch head
+      - name: Checkout
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -141,15 +55,12 @@ jobs:
 
   lint:
     name: Android lint
-    needs: migrate-theme
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout final branch head
+      - name: Checkout
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -210,19 +121,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
           test -n "$SDK_ROOT"
           echo "ANDROID_SDK_ROOT=$SDK_ROOT"
+
           SDKMANAGER=""
-          for candidate in "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$SDK_ROOT/cmdline-tools/bin/sdkmanager" "$SDK_ROOT/tools/bin/sdkmanager"; do
-            if [ -x "$candidate" ]; then SDKMANAGER="$candidate"; break; fi
+          for candidate in \
+            "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "$SDK_ROOT/cmdline-tools/bin/sdkmanager" \
+            "$SDK_ROOT/tools/bin/sdkmanager"; do
+            if [ -x "$candidate" ]; then
+              SDKMANAGER="$candidate"
+              break
+            fi
           done
-          if [ -z "$SDKMANAGER" ]; then SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"; fi
+
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+          fi
+
           test -n "$SDKMANAGER"
           test -x "$SDKMANAGER"
+
           SDKMANAGER_DIR="$(dirname "$SDKMANAGER")"
           echo "Using sdkmanager: $SDKMANAGER"
           echo "$SDKMANAGER_DIR" >> "$GITHUB_PATH"
+
           "$SDKMANAGER" --version
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
