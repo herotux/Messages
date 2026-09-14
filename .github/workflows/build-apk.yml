@@ -42,8 +42,6 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
       - name: Run ${{ matrix.variant }} unit tests
         run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon
 
@@ -154,7 +152,8 @@ jobs:
           test -f "$APK_PATH"
           test -s "$APK_PATH"
           echo "Publishing APK: $APK_PATH"
-          stat --printf='APK size: %s bytes\n' "$APK_PATH"
+          APK_SIZE=$(stat --printf='%s' "$APK_PATH")
+          echo "APK size: ${APK_SIZE} bytes"
           VERSION_NAME=$(grep -E '^versionName\s*=' app/build.gradle.kts | head -n 1 | sed -E 's/.*versionName\s*=\s*["\x27]([^"\x27]+)["\x27].*/\1/' || true)
           [ -n "$VERSION_NAME" ] || VERSION_NAME="${GITHUB_SHA::7}"
           CAPTION=$(printf 'Homa Messages — FOSS Release v%s\nCommit: %s\nBuild: %s' "$VERSION_NAME" "${GITHUB_SHA::7}" "$GITHUB_RUN_NUMBER")
@@ -170,12 +169,18 @@ jobs:
             echo "curl failed before receiving a valid HTTP response"
             exit "$CURL_EXIT"
           fi
-          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            if ! grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' "$RESPONSE_FILE"; then
+              echo "Bale API did not report success"
+              exit 1
+            fi
+            echo "Bale upload succeeded."
+          elif [ "$HTTP_CODE" -eq 413 ]; then
+            echo "Bale rejected the ${APK_SIZE}-byte APK with HTTP 413 Request Entity Too Large."
+            echo "The APK remains available as the GitHub Actions artifact 'Messages-foss-release'."
+            echo "Build is intentionally not failed for this transport-size limitation."
+          else
             echo "Bale request failed with HTTP status $HTTP_CODE"
-            exit 1
-          fi
-          if ! grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' "$RESPONSE_FILE"; then
-            echo "Bale API did not report success"
             exit 1
           fi
       - name: Remove release keystore
