@@ -2,6 +2,7 @@ package org.fossify.messages.helpers
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ThemeResolverTest {
@@ -105,5 +106,32 @@ class ThemeResolverTest {
     @Test
     fun resolve_keepsErrorRoleStable() {
         assertEquals(0xFFB3261E.toInt(), ThemeResolver.resolve(theme).error)
+    }
+
+    @Test
+    fun resolve_allBuiltInThemesProducesCompleteSemanticTokens() {
+        ThemeManager.builtInThemes.forEach { builtIn ->
+            val tokens = ThemeResolver.resolve(builtIn)
+            assertEquals(builtIn.colors.primary, tokens.primary)
+            assertEquals(builtIn.colors.accent, tokens.secondary)
+            assertEquals(builtIn.colors.background, tokens.background)
+            assertEquals(builtIn.colors.surface, tokens.surface)
+            assertEquals(builtIn.colors.toolbar, tokens.toolbar)
+            assertEquals(builtIn.colors.fab, tokens.fab)
+            assertEquals(builtIn.colors.incomingBubble, tokens.incomingMessage)
+            assertEquals(builtIn.colors.outgoingBubble, tokens.outgoingMessage)
+            assertTrue("${builtIn.id}: selected item keeps primary RGB", tokens.selectedItem and 0x00FFFFFF == tokens.primary and 0x00FFFFFF)
+            assertEquals(0xFFB3261E.toInt(), tokens.error)
+        }
+    }
+
+    @Test
+    fun contrastColor_isCentralAndDeterministic() {
+        assertEquals(0xFFFFFFFF.toInt(), ThemeResolver.contrastColor(0xFF000000.toInt()))
+        assertEquals(0xFF000000.toInt(), ThemeResolver.contrastColor(0xFFFFFFFF.toInt()))
+        assertEquals(
+            ThemeResolver.contrastColor(0xFF336699.toInt()),
+            ThemeResolver.contrastColor(0xFF336699.toInt())
+        )
     }
 }
