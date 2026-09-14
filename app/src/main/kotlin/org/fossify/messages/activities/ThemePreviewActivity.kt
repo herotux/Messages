@@ -68,7 +68,7 @@ class ThemePreviewActivity : SimpleActivity() {
         conversation.addView(messageBubble(
             text = if (english) "Hello! The new theme is ready 😊" else "سلام! تم جدید آماده است 😊",
             background = tokens.outgoingMessage,
-            textColor = contrastColor(tokens.outgoingMessage),
+            textColor = ThemeResolver.contrastColor(tokens.outgoingMessage),
             alignEnd = true
         ), LinearLayout.LayoutParams(-1, -2).apply { setMargins(dp(56), 0, 0, dp(6)) })
         conversation.addView(TextView(this).apply {
@@ -100,7 +100,7 @@ class ThemePreviewActivity : SimpleActivity() {
             text = "➤"
             textSize = 22f
             gravity = Gravity.CENTER
-            setTextColor(contrastColor(tokens.fab))
+            setTextColor(ThemeResolver.contrastColor(tokens.fab))
             setBackgroundColor(tokens.fab)
             setPadding(dp(10), 0, dp(10), 0)
         }, LinearLayout.LayoutParams(dp(48), dp(42)))
@@ -119,14 +119,6 @@ class ThemePreviewActivity : SimpleActivity() {
             setColor(background)
             cornerRadius = dp(18).toFloat()
         }
-    }
-
-    private fun contrastColor(background: Int): Int {
-        val red = (background shr 16) and 0xFF
-        val green = (background shr 8) and 0xFF
-        val blue = background and 0xFF
-        val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
-        return if (luminance > 0.55) android.graphics.Color.BLACK else android.graphics.Color.WHITE
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
