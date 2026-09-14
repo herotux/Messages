@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- DayNight bridge: keep the existing style contract while letting AppCompat/Material3
-         select the light palette through the notnight resource qualifier. -->
+    <!-- Light Material 3 resource layer used by AppCompat DayNight when the runtime theme is light. -->
     <style name="AppTheme.Base" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
@@ -23,5 +22,69 @@
         <item name="android:actionOverflowButtonStyle">@style/ActionMenuOverflowIcon</item>
         <item name="android:radioButtonStyle">@style/MyRadioButtonStyle</item>
         <item name="radioButtonStyle">@style/MyRadioButtonStyle</item>
+    </style>
+
+    <style name="AppTheme.Base.Core" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:colorControlHighlight">@color/activated_item_foreground</item>
+        <item name="colorControlHighlight">@color/activated_item_foreground</item>
+        <item name="bottomSheetDialogTheme">@style/AppTheme.Material3.BottomSheetDialogTheme</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="windowActionModeOverlay">true</item>
+        <item name="actionOverflowMenuStyle">@style/TopPopupMenu.Overflow.Light</item>
+        <item name="android:actionOverflowButtonStyle">@style/ActionMenuOverflowIcon</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="AppTheme.Base.System" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/m3_primary</item>
+        <item name="colorPrimaryDark">@color/m3_status_bar</item>
+        <item name="colorAccent">@color/m3_primary</item>
+        <item name="colorPrimaryContainer">@color/m3_primary</item>
+        <item name="colorOnPrimaryContainer">@color/m3_on_surface</item>
+        <item name="colorSecondaryContainer">@color/m3_primary</item>
+        <item name="colorOnSecondaryContainer">@color/m3_on_surface</item>
+        <item name="colorTertiaryContainer">@color/m3_primary</item>
+        <item name="colorOnTertiaryContainer">@color/m3_on_surface</item>
+        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
+        <item name="colorSurface">@color/m3_surface</item>
+        <item name="colorOnSurfaceVariant">@color/m3_on_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="actionOverflowMenuStyle">@style/TopPopupMenu.Overflow.Light</item>
+        <item name="actionBarStyle">@style/AppTheme.ActionBar</item>
+        <item name="actionModeStyle">@style/AppTheme.ActionModeYou</item>
+        <item name="bottomSheetDialogTheme">@style/AppTheme.Material3.BottomSheetDialogTheme</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
+        <item name="windowActionModeOverlay">true</item>
+        <item name="android:actionOverflowButtonStyle">@style/ActionMenuOverflowIcon</item>
+        <item name="android:radioButtonStyle">@style/MyRadioButtonStyle</item>
+        <item name="radioButtonStyle">@style/MyRadioButtonStyle</item>
+        <item name="toolbarStyle">@style/AppToolbar</item>
+    </style>
+
+    <style name="AppTheme.Base.System.Light" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/m3_primary</item>
+        <item name="colorPrimaryDark">@color/m3_status_bar</item>
+        <item name="colorAccent">@color/m3_primary</item>
+        <item name="colorPrimaryContainer">@color/m3_primary</item>
+        <item name="colorOnPrimaryContainer">@color/m3_on_surface</item>
+        <item name="colorSecondaryContainer">@color/m3_primary</item>
+        <item name="colorOnSecondaryContainer">@color/m3_on_surface</item>
+        <item name="colorTertiaryContainer">@color/m3_primary</item>
+        <item name="colorOnTertiaryContainer">@color/m3_on_surface</item>
+        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
+        <item name="colorSurface">@color/m3_surface</item>
+        <item name="colorOnSurfaceVariant">@color/m3_on_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="actionOverflowMenuStyle">@style/TopPopupMenu.Overflow.Light</item>
+        <item name="actionBarStyle">@style/AppTheme.ActionBar</item>
+        <item name="actionModeStyle">@style/AppTheme.ActionModeYou</item>
+        <item name="bottomSheetDialogTheme">@style/AppTheme.Material3.BottomSheetDialogTheme</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
+        <item name="windowActionModeOverlay">true</item>
+        <item name="android:actionOverflowButtonStyle">@style/ActionMenuOverflowIcon</item>
+        <item name="android:radioButtonStyle">@style/MyRadioButtonStyle</item>
+        <item name="radioButtonStyle">@style/MyRadioButtonStyle</item>
+        <item name="toolbarStyle">@style/AppToolbar</item>
     </style>
 </resources>
