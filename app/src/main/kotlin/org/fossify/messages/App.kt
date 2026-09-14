@@ -11,7 +11,6 @@ import android.provider.ContactsContract
 import android.view.View
 import android.view.ViewGroup
 import org.fossify.commons.FossifyApp
-import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -33,8 +32,6 @@ class App : FossifyApp() {
         super.onCreate()
         // Initialize the app language before the first Activity is created.
         AppLanguageManager.initialize(this)
-        // User-selected theme is authoritative; never fall back to system Light/Dark.
-        baseConfig.isSystemThemeEnabled = false
         BankCardsCrashLogger.install(this)
         TapsellAds.initialize()
         registerActivityLifecycleCallbacks(folderUiLifecycleCallbacks)
