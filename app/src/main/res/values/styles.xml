@@ -126,98 +126,7 @@
         <item name="android:layout_marginEnd">@dimen/activity_margin</item>
         <item name="android:visibility">invisible</item>
     </style>
-
-    <style name="AppTheme.Base" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="colorPrimary">@color/m3_primary</item>
-        <item name="colorPrimaryDark">@color/m3_primary</item>
-        <item name="colorAccent">@color/m3_secondary</item>
-        <item name="android:spinnerItemStyle">@style/SpinnerItem</item>
-        <item name="spinnerDropDownItemStyle">@style/SpinnerItem.DropDownItem</item>
-        <item name="android:spinnerDropDownItemStyle">@style/SpinnerItem.DropDownItem</item>
-        <item name="buttonStyle">@style/MyTransparentButton</item>
-        <item name="android:buttonStyle">@style/MyTransparentButton</item>
-        <item name="actionOverflowMenuStyle">@style/TopPopupMenu.Overflow.Dark</item>
-        <item name="android:textColor">@color/default_text_color</item>
-        <item name="android:colorControlHighlight">@color/activated_item_foreground</item>
-        <item name="colorControlHighlight">@color/activated_item_foreground</item>
-        <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme</item>
-        <item name="android:actionModeCloseDrawable">@drawable/ic_arrow_left_vector</item>
-        <item name="actionModeStyle">@style/AppCompat.ActionMode</item>
-        <item name="android:forceDarkAllowed">false</item>
-        <item name="windowActionModeOverlay">true</item>    
-        <item name="android:actionOverflowButtonStyle">@style/ActionMenuOverflowIcon</item>
-        <item name="android:radioButtonStyle">@style/MyRadioButtonStyle</item>
-        <item name="radioButtonStyle">@style/MyRadioButtonStyle</item>
-    </style>
-
-    <style name="AppTheme.Base.Core" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="android:colorControlHighlight">@color/activated_item_foreground</item>
-        <item name="colorControlHighlight">@color/activated_item_foreground</item>
-        <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme</item>
-        <item name="android:forceDarkAllowed">false</item>
-        <item name="windowActionModeOverlay">true</item>
-        <item name="actionOverflowMenuStyle">@style/TopPopupMenu.Overflow.Dark</item>
-        <item name="android:actionOverflowButtonStyle">@style/ActionMenuOverflowIcon</item>
-        <item name="android:windowLightStatusBar">false</item>
-    </style>
-
-    <style name="AppTheme.Base.System" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="colorPrimary">@color/m3_primary</item>
-        <item name="colorPrimaryDark">@color/m3_status_bar</item>
-        <item name="colorAccent">@color/m3_primary</item>
-        <item name="colorPrimaryContainer">@color/m3_primary</item>
-        <item name="colorOnPrimaryContainer">@color/m3_on_surface</item>
-        <item name="colorSecondaryContainer">@color/m3_primary</item>
-        <item name="colorOnSecondaryContainer">@color/m3_on_surface</item>
-        <item name="colorTertiaryContainer">@color/m3_primary</item>
-        <item name="colorOnTertiaryContainer">@color/m3_on_surface</item>
-        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
-        <item name="colorSurface">@color/m3_surface</item>
-        <item name="colorOnSurfaceVariant">@color/m3_on_surface</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="actionOverflowMenuStyle">@style/TopPopupMenuYou</item>
-        <item name="actionBarPopupTheme">@style/TopPopupMenuTextYou</item>
-        <item name="actionBarStyle">@style/AppTheme.ActionBar</item>
-        <item name="actionModeStyle">@style/AppTheme.ActionModeYou</item>
-        <item name="bottomSheetDialogTheme">@style/AppTheme.Material3.BottomSheetDialogTheme</item>
-        <item name="android:forceDarkAllowed">false</item>
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
-        <item name="windowActionModeOverlay">true</item>
-        <item name="android:actionOverflowButtonStyle">@style/ActionMenuOverflowIcon</item>
-        <item name="android:radioButtonStyle">@style/MyRadioButtonStyle</item>
-        <item name="radioButtonStyle">@style/MyRadioButtonStyle</item>
-        <item name="toolbarStyle">@style/AppToolbar</item>
-    </style>
-
-    <style name="AppTheme.Base.System.Light" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/m3_primary</item>
-        <item name="colorPrimaryDark">@color/m3_status_bar</item>
-        <item name="colorAccent">@color/m3_primary</item>
-        <item name="colorPrimaryContainer">@color/m3_primary</item>
-        <item name="colorOnPrimaryContainer">@color/m3_on_surface</item>
-        <item name="colorSecondaryContainer">@color/m3_primary</item>
-        <item name="colorOnSecondaryContainer">@color/m3_on_surface</item>
-        <item name="colorTertiaryContainer">@color/m3_primary</item>
-        <item name="colorOnTertiaryContainer">@color/m3_on_surface</item>
-        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
-        <item name="colorSurface">@color/m3_surface</item>
-        <item name="colorOnSurfaceVariant">@color/m3_on_surface</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="actionOverflowMenuStyle">@style/TopPopupMenuYou</item>
-        <item name="actionBarPopupTheme">@style/TopPopupMenuTextYou</item>
-        <item name="actionBarStyle">@style/AppTheme.ActionBar</item>
-        <item name="bottomSheetDialogTheme">@style/AppTheme.Material3.BottomSheetDialogTheme</item>
-        <item name="actionModeStyle">@style/AppTheme.ActionModeYou</item>
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
-        <item name="windowActionModeOverlay">true</item>
-        <item name="android:actionOverflowButtonStyle">@style/ActionMenuOverflowIcon</item>
-        <item name="android:radioButtonStyle">@style/MyRadioButtonStyle</item>
-        <item name="radioButtonStyle">@style/MyRadioButtonStyle</item>
-        <item name="toolbarStyle">@style/AppToolbar</item>
-    </style>
-
-    
-    <style name="AppTheme.ActionBar" parent="@style/Widget.AppCompat.Light.ActionBar.Solid.Inverse">
+<style name="AppTheme.ActionBar" parent="@style/Widget.AppCompat.Light.ActionBar.Solid.Inverse">
         <item name="android:outlineProvider">none</item>
     </style>
 
@@ -590,1027 +499,1027 @@
     </style>
 
     
-    <style name="AppTheme.Red_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_error</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_error</item>
     </style>
 
-    <style name="AppTheme.Red_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_error</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_error</item>
     </style>
 
-    <style name="AppTheme.Red_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_error</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_error</item>
     </style>
 
-    <style name="AppTheme.Red_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_error</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_error</item>
     </style>
 
-    <style name="AppTheme.Red_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_error</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_error</item>
     </style>
 
-    <style name="AppTheme.Red_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_error</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_error</item>
     </style>
 
-    <style name="AppTheme.Red_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_error</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_error</item>
     </style>
 
-    <style name="AppTheme.Red_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_error</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_error</item>
     </style>
 
-    <style name="AppTheme.Red_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Red_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_error</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Pink_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Pink_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Pink_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Pink_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Pink_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Pink_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Pink_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Pink_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Pink_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Pink_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Purple_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Purple_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Purple_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Purple_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Purple_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Purple_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Purple_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Purple_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Purple_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Purple_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Purple_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Purple_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Indigo_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Indigo_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Indigo_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Indigo_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Indigo_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Indigo_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Indigo_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Indigo_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Indigo_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Indigo_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Blue_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Light_Blue_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Blue_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Cyan_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Cyan_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Cyan_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Cyan_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Cyan_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Cyan_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Cyan_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Cyan_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Cyan_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Cyan_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Teal_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Teal_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Teal_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Teal_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Teal_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Teal_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Teal_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Teal_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_secondary</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_secondary</item>
     </style>
 
-    <style name="AppTheme.Teal_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Teal_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_secondary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Green_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Green_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Green_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Green_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Green_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Green_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Green_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Green_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Green_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Green_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Light_Green_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Light_Green_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Light_Green_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Light_Green_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Light_Green_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Light_Green_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Light_Green_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Light_Green_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Light_Green_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Light_Green_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Lime_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Lime_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Lime_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Lime_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Lime_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Lime_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Lime_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Lime_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_primary</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_primary</item>
     </style>
 
-    <style name="AppTheme.Lime_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Lime_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_primary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Yellow_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Yellow_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Yellow_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Yellow_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Yellow_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Yellow_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Yellow_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Yellow_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Yellow_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Yellow_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Amber_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Amber_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Amber_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Amber_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Amber_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Amber_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Amber_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Amber_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Amber_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Amber_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Orange_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Orange_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Orange_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Orange_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Orange_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Orange_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Orange_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Orange_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Orange_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Orange_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Deep_Orange_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Deep_Orange_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Brown_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Brown_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Brown_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Brown_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Brown_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Brown_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Brown_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Brown_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Brown_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Brown_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_tertiary</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_tertiary</item>
     </style>
 
-    <style name="AppTheme.Blue_Grey_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Blue_Grey_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Grey_100_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_100_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_surface</item>
     </style>
 
-    <style name="AppTheme.Grey_200_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_200_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_surface</item>
         <item name="colorPrimaryDark">@color/m3_surface</item>
         <item name="colorAccent">@color/m3_surface</item>
     </style>
 
-    <style name="AppTheme.Grey_300_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_300_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface_variant</item>
         <item name="colorPrimaryDark">@color/m3_on_surface_variant</item>
         <item name="colorAccent">@color/m3_on_surface_variant</item>
     </style>
 
-    <style name="AppTheme.Grey_400_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_400_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface_variant</item>
         <item name="colorPrimaryDark">@color/m3_on_surface_variant</item>
         <item name="colorAccent">@color/m3_on_surface_variant</item>
     </style>
 
-    <style name="AppTheme.Grey_500_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_500_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface_variant</item>
         <item name="colorPrimaryDark">@color/m3_on_surface_variant</item>
         <item name="colorAccent">@color/m3_on_surface_variant</item>
     </style>
 
-    <style name="AppTheme.Grey_600_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_600_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface_variant</item>
         <item name="colorPrimaryDark">@color/m3_on_surface_variant</item>
         <item name="colorAccent">@color/m3_on_surface_variant</item>
     </style>
 
-    <style name="AppTheme.Grey_700_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_700_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_on_surface</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Grey_800_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_800_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_on_surface</item>
         <item name="colorAccent">@color/m3_on_surface</item>
     </style>
 
-    <style name="AppTheme.Grey_900_core" parent="AppTheme.Base.Core">
+    <style name="AppTheme.Grey_900_core" parent="AppTheme.Base">
         <item name="colorPrimary">@color/m3_on_surface</item>
         <item name="colorPrimaryDark">@color/m3_tertiary</item>
         <item name="colorAccent">@color/m3_on_surface</item>

@@ -34,7 +34,6 @@ import org.fossify.commons.helpers.FontHelper
 import org.fossify.commons.helpers.SHOW_ALL_TABS
 import org.fossify.messages.R
 import org.fossify.messages.extensions.config
-import org.fossify.messages.helpers.BackgroundThemeManager
 import org.fossify.messages.helpers.FILE_SIZE_100_KB
 import org.fossify.messages.helpers.FILE_SIZE_1_MB
 import org.fossify.messages.helpers.FILE_SIZE_200_KB
@@ -124,7 +123,7 @@ class SettingsActivity : SimpleActivity() {
         scroll.addView(content, LinearLayout.LayoutParams(-1, -2))
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
-        BackgroundThemeManager.applyToRoot(root, BackgroundThemeManager.selectedId(this))
+        ThemeManager.applyBackground(this)
         when (page) {
             GENERAL -> general(content)
             APPEARANCE -> appearance(content)
@@ -254,10 +253,10 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun showLegacyBackgrounds() {
-        val themes = BackgroundThemeManager.themes.filter { it.id != BackgroundThemeManager.NONE }
-        val labels = themes.map { if (english()) it.titleEn else it.titleFa }.toTypedArray()
-        val selected = themes.indexOfFirst { it.id == BackgroundThemeManager.selectedId(this) }.coerceAtLeast(0)
-        MaterialAlertDialogBuilder(this).setTitle(t("پس‌زمینه‌های آماده", "Ready-made backgrounds")).setSingleChoiceItems(labels, selected) { dialog, which -> BackgroundThemeManager.select(this, themes[which].id); dialog.dismiss(); render(APPEARANCE) }.show()
+        val themes = ThemeManager.allThemes(this).filter { it.source == ThemeManager.ThemeSource.BUILT_IN && it.id != ThemeManager.DEFAULT_ID }
+        val labels = themes.map { if (english()) it.nameEn else it.nameFa }.toTypedArray()
+        val selected = themes.indexOfFirst { it.id == ThemeManager.selectedThemeId(this) }.coerceAtLeast(0)
+        MaterialAlertDialogBuilder(this).setTitle(t("پس‌زمینه‌های آماده", "Ready-made backgrounds")).setSingleChoiceItems(labels, selected) { dialog, which -> ThemeManager.select(this, themes[which].id); dialog.dismiss(); render(APPEARANCE) }.show()
     }
 
     private fun isLight(color: Int): Boolean = (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255.0 > 0.55

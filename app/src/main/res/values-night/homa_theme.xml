@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Canonical Homa light Material 3 activity theme. -->
-    <style name="AppTheme.Base" parent="Theme.Material3.Light.NoActionBar">
+    <!-- Canonical Homa dark Material 3 activity theme. -->
+    <style name="AppTheme.Base" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/m3_primary</item>
-        <item name="colorPrimaryDark">@color/m3_primary</item>
+        <item name="colorPrimaryDark">@color/m3_status_bar</item>
         <item name="colorAccent">@color/m3_secondary</item>
         <item name="android:spinnerItemStyle">@style/SpinnerItem</item>
         <item name="spinnerDropDownItemStyle">@style/SpinnerItem.DropDownItem</item>
         <item name="android:spinnerDropDownItemStyle">@style/SpinnerItem.DropDownItem</item>
         <item name="buttonStyle">@style/MyTransparentButton</item>
         <item name="android:buttonStyle">@style/MyTransparentButton</item>
-        <item name="actionOverflowMenuStyle">@style/TopPopupMenu.Overflow.Light</item>
+        <item name="actionOverflowMenuStyle">@style/TopPopupMenu.Overflow.Dark</item>
         <item name="android:textColor">@color/default_text_color</item>
         <item name="android:colorControlHighlight">@color/activated_item_foreground</item>
         <item name="colorControlHighlight">@color/activated_item_foreground</item>
