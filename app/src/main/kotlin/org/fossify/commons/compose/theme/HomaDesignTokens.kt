@@ -3,12 +3,7 @@ package org.fossify.commons.compose.theme
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * Homa UI foundation tokens.
- *
- * These tokens define how the UI is constructed. Active colors and visual
- * appearance still come from the application's ThemeManager/Material theme.
- */
+/** Homa UI construction tokens. Appearance remains owned by MaterialTheme/ThemeManager. */
 object HomaDesignTokens {
     object Spacing {
         val xxs: Dp = 4.dp
@@ -35,5 +30,10 @@ object HomaDesignTokens {
         val listItemMinHeight: Dp = 56.dp
         val cardPadding: Dp = 16.dp
         val sectionSpacing: Dp = 24.dp
+    }
+
+    object Elevation {
+        val card: Dp = 1.dp
+        val raised: Dp = 3.dp
     }
 }
