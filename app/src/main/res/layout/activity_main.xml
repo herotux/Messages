@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main_coordinator"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
 
     <org.fossify.commons.views.MySearchMenu
         android:id="@+id/main_menu"
@@ -24,8 +25,8 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:clipToPadding="false"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp" />
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp" />
 
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:id="@+id/main_coordinator_wrapper"
@@ -55,14 +56,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_centerHorizontal="true"
-                    android:layout_marginTop="@dimen/bigger_margin"
+                    android:layout_marginTop="32dp"
                     android:alpha="0.8"
                     android:gravity="center"
-                    android:paddingLeft="@dimen/activity_margin"
-                    android:paddingRight="@dimen/activity_margin"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
                     android:text="@string/no_conversations_found"
-                    android:textSize="@dimen/bigger_text_size"
-                    android:textStyle="italic"
+                    android:textSize="18sp"
                     android:visibility="gone" />
 
                 <org.fossify.commons.views.MyTextView
@@ -73,16 +73,19 @@
                     android:layout_centerHorizontal="true"
                     android:background="@drawable/ripple_all_corners"
                     android:gravity="center"
-                    android:padding="@dimen/activity_margin"
+                    android:minHeight="48dp"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
                     android:text="@string/start_conversation"
-                    android:textSize="@dimen/bigger_text_size"
+                    android:textSize="16sp"
                     android:visibility="gone" />
 
                 <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
                     android:id="@+id/conversations_fastscroller"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
-
                     <org.fossify.commons.views.MyRecyclerView
                         android:id="@+id/conversations_list"
                         android:layout_width="match_parent"
@@ -91,8 +94,9 @@
                         android:layoutAnimation="@anim/layout_animation"
                         android:overScrollMode="ifContentScrolls"
                         android:scrollbars="none"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
                 </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
             </RelativeLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
@@ -104,21 +108,18 @@
             android:layout_below="@id/folder_tabs"
             android:alpha="0"
             android:visibility="gone">
-
             <org.fossify.commons.views.MyTextView
                 android:id="@+id/search_placeholder"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="@dimen/activity_margin"
+                android:layout_marginTop="24dp"
                 android:alpha="0.8"
                 android:gravity="center"
-                android:paddingStart="@dimen/activity_margin"
-                android:paddingEnd="@dimen/activity_margin"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
                 android:text="@string/no_items_found"
-                android:textSize="@dimen/bigger_text_size"
-                android:textStyle="italic" />
-
+                android:textSize="18sp" />
             <org.fossify.commons.views.MyTextView
                 android:id="@+id/search_placeholder_2"
                 android:layout_width="match_parent"
@@ -126,23 +127,21 @@
                 android:layout_below="@+id/search_placeholder"
                 android:layout_centerHorizontal="true"
                 android:alpha="0.8"
-                android:gravity="center"
-                android:paddingStart="@dimen/activity_margin"
-                android:paddingTop="@dimen/medium_margin"
-                android:paddingEnd="@dimen/activity_margin"
-                android:paddingBottom="@dimen/medium_margin"
+                android:paddingStart="24dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="16dp"
                 android:text="@string/type_2_characters"
-                android:textSize="@dimen/bigger_text_size"
-                android:textStyle="italic" />
-
+                android:textSize="18sp" />
             <org.fossify.commons.views.MyRecyclerView
                 android:id="@+id/search_results_list"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
                 android:scrollbars="vertical"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
         </RelativeLayout>
     </RelativeLayout>
 
@@ -151,7 +150,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/activity_margin"
+        android:layout_margin="16dp"
         android:src="@drawable/ic_plus_vector"
         app:applyWindowInsets="true" />
 
