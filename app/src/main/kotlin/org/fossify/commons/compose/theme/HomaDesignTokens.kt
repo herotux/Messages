@@ -32,6 +32,16 @@ object HomaDesignTokens {
         val sectionSpacing: Dp = 24.dp
     }
 
+    object Insets {
+        val content: Dp = 16.dp
+        val section: Dp = 24.dp
+    }
+
+    object Motion {
+        const val standardMillis: Int = 300
+        const val fastMillis: Int = 150
+    }
+
     object Elevation {
         val card: Dp = 1.dp
         val raised: Dp = 3.dp
