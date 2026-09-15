@@ -11,13 +11,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.fossify.commons.compose.theme.HomaDesignTokens
 
 /** Shared page skeleton for Homa screens. */
 @Composable
 fun HomaPage(
     modifier: Modifier = Modifier,
-    contentWindowInsets: WindowInsets = WindowInsets.safeDrawing,
+    contentWindowInsets: WindowInsets = WindowInsets(0, 0, 0, 0),
     header: @Composable ColumnScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -26,16 +25,14 @@ fun HomaPage(
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(contentWindowInsets)
-                .navigationBarsPadding()
-                .imePadding(),
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             header()
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(contentWindowInsets)
+                    .navigationBarsPadding()
+                    .imePadding(),
                 content = content,
             )
         }
