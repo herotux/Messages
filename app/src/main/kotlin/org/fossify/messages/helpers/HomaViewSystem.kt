@@ -4,7 +4,6 @@ import android.app.Activity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.TextView
 import android.widget.ScrollView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
@@ -32,7 +31,6 @@ object HomaViewSystem {
 
     private val installedRoots = WeakHashMap<ViewGroup, Unit>()
 
-    /** Applies Homa styling and the shared edge-to-edge/inset contract. */
     fun apply(activity: Activity) {
         val root = contentRoot(activity) ?: return
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
@@ -64,22 +62,12 @@ object HomaViewSystem {
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
             toolbar?.let { base ->
                 toolbarPadding?.let { p ->
-                    base.updatePadding(
-                        left = p.left,
-                        top = p.top + bars.top,
-                        right = p.right,
-                        bottom = p.bottom,
-                    )
+                    base.updatePadding(left = p.left, top = p.top + bars.top, right = p.right, bottom = p.bottom)
                 }
             }
             scroll?.let { base ->
                 scrollPadding?.let { p ->
-                    base.updatePadding(
-                        left = p.left,
-                        top = p.top,
-                        right = p.right,
-                        bottom = p.bottom + maxOf(bars.bottom, ime.bottom),
-                    )
+                    base.updatePadding(left = p.left, top = p.top, right = p.right, bottom = p.bottom + maxOf(bars.bottom, ime.bottom))
                 }
             }
             insets
@@ -107,9 +95,7 @@ object HomaViewSystem {
                 view.minHeight = dp(view, 40)
                 view.ensureAccessibleTouchTarget = true
             }
-            is SwitchMaterial -> {
-                view.minHeight = dp(view, 48)
-            }
+            is SwitchMaterial -> view.minHeight = dp(view, 48)
             is TextInputLayout -> {
                 view.boxCornerRadiusTopStart = dp(view, 12).toFloat()
                 view.boxCornerRadiusTopEnd = dp(view, 12).toFloat()
@@ -118,15 +104,8 @@ object HomaViewSystem {
                 view.boxStrokeColor = resolveColor(view, MaterialR.attr.colorOutline)
                 view.setBoxStrokeWidthFocused(dp(view, 2))
             }
-            is FloatingActionButton -> {
-                view.elevation = dp(view, 3).toFloat()
-            }
-            is EditText -> {
-                view.minHeight = maxOf(view.minHeight, dp(view, 48))
-            }
-            is TextView -> {
-                view.setTextColor(resolveColor(view, MaterialR.attr.colorOnSurface))
-            }
+            is FloatingActionButton -> view.elevation = dp(view, 3).toFloat()
+            is EditText -> view.minHeight = maxOf(view.minHeight, dp(view, 48))
         }
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) styleTree(view.getChildAt(i))
@@ -143,9 +122,7 @@ object HomaViewSystem {
     private fun findFirstToolbar(root: View): Toolbar? {
         if (root is Toolbar) return root
         if (root is ViewGroup) {
-            for (i in 0 until root.childCount) {
-                findFirstToolbar(root.getChildAt(i))?.let { return it }
-            }
+            for (i in 0 until root.childCount) findFirstToolbar(root.getChildAt(i))?.let { return it }
         }
         return null
     }
@@ -153,9 +130,7 @@ object HomaViewSystem {
     private fun <T : View> findFirst(root: View, type: Class<T>): T? {
         if (type.isInstance(root)) return type.cast(root)
         if (root is ViewGroup) {
-            for (i in 0 until root.childCount) {
-                findFirst(root.getChildAt(i), type)?.let { return it }
-            }
+            for (i in 0 until root.childCount) findFirst(root.getChildAt(i), type)?.let { return it }
         }
         return null
     }
