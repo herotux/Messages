@@ -3,6 +3,7 @@ package org.fossify.messages.helpers
 import android.app.Activity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.ScrollView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
@@ -13,6 +14,7 @@ import com.google.android.material.R as MaterialR
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.textfield.TextInputLayout
 import java.util.WeakHashMap
 
 /** Shared Homa contract for the existing View-based screens. */
@@ -96,6 +98,17 @@ object HomaViewSystem {
             is MaterialButton -> {
                 view.minHeight = dp(view, 48)
                 view.cornerRadius = dp(view, 12)
+            }
+            is TextInputLayout -> {
+                view.boxCornerRadiusTopStart = dp(view, 12).toFloat()
+                view.boxCornerRadiusTopEnd = dp(view, 12).toFloat()
+                view.boxCornerRadiusBottomStart = dp(view, 12).toFloat()
+                view.boxCornerRadiusBottomEnd = dp(view, 12).toFloat()
+                view.boxStrokeColor = resolveColor(view, MaterialR.attr.colorOutline)
+                view.setBoxStrokeWidthFocused(dp(view, 2))
+            }
+            is EditText -> {
+                view.minHeight = maxOf(view.minHeight, dp(view, 48))
             }
         }
         if (view is ViewGroup) {
