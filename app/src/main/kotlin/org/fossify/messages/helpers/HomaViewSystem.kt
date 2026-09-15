@@ -14,12 +14,21 @@ import com.google.android.material.R as MaterialR
 
 /** Shared Homa contract for the existing View-based screens. */
 object HomaViewSystem {
+    /** Applies Homa styling and the shared edge-to-edge/inset contract. */
     fun apply(activity: Activity) {
-        val root = activity.window.decorView.findViewById<ViewGroup>(android.R.id.content)?.getChildAt(0) as? ViewGroup ?: return
+        val root = contentRoot(activity) ?: return
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
         styleTree(root)
         installInsets(root)
     }
+
+    /** Styles an existing screen without replacing its established inset contract. */
+    fun style(activity: Activity) {
+        contentRoot(activity)?.let(::styleTree)
+    }
+
+    private fun contentRoot(activity: Activity): ViewGroup? =
+        activity.window.decorView.findViewById<ViewGroup>(android.R.id.content)?.getChildAt(0) as? ViewGroup
 
     private fun installInsets(root: ViewGroup) {
         val toolbar = findFirst<MaterialToolbar>(root)
