@@ -1,6 +1,7 @@
 package org.fossify.commons.compose.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,11 +12,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import org.fossify.commons.compose.theme.HomaDesignTokens
 
 @Composable
@@ -29,7 +32,7 @@ fun HomaTopAppBar(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = TopAppBarDefaults.topAppBarColors().containerColor.let { androidx.compose.ui.unit.Dp.Zero },
+        tonalElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier
@@ -59,7 +62,11 @@ fun HomaIconButton(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    IconButton(onClick = onClick, modifier = modifier, content = content)
+    IconButton(
+        onClick = onClick,
+        modifier = if (contentDescription.isNullOrBlank()) modifier else modifier.semantics { this.contentDescription = contentDescription },
+        content = content,
+    )
 }
 
 @Composable
@@ -69,7 +76,7 @@ fun HomaSection(
     trailing: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    androidx.compose.foundation.layout.Column(
+    Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(HomaDesignTokens.Spacing.sm),
     ) {
