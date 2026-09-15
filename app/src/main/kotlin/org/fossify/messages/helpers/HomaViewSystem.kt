@@ -93,15 +93,12 @@ object HomaViewSystem {
             }
             is Chip -> {
                 view.minHeight = dp(view, 40)
-                view.ensureAccessibleTouchTarget = true
             }
             is SwitchMaterial -> view.minHeight = dp(view, 48)
             is TextInputLayout -> {
-                view.boxCornerRadiusTopStart = dp(view, 12).toFloat()
-                view.boxCornerRadiusTopEnd = dp(view, 12).toFloat()
-                view.boxCornerRadiusBottomStart = dp(view, 12).toFloat()
-                view.boxCornerRadiusBottomEnd = dp(view, 12).toFloat()
-                view.boxStrokeColor = resolveColor(view, MaterialR.attr.colorOutline)
+                val radius = dp(view, 12).toFloat()
+                view.setBoxCornerRadii(radius, radius, radius, radius)
+                view.setBoxStrokeColor(resolveColor(view, MaterialR.attr.colorOutline))
                 view.setBoxStrokeWidthFocused(dp(view, 2))
             }
             is FloatingActionButton -> view.elevation = dp(view, 3).toFloat()
