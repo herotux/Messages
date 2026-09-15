@@ -11,15 +11,25 @@ import androidx.core.view.updatePadding
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.R as MaterialR
+import java.util.WeakHashMap
 
 /** Shared Homa contract for the existing View-based screens. */
 object HomaViewSystem {
+    private data class PaddingSnapshot(
+        val left: Int,
+        val top: Int,
+        val right: Int,
+        val bottom: Int,
+    )
+
+    private val installedRoots = WeakHashMap<ViewGroup, Unit>()
+
     /** Applies Homa styling and the shared edge-to-edge/inset contract. */
     fun apply(activity: Activity) {
         val root = contentRoot(activity) ?: return
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
         styleTree(root)
-        installInsets(root)
+        installInsetsOnce(root)
     }
 
     /** Styles an existing screen without replacing its established inset contract. */
@@ -30,32 +40,40 @@ object HomaViewSystem {
     private fun contentRoot(activity: Activity): ViewGroup? =
         activity.window.decorView.findViewById<ViewGroup>(android.R.id.content)?.getChildAt(0) as? ViewGroup
 
-    private fun installInsets(root: ViewGroup) {
+    private fun installInsetsOnce(root: ViewGroup) {
+        synchronized(installedRoots) {
+            if (installedRoots.containsKey(root)) return
+            installedRoots[root] = Unit
+        }
+
         val toolbar = findFirst<MaterialToolbar>(root)
         val scroll = findFirst<ScrollView>(root)
-        val toolbarLeft = toolbar?.paddingLeft ?: 0
-        val toolbarRight = toolbar?.paddingRight ?: 0
-        val toolbarBottom = toolbar?.paddingBottom ?: 0
-        val scrollLeft = scroll?.paddingLeft ?: 0
-        val scrollTop = scroll?.paddingTop ?: 0
-        val scrollRight = scroll?.paddingRight ?: 0
-        val scrollBottom = scroll?.paddingBottom ?: 0
+        val toolbarPadding = toolbar?.let { PaddingSnapshot(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
+        val scrollPadding = scroll?.let { PaddingSnapshot(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
 
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            toolbar?.updatePadding(
-                left = toolbarLeft,
-                top = toolbarBottom + bars.top,
-                right = toolbarRight,
-                bottom = toolbarBottom,
-            )
-            scroll?.updatePadding(
-                left = scrollLeft,
-                top = scrollTop,
-                right = scrollRight,
-                bottom = scrollBottom + maxOf(bars.bottom, ime.bottom),
-            )
+            toolbar?.let { base ->
+                toolbarPadding?.let { p ->
+                    base.updatePadding(
+                        left = p.left,
+                        top = p.top + bars.top,
+                        right = p.right,
+                        bottom = p.bottom,
+                    )
+                }
+            }
+            scroll?.let { base ->
+                scrollPadding?.let { p ->
+                    base.updatePadding(
+                        left = p.left,
+                        top = p.top,
+                        right = p.right,
+                        bottom = p.bottom + maxOf(bars.bottom, ime.bottom),
+                    )
+                }
+            }
             insets
         }
         ViewCompat.requestApplyInsets(root)
