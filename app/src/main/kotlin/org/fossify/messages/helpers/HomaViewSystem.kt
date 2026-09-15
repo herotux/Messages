@@ -4,12 +4,14 @@ import android.app.Activity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
+import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.google.android.material.R as MaterialR
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import java.util.WeakHashMap
 
@@ -46,7 +48,7 @@ object HomaViewSystem {
             installedRoots[root] = Unit
         }
 
-        val toolbar = findFirst(root, MaterialToolbar::class.java)
+        val toolbar = findFirstToolbar(root)
         val scroll = findFirst(root, ScrollView::class.java)
         val toolbarPadding = toolbar?.let { PaddingSnapshot(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
         val scrollPadding = scroll?.let { PaddingSnapshot(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
@@ -81,23 +83,41 @@ object HomaViewSystem {
 
     private fun styleTree(view: View) {
         when (view) {
-            is MaterialToolbar -> {
-                view.minimumHeight = dp(view, 64)
-                view.setBackgroundColor(resolveColor(view, MaterialR.attr.colorSurface))
-                view.setTitleTextColor(resolveColor(view, MaterialR.attr.colorOnSurface))
-                view.elevation = 0f
-            }
+            is MaterialToolbar -> styleToolbar(view)
+            is Toolbar -> styleToolbar(view)
             is MaterialCardView -> {
                 view.radius = dp(view, 16).toFloat()
                 view.cardElevation = dp(view, 1).toFloat()
-                view.strokeWidth = dp(view, 1)
-                view.strokeColor = resolveColor(view, MaterialR.attr.colorOutlineVariant)
-                view.setCardBackgroundColor(resolveColor(view, MaterialR.attr.colorSurface))
+                if (view.strokeWidth > 0) {
+                    view.strokeWidth = dp(view, 1)
+                    view.strokeColor = resolveColor(view, MaterialR.attr.colorOutlineVariant)
+                }
+            }
+            is MaterialButton -> {
+                view.minHeight = dp(view, 48)
+                view.cornerRadius = dp(view, 12)
             }
         }
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) styleTree(view.getChildAt(i))
         }
+    }
+
+    private fun styleToolbar(toolbar: Toolbar) {
+        toolbar.minimumHeight = dp(toolbar, 64)
+        toolbar.setBackgroundColor(resolveColor(toolbar, MaterialR.attr.colorSurface))
+        toolbar.setTitleTextColor(resolveColor(toolbar, MaterialR.attr.colorOnSurface))
+        toolbar.elevation = 0f
+    }
+
+    private fun findFirstToolbar(root: View): Toolbar? {
+        if (root is Toolbar) return root
+        if (root is ViewGroup) {
+            for (i in 0 until root.childCount) {
+                findFirstToolbar(root.getChildAt(i))?.let { return it }
+            }
+        }
+        return null
     }
 
     private fun <T : View> findFirst(root: View, type: Class<T>): T? {
