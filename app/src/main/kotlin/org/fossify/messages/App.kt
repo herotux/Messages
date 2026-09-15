@@ -15,13 +15,17 @@ import org.fossify.commons.FossifyApp
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.messages.activities.BankCardsActivity
 import org.fossify.messages.activities.MainActivity
+import org.fossify.messages.activities.SettingsActivity
+import org.fossify.messages.activities.ThemeBuilderActivity
 import org.fossify.messages.activities.ThreadActivity
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.helpers.AppLanguageManager
 import org.fossify.messages.helpers.BankAccountsFeature
 import org.fossify.messages.helpers.BankCardsCrashLogger
 import org.fossify.messages.helpers.ConversationFolderManager
+import org.fossify.messages.helpers.HomaViewSystem
 import org.fossify.messages.helpers.MessagingCache
 import org.fossify.messages.helpers.PersianThreadFontInstaller
 import org.fossify.messages.helpers.TapsellAds
@@ -62,6 +66,12 @@ class App : FossifyApp() {
 
         override fun onActivityResumed(activity: Activity) {
             AppLanguageManager.apply(activity)
+
+            // These screens still use the legacy View system, so apply the same Homa
+            // edge-to-edge and surface/card contract without rewriting their features.
+            if (activity is SettingsActivity || activity is ThemeBuilderActivity || activity is BankCardsActivity) {
+                HomaViewSystem.apply(activity)
+            }
 
             if (activity is MainActivity) {
                 activity.findViewById<android.view.View>(R.id.folder_tabs)?.visibility =
