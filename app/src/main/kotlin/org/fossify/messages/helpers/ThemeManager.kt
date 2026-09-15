@@ -189,7 +189,11 @@ object ThemeManager {
         return current(activity)
     }
 
+    /** Applies a theme background only to a conversation. Global screens stay on the app surface. */
     fun applyBackground(activity: Activity) {
+        val threadId = activity.intent?.getLongExtra(THREAD_ID, 0L) ?: 0L
+        if (threadId == 0L) return
+
         val theme = themeForActivity(activity)
         val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
         val root = if (content.childCount == 1 && content.getChildAt(0) is ViewGroup) content.getChildAt(0) as ViewGroup else content
