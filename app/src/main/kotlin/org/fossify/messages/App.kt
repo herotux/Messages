@@ -67,13 +67,22 @@ class App : FossifyApp() {
         override fun onActivityResumed(activity: Activity) {
             AppLanguageManager.apply(activity)
 
-            // Legacy View screens keep their feature implementations, but their chrome
-            // is now governed by the shared Homa contract.
-            if (activity is SettingsActivity || activity is ThemeBuilderActivity) {
-                HomaViewSystem.apply(activity)
-            } else if (activity is BankCardsActivity) {
-                // Bank cards already owns its inset contract; only normalize its surfaces/cards.
-                HomaViewSystem.style(activity)
+            // Normalize the existing View hierarchy with Homa's shared chrome contract.
+            // Settings/Theme Builder additionally own a centralized edge-to-edge contract.
+            when {
+                activity is SettingsActivity || activity is ThemeBuilderActivity -> {
+                    HomaViewSystem.apply(activity)
+                }
+                else -> {
+                    // Main, conversation, contacts, dialogs and feature screens retain their
+                    // established inset behavior while sharing Homa toolbar/card/button styling.
+                    HomaViewSystem.style(activity)
+                }
+            }
+
+            if (activity is BankCardsActivity) {
+                // Bank cards already owns its inset contract; HomaViewSystem.style() does not
+                // install another inset listener and preserves bank-specific card colors.
             }
 
             if (activity is MainActivity) {
