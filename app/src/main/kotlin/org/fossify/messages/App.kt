@@ -67,10 +67,13 @@ class App : FossifyApp() {
         override fun onActivityResumed(activity: Activity) {
             AppLanguageManager.apply(activity)
 
-            // These screens still use the legacy View system, so apply the same Homa
-            // edge-to-edge and surface/card contract without rewriting their features.
-            if (activity is SettingsActivity || activity is ThemeBuilderActivity || activity is BankCardsActivity) {
+            // Legacy View screens keep their feature implementations, but their chrome
+            // is now governed by the shared Homa contract.
+            if (activity is SettingsActivity || activity is ThemeBuilderActivity) {
                 HomaViewSystem.apply(activity)
+            } else if (activity is BankCardsActivity) {
+                // Bank cards already owns its inset contract; only normalize its surfaces/cards.
+                HomaViewSystem.style(activity)
             }
 
             if (activity is MainActivity) {
