@@ -13,7 +13,7 @@ import android.util.AttributeSet
  * view already synchronizes direction after attachment/configuration, so this
  * constructor-time callback is intentionally suppressed here.
  */
-class Android16SafeFixedConversationFolderTabsView @JvmOverloads constructor(
+open class Android16SafeFixedConversationFolderTabsView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : FixedConversationFolderTabsView(context, attrs) {

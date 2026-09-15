@@ -84,8 +84,8 @@ open class FixedConversationFolderTabsView @JvmOverloads constructor(
         if (reorder) installDrag()
     }
 
-    /** No filled tab state; active tab gets an exact full-width bottom indicator. */
-    private fun styleTabs(selected: String) {
+    /** Presentation hook. Subclasses may replace the visual tab treatment. */
+    protected open fun styleTabs(selected: String) {
         val tabs = privateField("tabs") as? LinearLayout ?: return
         val folders = ConversationFolderManager.getFolders(context).associateBy { it.id }
         val primary = context.getProperPrimaryColor()
@@ -112,6 +112,12 @@ open class FixedConversationFolderTabsView @JvmOverloads constructor(
             }
         }
     }
+
+    protected fun tabContainer(): LinearLayout? = privateField("tabs") as? LinearLayout
+
+    protected fun folderMap() = ConversationFolderManager.getFolders(context).associateBy { it.id }
+
+    protected fun primaryTabColor() = context.getProperPrimaryColor()
 
     private fun selectableItemBackgroundBorderless(): Drawable? = runCatching {
         val value = android.util.TypedValue()
