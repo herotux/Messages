@@ -8,9 +8,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import com.google.android.material.R as MaterialR
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.R as MaterialR
 import java.util.WeakHashMap
 
 /** Shared Homa contract for the existing View-based screens. */
@@ -46,8 +46,8 @@ object HomaViewSystem {
             installedRoots[root] = Unit
         }
 
-        val toolbar = findFirst<MaterialToolbar>(root)
-        val scroll = findFirst<ScrollView>(root)
+        val toolbar = findFirst(root, MaterialToolbar::class.java)
+        val scroll = findFirst(root, ScrollView::class.java)
         val toolbarPadding = toolbar?.let { PaddingSnapshot(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
         val scrollPadding = scroll?.let { PaddingSnapshot(it.paddingLeft, it.paddingTop, it.paddingRight, it.paddingBottom) }
 
@@ -100,10 +100,12 @@ object HomaViewSystem {
         }
     }
 
-    private inline fun <reified T : View> findFirst(root: View): T? {
-        if (root is T) return root
+    private fun <T : View> findFirst(root: View, type: Class<T>): T? {
+        if (type.isInstance(root)) return type.cast(root)
         if (root is ViewGroup) {
-            for (i in 0 until root.childCount) findFirst<T>(root.getChildAt(i))?.let { return it }
+            for (i in 0 until root.childCount) {
+                findFirst(root.getChildAt(i), type)?.let { return it }
+            }
         }
         return null
     }
