@@ -8,6 +8,7 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.helpers.FontHelper
 import org.fossify.messages.R
 import org.fossify.messages.extensions.config
+import org.fossify.messages.helpers.HomaViewSystem
 import org.fossify.messages.helpers.ThemeApplier
 
 open class SimpleActivity : BaseSimpleActivity() {
@@ -18,6 +19,7 @@ open class SimpleActivity : BaseSimpleActivity() {
         applyLocaleLayoutDirection()
         applyVisualTheme()
         applySelectedFontToViewTree(window.decorView)
+        HomaViewSystem.apply(this)
         appliedFontSize = config.fontSize
     }
 
@@ -26,6 +28,7 @@ open class SimpleActivity : BaseSimpleActivity() {
         applyLocaleLayoutDirection()
         applyVisualTheme()
         applySelectedFontToViewTree(window.decorView)
+        HomaViewSystem.apply(this)
 
         if (appliedFontSize != -1 && appliedFontSize != config.fontSize && this !is SettingsActivity) {
             appliedFontSize = config.fontSize
