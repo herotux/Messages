@@ -21,14 +21,16 @@
             android:layout_height="160dp"
             android:background="?attr/colorSurface"
             app:collapsedTitleGravity="bottom|start"
+            app:collapsedTitleTextAppearance="@style/HomaMainBrandTitleCollapsed"
             app:contentScrim="?attr/colorSurface"
             app:expandedTitleGravity="bottom|start"
             app:expandedTitleMarginBottom="16dp"
             app:expandedTitleMarginEnd="16dp"
             app:expandedTitleMarginStart="20dp"
             app:expandedTitleMarginTop="16dp"
+            app:expandedTitleTextAppearance="@style/HomaMainBrandTitleExpanded"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:title="@string/app_launcher_name"
+            app:title="Homa"
             app:toolbarId="@+id/main_collapsing_toolbar_bar">
 
             <androidx.appcompat.widget.Toolbar
@@ -115,7 +117,7 @@
                         android:overScrollMode="ifContentScrolls"
                         android:scrollbars="none"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-                </com.qtalk.recyclerview.fastscroller.RecyclerViewFastScroller>
+                </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
             </RelativeLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
