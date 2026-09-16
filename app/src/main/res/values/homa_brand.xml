@@ -4,7 +4,12 @@
     <color name="homa_brand_teal">#00A6A6</color>
     <color name="homa_brand_teal_dark">#007F82</color>
     <color name="homa_brand_teal_light">#5DD6D3</color>
-    <color name="homa_brand_surface_tint">#E4F7F6</color>
+    <color name="homa_brand_teal_surface">#E4F7F6</color>
+    <color name="homa_brand_on_teal">#FFFFFF</color>
+
+    <!-- Semantic brand roles. Theme colors remain the source of truth for ordinary UI surfaces. -->
+    <color name="homa_brand_selected">@color/homa_brand_teal</color>
+    <color name="homa_brand_accent">@color/homa_brand_teal</color>
 
     <style name="HomaMainBrandTitleExpanded" parent="TextAppearance.Material3.HeadlineMedium">
         <item name="android:textColor">@color/homa_brand_teal</item>
