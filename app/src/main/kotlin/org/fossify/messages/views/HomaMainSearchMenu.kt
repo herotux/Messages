@@ -24,7 +24,7 @@ import org.fossify.commons.helpers.MEDIUM_ALPHA
 import org.fossify.commons.views.MyAppBarLayout
 import org.fossify.messages.R
 
-/** Main-screen search header: compact icon when closed, real field when opened. */
+/** Compact search header used by the dedicated Homa search surface. */
 class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout(context, attrs) {
     var isSearchOpen = false
     var useArrowIcon = false
@@ -51,7 +51,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
         topToolbar = findViewById(R.id.top_toolbar)
 
         searchBarContainer.layoutParams = searchBarContainer.layoutParams.apply {
-            height = dp(64)
+            height = dp(56)
         }
         searchBarContainer.setPadding(0, 0, 0, 0)
         topToolbar.title = ""
@@ -149,7 +149,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
 
     private fun setClosedLayout() {
         toolbarContainer.background = null
-        searchIcon.layoutParams = RelativeLayout.LayoutParams(dp(48), dp(64)).apply {
+        searchIcon.layoutParams = RelativeLayout.LayoutParams(dp(44), dp(56)).apply {
             addRule(RelativeLayout.ALIGN_PARENT_END)
         }
         searchIcon.setPadding(dp(8), 0, dp(8), 0)
@@ -158,13 +158,13 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
             RelativeLayout.LayoutParams.MATCH_PARENT,
         ).apply {
             addRule(RelativeLayout.ALIGN_PARENT_END)
-            marginEnd = dp(52)
+            marginEnd = dp(48)
         }
     }
 
     private fun setOpenLayout() {
         toolbarContainer.setBackgroundResource(R.drawable.search_menu_background)
-        searchIcon.layoutParams = RelativeLayout.LayoutParams(dp(48), dp(64)).apply {
+        searchIcon.layoutParams = RelativeLayout.LayoutParams(dp(44), dp(56)).apply {
             addRule(RelativeLayout.ALIGN_PARENT_START)
         }
         searchIcon.setPadding(dp(8), 0, dp(8), 0)
@@ -180,7 +180,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
             RelativeLayout.LayoutParams.MATCH_PARENT,
         ).apply {
             addRule(RelativeLayout.ALIGN_PARENT_END)
-            marginEnd = dp(4)
+            marginEnd = dp(2)
         }
     }
 
