@@ -2,6 +2,7 @@ package org.fossify.messages.views
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Color
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -41,6 +42,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
             height = dp(64)
         }
         binding.searchBarContainer.setPadding(0, 0, 0, 0)
+        binding.topToolbar.title = ""
         binding.topToolbarSearch.visibility = View.GONE
         setClosedLayout()
     }
@@ -121,7 +123,8 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
         val backgroundColor = context.getProperBackgroundColor()
         val contrastColor = backgroundColor.getContrastColor()
 
-        setBackgroundColor(backgroundColor)
+        setBackgroundColor(Color.TRANSPARENT)
+        binding.topToolbar.background = null
         binding.topToolbarSearchIcon.applyColorFilter(contrastColor)
         binding.toolbarContainer.background?.applyColorFilter(
             color = context.getProperPrimaryColor().adjustAlpha(LOWER_ALPHA)
