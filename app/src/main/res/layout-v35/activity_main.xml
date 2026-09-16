@@ -116,6 +116,7 @@
                     android:text="@string/start_conversation"
                     android:textSize="@dimen/bigger_text_size"
                     android:visibility="gone" />
+                <!-- Keep the fast scroller as a real parent so the RecyclerView remains wired to its existing behavior. -->
                 <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
                     android:id="@+id/conversations_fastscroller"
                     android:layout_width="match_parent"
