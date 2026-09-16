@@ -139,22 +139,94 @@
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </RelativeLayout>
 
-    <!-- Full-screen search surface. It sits above the home page, while the search toolbar stays above it. -->
+    <!-- Dedicated search surface. Home header and folder tabs are fully covered while searching. -->
     <FrameLayout
         android:id="@+id/search_holder"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?attr/colorSurface"
         android:clipToPadding="false"
-        android:paddingTop="76dp"
+        android:paddingTop="56dp"
         android:visibility="gone">
+
+        <HorizontalScrollView
+            android:id="@+id/search_filters_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_gravity="top"
+            android:clipToPadding="false"
+            android:fillViewport="false"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/search_filters"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="0dp"
+                app:singleLine="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/search_filter_tags"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="تگ‌ها"
+                    android:checkable="true" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/search_filter_sim"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="سیم‌کارت‌ها"
+                    android:checkable="true" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/search_filter_unread"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="خوانده‌نشده‌ها"
+                    android:checkable="true" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/search_filter_unknown"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ناشناس‌ها"
+                    android:checkable="true" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/search_filter_links"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="لینک‌ها"
+                    android:checkable="true" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/search_filter_locations"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="مکان‌ها"
+                    android:checkable="true" />
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
 
         <org.fossify.commons.views.MyTextView
             android:id="@+id/search_placeholder"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="top"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="76dp"
             android:alpha="0.8"
             android:gravity="center"
             android:paddingStart="24dp"
@@ -167,7 +239,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="top"
-            android:layout_marginTop="72dp"
+            android:layout_marginTop="124dp"
             android:alpha="0.8"
             android:gravity="center"
             android:paddingStart="24dp"
@@ -180,6 +252,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
+            android:paddingTop="56dp"
             android:scrollbars="vertical"
             android:visibility="gone"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
