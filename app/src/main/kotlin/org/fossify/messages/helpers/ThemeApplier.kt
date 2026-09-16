@@ -24,12 +24,18 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputLayout
 import org.fossify.messages.R
+import org.fossify.messages.activities.SettingsActivity
 
 /** Single runtime application point for the app-owned visual theme. */
 object ThemeApplier {
     fun apply(activity: Activity) {
         val theme = ThemeManager.themeForActivity(activity)
-        val tokens = ThemeResolver.resolve(theme)
+        val darkMode = (activity.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val tokens = if (activity is SettingsActivity) {
+            ThemeResolver.resolveSettings(theme, darkMode)
+        } else {
+            ThemeResolver.resolve(theme)
+        }
         ThemeManager.applyBackground(activity)
         applySystemBars(activity, tokens)
         (activity as? AppCompatActivity)?.supportActionBar?.let { actionBar ->
@@ -82,10 +88,10 @@ object ThemeApplier {
         when (view) {
             is Toolbar -> {
                 view.setBackgroundColor(tokens.toolbar)
-                view.setTitleTextColor(tokens.onPrimary)
+                view.setTitleTextColor(tokens.onSurface)
                 view.setSubtitleTextColor(tokens.messageSecondaryText)
-                view.navigationIcon?.setTint(tokens.onPrimary)
-                for (index in 0 until view.menu.size()) view.menu.getItem(index).icon?.setTint(tokens.onPrimary)
+                view.navigationIcon?.setTint(tokens.onSurface)
+                for (index in 0 until view.menu.size()) view.menu.getItem(index).icon?.setTint(tokens.onSurface)
             }
             is AppBarLayout -> view.setBackgroundColor(tokens.toolbar)
             is FloatingActionButton -> {
@@ -93,7 +99,7 @@ object ThemeApplier {
                 view.imageTintList = ColorStateList.valueOf(tokens.onPrimary)
             }
             is MaterialCardView -> {
-                view.setCardBackgroundColor(tokens.surface)
+                view.setCardBackgroundColor(tokens.surfaceVariant)
                 view.strokeColor = tokens.divider
             }
             is MaterialButton -> applyMaterialButton(view, tokens)
