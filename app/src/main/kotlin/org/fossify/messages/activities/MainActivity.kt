@@ -10,6 +10,7 @@ import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.provider.Telephony
 import android.text.TextUtils
+import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.content.res.AppCompatResources
 import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.extensions.adjustAlpha
@@ -76,8 +77,9 @@ import org.greenrobot.eventbus.ThreadMode
 
 class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
-    
+
     private val MAKE_DEFAULT_APP_REQUEST = 1
+    private val SEARCH_PAGE_ANIMATION_DURATION = 280L
 
     private var storedTextColor = 0
     private var storedFontSize = 0
@@ -160,18 +162,15 @@ class MainActivity : SimpleActivity() {
         binding.mainMenu.toggleHideOnScroll(true)
         binding.mainMenu.setupMenu()
 
+        binding.mainMenu.onSearchOpenListener = {
+            showSearchPage()
+        }
+
         binding.mainMenu.onSearchClosedListener = {
-            fadeOutSearch()
+            hideSearchPage()
         }
 
         binding.mainMenu.onSearchTextChangedListener = { text ->
-            if (text.isNotEmpty()) {
-                if (binding.searchHolder.alpha < 1f) {
-                    binding.searchHolder.fadeIn()
-                }
-            } else {
-                fadeOutSearch()
-            }
             searchTextChanged(text)
         }
 
@@ -185,6 +184,39 @@ class MainActivity : SimpleActivity() {
             }
             return@setOnMenuItemClickListener true
         }
+    }
+
+    private fun showSearchPage() {
+        val searchPage = binding.searchHolder
+        searchPage.animate().cancel()
+        searchPage.beVisible()
+        searchPage.alpha = 1f
+        searchPage.translationX = searchPage.width.takeIf { it > 0 }?.toFloat() ?: resources.displayMetrics.widthPixels.toFloat()
+        searchPage.animate()
+            .translationX(0f)
+            .setDuration(SEARCH_PAGE_ANIMATION_DURATION)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+    }
+
+    private fun hideSearchPage() {
+        val searchPage = binding.searchHolder
+        searchPage.animate().cancel()
+        if (searchPage.visibility != android.view.View.VISIBLE) {
+            return
+        }
+
+        val target = searchPage.width.takeIf { it > 0 }?.toFloat() ?: resources.displayMetrics.widthPixels.toFloat()
+        searchPage.animate()
+            .translationX(target)
+            .setDuration(SEARCH_PAGE_ANIMATION_DURATION)
+            .setInterpolator(DecelerateInterpolator())
+            .withEndAction {
+                searchPage.beGone()
+                searchPage.translationX = 0f
+                searchTextChanged("", true)
+            }
+            .start()
     }
 
     private fun refreshMenuItems() {
@@ -447,16 +479,6 @@ class MainActivity : SimpleActivity() {
         binding.noConversationsPlaceholder.beVisibleIf(show)
         binding.noConversationsPlaceholder.text = getString(R.string.no_conversations_found)
         binding.noConversationsPlaceholder2.beVisibleIf(show)
-    }
-
-    private fun fadeOutSearch() {
-        binding.searchHolder.animate()
-            .alpha(0f)
-            .setDuration(SHORT_ANIMATION_DURATION)
-            .withEndAction {
-                binding.searchHolder.beGone()
-                searchTextChanged("", true)
-            }.start()
     }
 
     @SuppressLint("NotifyDataSetChanged")
