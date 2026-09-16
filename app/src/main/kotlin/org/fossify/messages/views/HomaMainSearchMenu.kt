@@ -10,7 +10,6 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import com.google.android.material.appbar.MaterialToolbar
-import org.fossify.commons.R as CommonsR
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.applyColorFilter
@@ -23,6 +22,7 @@ import org.fossify.commons.extensions.showKeyboard
 import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.MEDIUM_ALPHA
 import org.fossify.commons.views.MyAppBarLayout
+import org.fossify.messages.R
 
 /** Main-screen search header: compact icon when closed, real field when opened. */
 class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout(context, attrs) {
@@ -43,12 +43,12 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
         get() = topToolbar
 
     init {
-        LayoutInflater.from(context).inflate(CommonsR.layout.menu_search, this, true)
-        searchBarContainer = findViewById(CommonsR.id.search_bar_container)
-        toolbarContainer = findViewById(CommonsR.id.toolbar_container)
-        searchIcon = findViewById(CommonsR.id.top_toolbar_search_icon)
-        searchField = findViewById(CommonsR.id.top_toolbar_search)
-        topToolbar = findViewById(CommonsR.id.top_toolbar)
+        LayoutInflater.from(context).inflate(R.layout.menu_search, this, true)
+        searchBarContainer = findViewById(R.id.search_bar_container)
+        toolbarContainer = findViewById(R.id.toolbar_container)
+        searchIcon = findViewById(R.id.top_toolbar_search_icon)
+        searchField = findViewById(R.id.top_toolbar_search)
+        topToolbar = findViewById(R.id.top_toolbar)
 
         searchBarContainer.layoutParams = searchBarContainer.layoutParams.apply {
             height = dp(64)
@@ -94,8 +94,8 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
         searchField.visibility = View.VISIBLE
         setOpenLayout()
         onSearchOpenListener?.invoke()
-        searchIcon.setImageResource(CommonsR.drawable.ic_arrow_left_vector)
-        searchIcon.contentDescription = resources.getString(CommonsR.string.back)
+        searchIcon.setImageResource(R.drawable.ic_arrow_left_vector)
+        searchIcon.contentDescription = resources.getString(R.string.back)
     }
 
     fun closeSearch() {
@@ -106,8 +106,8 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
         searchField.visibility = View.GONE
         setClosedLayout()
         if (!useArrowIcon) {
-            searchIcon.setImageResource(CommonsR.drawable.ic_search_vector)
-            searchIcon.contentDescription = resources.getString(CommonsR.string.search)
+            searchIcon.setImageResource(R.drawable.ic_search_vector)
+            searchIcon.contentDescription = resources.getString(R.string.search)
         }
         (context as? Activity)?.hideKeyboard()
     }
@@ -124,11 +124,11 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
     fun toggleForceArrowBackIcon(useArrowBack: Boolean) {
         useArrowIcon = useArrowBack
         if (useArrowBack) {
-            searchIcon.setImageResource(CommonsR.drawable.ic_arrow_left_vector)
-            searchIcon.contentDescription = resources.getString(CommonsR.string.back)
+            searchIcon.setImageResource(R.drawable.ic_arrow_left_vector)
+            searchIcon.contentDescription = resources.getString(R.string.back)
         } else {
-            searchIcon.setImageResource(CommonsR.drawable.ic_search_vector)
-            searchIcon.contentDescription = resources.getString(CommonsR.string.search)
+            searchIcon.setImageResource(R.drawable.ic_search_vector)
+            searchIcon.contentDescription = resources.getString(R.string.search)
         }
     }
 
@@ -163,7 +163,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
     }
 
     private fun setOpenLayout() {
-        toolbarContainer.setBackgroundResource(CommonsR.drawable.search_menu_background)
+        toolbarContainer.setBackgroundResource(R.drawable.search_menu_background)
         searchIcon.layoutParams = RelativeLayout.LayoutParams(dp(48), dp(64)).apply {
             addRule(RelativeLayout.ALIGN_PARENT_START)
         }
@@ -172,8 +172,8 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
             0,
             RelativeLayout.LayoutParams.MATCH_PARENT,
         ).apply {
-            addRule(RelativeLayout.RIGHT_OF, CommonsR.id.top_toolbar_search_icon)
-            addRule(RelativeLayout.LEFT_OF, CommonsR.id.top_toolbar)
+            addRule(RelativeLayout.RIGHT_OF, R.id.top_toolbar_search_icon)
+            addRule(RelativeLayout.LEFT_OF, R.id.top_toolbar)
         }
         topToolbar.layoutParams = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
