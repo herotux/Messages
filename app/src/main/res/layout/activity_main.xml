@@ -137,47 +137,53 @@
                 </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
             </RelativeLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
+    </RelativeLayout>
 
-        <RelativeLayout
-            android:id="@+id/search_holder"
+    <!-- Full-screen search surface. It sits above the home page, while the search toolbar stays above it. -->
+    <FrameLayout
+        android:id="@+id/search_holder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/colorSurface"
+        android:clipToPadding="false"
+        android:paddingTop="76dp"
+        android:visibility="gone">
+
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/search_placeholder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginTop="24dp"
+            android:alpha="0.8"
+            android:gravity="center"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:text="@string/no_items_found"
+            android:textSize="18sp" />
+
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/search_placeholder_2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginTop="72dp"
+            android:alpha="0.8"
+            android:gravity="center"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:text="@string/type_2_characters"
+            android:textSize="18sp" />
+
+        <org.fossify.commons.views.MyRecyclerView
+            android:id="@+id/search_results_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:alpha="0"
-            android:visibility="gone">
-            <org.fossify.commons.views.MyTextView
-                android:id="@+id/search_placeholder"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="24dp"
-                android:alpha="0.8"
-                android:gravity="center"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:text="@string/no_items_found"
-                android:textSize="18sp" />
-            <org.fossify.commons.views.MyTextView
-                android:id="@+id/search_placeholder_2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/search_placeholder"
-                android:layout_centerHorizontal="true"
-                android:alpha="0.8"
-                android:paddingStart="24dp"
-                android:paddingTop="16dp"
-                android:paddingEnd="24dp"
-                android:paddingBottom="16dp"
-                android:text="@string/type_2_characters"
-                android:textSize="18sp" />
-            <org.fossify.commons.views.MyRecyclerView
-                android:id="@+id/search_results_list"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:scrollbars="vertical"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-        </RelativeLayout>
-    </RelativeLayout>
+            android:clipToPadding="false"
+            android:scrollbars="vertical"
+            android:visibility="gone"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+    </FrameLayout>
 
     <org.fossify.messages.views.HomaMainSearchMenu
         android:id="@+id/main_menu"
