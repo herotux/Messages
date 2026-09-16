@@ -1,10 +1,12 @@
 package org.fossify.messages.helpers
 
 import android.app.Activity
+import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ScrollView
+import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -102,7 +104,8 @@ object HomaViewSystem {
                 view.setBoxStrokeWidthFocused(dp(view, 2))
             }
             is FloatingActionButton -> view.elevation = dp(view, 3).toFloat()
-            is EditText -> view.minHeight = maxOf(view.minHeight, dp(view, 48))
+            is EditText -> styleEditText(view)
+            is TextView -> if (view.isClickable && view !is MaterialButton && view !is Chip) styleClickableText(view)
         }
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) styleTree(view.getChildAt(i))
@@ -115,6 +118,33 @@ object HomaViewSystem {
         toolbar.setTitleTextColor(resolveColor(toolbar, MaterialR.attr.colorOnSurface))
         toolbar.elevation = 0f
     }
+
+    private fun styleEditText(editText: EditText) {
+        editText.minHeight = maxOf(editText.minHeight, dp(editText, 48))
+        if (editText.background == null || editText.background !is GradientDrawable) {
+            editText.background = roundedSurface(editText, 12)
+        }
+        val horizontal = maxOf(editText.paddingLeft, dp(editText, 14))
+        val vertical = maxOf(editText.paddingTop, dp(editText, 10))
+        editText.setPadding(horizontal, vertical, horizontal, vertical)
+    }
+
+    private fun styleClickableText(view: TextView) {
+        view.minHeight = maxOf(view.minimumHeight, dp(view, 48))
+        if (view.background == null || view.background is GradientDrawable) {
+            view.background = roundedSurface(view, 12)
+        }
+        val horizontal = maxOf(view.paddingLeft, dp(view, 12))
+        val vertical = maxOf(view.paddingTop, dp(view, 8))
+        view.setPadding(horizontal, vertical, horizontal, vertical)
+    }
+
+    private fun roundedSurface(view: View, radiusDp: Int): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dp(view, radiusDp).toFloat()
+            setColor(resolveColor(view, MaterialR.attr.colorSurfaceVariant))
+        }
 
     private fun findFirstToolbar(root: View): Toolbar? {
         if (root is Toolbar) return root
