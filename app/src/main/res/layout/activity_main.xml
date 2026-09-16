@@ -7,18 +7,38 @@
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
-    <org.fossify.commons.views.MySearchMenu
-        android:id="@+id/main_menu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <RelativeLayout
-        android:id="@+id/main_nested_scrollview"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/main_appbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fillViewport="true"
-        android:scrollbars="none"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:background="?attr/colorSurface"
+        android:elevation="0dp"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:id="@+id/main_collapsing_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:background="?attr/colorSurface"
+            app:collapsedTitleGravity="bottom|start"
+            app:contentScrim="?attr/colorSurface"
+            app:expandedTitleGravity="bottom|start"
+            app:expandedTitleMarginBottom="16dp"
+            app:expandedTitleMarginEnd="16dp"
+            app:expandedTitleMarginStart="20dp"
+            app:expandedTitleMarginTop="16dp"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:title="@string/app_launcher_name"
+            app:toolbarId="@+id/main_collapsing_toolbar_bar">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/main_collapsing_toolbar_bar"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:background="@android:color/transparent"
+                android:contentInsetStart="0dp"
+                app:layout_collapseMode="pin" />
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
 
         <org.fossify.messages.views.HomaPillConversationFolderTabsView
             android:id="@+id/folder_tabs"
@@ -27,12 +47,20 @@
             android:clipToPadding="false"
             android:paddingStart="8dp"
             android:paddingEnd="8dp" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <RelativeLayout
+        android:id="@+id/main_nested_scrollview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:scrollbars="none"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:id="@+id/main_coordinator_wrapper"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/folder_tabs">
+            android:layout_height="match_parent">
             <RelativeLayout
                 android:id="@+id/main_holder"
                 android:layout_width="match_parent"
@@ -100,7 +128,6 @@
             android:id="@+id/search_holder"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_below="@id/folder_tabs"
             android:alpha="0"
             android:visibility="gone">
             <org.fossify.commons.views.MyTextView
@@ -139,6 +166,12 @@
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
         </RelativeLayout>
     </RelativeLayout>
+
+    <org.fossify.messages.views.HomaMainSearchMenu
+        android:id="@+id/main_menu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:elevation="4dp" />
 
     <org.fossify.commons.views.MyFloatingActionButton
         android:id="@+id/conversations_fab"
