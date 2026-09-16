@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Homa brand identity. Keep this palette centralized; do not duplicate brand colors in layouts. -->
+    <color name="homa_brand_teal">#00A6A6</color>
+    <color name="homa_brand_teal_dark">#007F82</color>
+    <color name="homa_brand_teal_light">#5DD6D3</color>
+    <color name="homa_brand_surface_tint">#E4F7F6</color>
+
+    <style name="HomaMainBrandTitleExpanded" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textColor">@color/homa_brand_teal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="HomaMainBrandTitleCollapsed" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/homa_brand_teal</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>
