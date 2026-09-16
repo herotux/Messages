@@ -33,12 +33,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_below="@id/folder_tabs">
-
             <RelativeLayout
                 android:id="@+id/main_holder"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/conversations_progress_bar"
                     android:layout_width="match_parent"
@@ -50,7 +48,6 @@
                     app:showAnimationBehavior="inward"
                     app:showDelay="250"
                     tools:visibility="visible" />
-
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/no_conversations_placeholder"
                     android:layout_width="match_parent"
@@ -64,7 +61,6 @@
                     android:text="@string/no_conversations_found"
                     android:textSize="18sp"
                     android:visibility="gone" />
-
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/no_conversations_placeholder_2"
                     android:layout_width="wrap_content"
@@ -81,7 +77,6 @@
                     android:text="@string/start_conversation"
                     android:textSize="16sp"
                     android:visibility="gone" />
-
                 <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
                     android:id="@+id/conversations_fastscroller"
                     android:layout_width="match_parent"
@@ -94,8 +89,8 @@
                         android:layoutAnimation="@anim/layout_animation"
                         android:overScrollMode="ifContentScrolls"
                         android:scrollbars="none"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
                 </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
             </RelativeLayout>
@@ -138,8 +133,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
                 android:scrollbars="vertical"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
         </RelativeLayout>
@@ -153,5 +148,4 @@
         android:layout_margin="16dp"
         android:src="@drawable/ic_plus_vector"
         app:applyWindowInsets="true" />
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
