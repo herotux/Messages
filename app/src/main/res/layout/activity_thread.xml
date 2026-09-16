@@ -18,6 +18,8 @@
             android:layout_width="match_parent"
             android:layout_height="64dp"
             android:background="?attr/colorSurface"
+            android:minHeight="64dp"
+            app:contentInsetStartWithNavigation="0dp"
             app:menu="@menu/menu_thread"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
         <org.fossify.messages.helpers.BankConversationVerificationView
@@ -116,16 +118,16 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:overScrollMode="ifContentScrolls"
-                android:paddingTop="16dp"
-                android:paddingBottom="12dp"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="16dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
                 android:scrollbars="none"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 app:stackFromEnd="true"
                 tools:itemCount="3"
                 tools:listitem="@layout/item_message" />
-        </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
+        </com.qtalk.recyclerview.fastscroller.RecyclerViewFastScroller>
 
         <org.fossify.commons.views.MyFloatingActionButton
             android:id="@+id/scroll_to_bottom_fab"
