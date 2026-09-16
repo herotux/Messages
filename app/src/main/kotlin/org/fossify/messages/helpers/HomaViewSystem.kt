@@ -114,6 +114,9 @@ object HomaViewSystem {
 
     private fun styleToolbar(toolbar: Toolbar) {
         toolbar.minimumHeight = dp(toolbar, 64)
+        toolbar.layoutParams?.let { params ->
+            if (params.height > 0) params.height = maxOf(params.height, dp(toolbar, 64))
+        }
         toolbar.setBackgroundColor(resolveColor(toolbar, MaterialR.attr.colorSurface))
         toolbar.setTitleTextColor(resolveColor(toolbar, MaterialR.attr.colorOnSurface))
         toolbar.elevation = 0f
@@ -131,6 +134,9 @@ object HomaViewSystem {
 
     private fun styleClickableText(view: TextView) {
         view.minHeight = maxOf(view.minimumHeight, dp(view, 48))
+        view.layoutParams?.let { params ->
+            if (params.height > 0) params.height = maxOf(params.height, dp(view, 48))
+        }
         if (view.background == null || view.background is GradientDrawable) {
             view.background = roundedSurface(view, 12)
         }
