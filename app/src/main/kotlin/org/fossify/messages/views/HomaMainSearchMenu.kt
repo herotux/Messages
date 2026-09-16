@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.RelativeLayout
 import com.google.android.material.appbar.MaterialToolbar
 import org.fossify.commons.R as CommonsR
@@ -21,13 +22,7 @@ import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.MEDIUM_ALPHA
 import org.fossify.commons.views.MyAppBarLayout
 
-/**
- * Main-screen search header for Homa.
- *
- * Closed state is intentionally compact: only the search action is visible.
- * Opening the action expands the real search field without changing the
- * existing MainActivity search contract.
- */
+/** Main-screen search header: compact icon when closed, real field when opened. */
 class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout(context, attrs) {
     var isSearchOpen = false
     var useArrowIcon = false
@@ -46,7 +41,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
             height = dp(64)
         }
         binding.searchBarContainer.setPadding(0, 0, 0, 0)
-        binding.topToolbarSearch.visibility = GONE
+        binding.topToolbarSearch.visibility = View.GONE
         setClosedLayout()
     }
 
@@ -57,7 +52,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
             } else if (useArrowIcon && onNavigateBackClickListener != null) {
                 onNavigateBackClickListener!!()
             } else {
-                binding.topToolbarSearch.visibility = VISIBLE
+                binding.topToolbarSearch.visibility = View.VISIBLE
                 binding.topToolbarSearch.requestFocus()
                 (context as? Activity)?.showKeyboard(binding.topToolbarSearch)
             }
@@ -75,13 +70,13 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
     }
 
     fun focusView() {
-        binding.topToolbarSearch.visibility = VISIBLE
+        binding.topToolbarSearch.visibility = View.VISIBLE
         binding.topToolbarSearch.requestFocus()
     }
 
     private fun openSearch() {
         isSearchOpen = true
-        binding.topToolbarSearch.visibility = VISIBLE
+        binding.topToolbarSearch.visibility = View.VISIBLE
         setOpenLayout()
         onSearchOpenListener?.invoke()
         binding.topToolbarSearchIcon.setImageResource(CommonsR.drawable.ic_arrow_left_vector)
@@ -93,7 +88,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
         onSearchClosedListener?.invoke()
         binding.topToolbarSearch.setText("")
         binding.topToolbarSearch.clearFocus()
-        binding.topToolbarSearch.visibility = GONE
+        binding.topToolbarSearch.visibility = View.GONE
         setClosedLayout()
         if (!useArrowIcon) {
             binding.topToolbarSearchIcon.setImageResource(CommonsR.drawable.ic_search_vector)
@@ -158,15 +153,11 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
         }
         binding.topToolbarSearchIcon.setPadding(dp(8), 0, dp(8), 0)
         binding.topToolbarSearch.layoutParams = RelativeLayout.LayoutParams(
-            RelativeLayout.LayoutParams.MATCH_PARENT,
+            0,
             RelativeLayout.LayoutParams.MATCH_PARENT,
         ).apply {
-            addRule(RelativeLayout.ALIGN_PARENT_START)
-            addRule(RelativeLayout.ALIGN_PARENT_END)
             addRule(RelativeLayout.RIGHT_OF, CommonsR.id.top_toolbar_search_icon)
             addRule(RelativeLayout.LEFT_OF, CommonsR.id.top_toolbar)
-            marginStart = dp(0)
-            marginEnd = dp(0)
         }
         binding.topToolbar.layoutParams = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
