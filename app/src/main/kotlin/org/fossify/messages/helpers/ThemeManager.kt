@@ -50,8 +50,23 @@ object ThemeManager {
         val wallpaperUri: String? = null,
         val embeddedWallpaperBase64: String? = null
     ) {
+        /**
+         * Compatibility accessor for older UI call sites.
+         * It must never silently return the light palette while the activity is dark.
+         * Keeping this mode-aware also makes legacy message rendering deterministic
+         * across recreation/resume because every bind resolves the same palette.
+         */
         @Deprecated("Use lightColors/darkColors")
-        val colors: ThemeColors get() = lightColors
+        val colors: ThemeColors
+            get() {
+                val context = ThemeManager.contextForThemeFiles()
+                return if (context != null) {
+                    colorsForMode(ThemeManager.contextForDarkMode(context))
+                } else {
+                    lightColors
+                }
+            }
+
         fun colorsForMode(darkMode: Boolean): ThemeColors = if (darkMode) darkColors else lightColors
 
         /** Compatibility constructor for older editor/import code. */
