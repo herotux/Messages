@@ -5,9 +5,13 @@ object ThemeResolver {
     fun resolve(theme: ThemeManager.ThemeDefinition, darkMode: Boolean): HomaThemeTokens =
         tokensFromColors(theme.colorsForMode(darkMode))
 
-    /** Resolves using the supplied Context's current Light/Dark configuration. */
     fun resolve(theme: ThemeManager.ThemeDefinition, context: android.content.Context): HomaThemeTokens =
         resolve(theme, ThemeManager.contextForDarkMode(context))
+
+    /** Compatibility entry point: Settings uses the same selected theme palette, never a global palette. */
+    @Deprecated("Use resolve(theme, darkMode)")
+    fun resolveSettings(theme: ThemeManager.ThemeDefinition, darkMode: Boolean): HomaThemeTokens =
+        resolve(theme, darkMode)
 
     private fun tokensFromColors(colors: ThemeManager.ThemeColors): HomaThemeTokens {
         val onPrimary = contrastColor(colors.primary)
@@ -40,10 +44,8 @@ object ThemeResolver {
         )
     }
 
-    private fun withAlpha(color: Int, alpha: Int): Int =
-        (color and 0x00FFFFFF) or ((alpha and 0xFF) shl 24)
+    private fun withAlpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or ((alpha and 0xFF) shl 24)
 
-    /** Returns a readable foreground for a solid background color. */
     internal fun contrastColor(background: Int): Int {
         val red = (background shr 16) and 0xFF
         val green = (background shr 8) and 0xFF
