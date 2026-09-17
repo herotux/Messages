@@ -12,12 +12,12 @@
     <color name="homa_brand_accent">@color/homa_brand_teal</color>
 
     <style name="HomaMainBrandTitleExpanded" parent="TextAppearance.Material3.HeadlineMedium">
-        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textColor">?attr/colorOnPrimaryContainer</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="HomaMainBrandTitleCollapsed" parent="TextAppearance.Material3.TitleLarge">
-        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textColor">?attr/colorOnPrimaryContainer</item>
         <item name="android:textStyle">bold</item>
     </style>
 </resources>
