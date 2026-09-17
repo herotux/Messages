@@ -68,19 +68,30 @@ object ThemeResolver {
         }
     }
 
+    private fun red(color: Int): Int = (color ushr 16) and 0xFF
+    private fun green(color: Int): Int = (color ushr 8) and 0xFF
+    private fun blue(color: Int): Int = color and 0xFF
+
+    private fun rgb(red: Int, green: Int, blue: Int): Int =
+        (0xFF shl 24) or
+            ((red.coerceIn(0, 255)) shl 16) or
+            ((green.coerceIn(0, 255)) shl 8) or
+            blue.coerceIn(0, 255)
+
     private fun mix(first: Int, second: Int, secondWeight: Float): Int {
         val weight = secondWeight.coerceIn(0f, 1f)
         val inverse = 1f - weight
-        val red = (android.graphics.Color.red(first) * inverse + android.graphics.Color.red(second) * weight).toInt()
-        val green = (android.graphics.Color.green(first) * inverse + android.graphics.Color.green(second) * weight).toInt()
-        val blue = (android.graphics.Color.blue(first) * inverse + android.graphics.Color.blue(second) * weight).toInt()
-        return android.graphics.Color.rgb(red, green, blue)
+        return rgb(
+            (red(first) * inverse + red(second) * weight).toInt(),
+            (green(first) * inverse + green(second) * weight).toInt(),
+            (blue(first) * inverse + blue(second) * weight).toInt(),
+        )
     }
 
     private fun colorDistance(first: Int, second: Int): Double {
-        val dr = android.graphics.Color.red(first) - android.graphics.Color.red(second)
-        val dg = android.graphics.Color.green(first) - android.graphics.Color.green(second)
-        val db = android.graphics.Color.blue(first) - android.graphics.Color.blue(second)
+        val dr = red(first) - red(second)
+        val dg = green(first) - green(second)
+        val db = blue(first) - blue(second)
         return kotlin.math.sqrt((dr * dr + dg * dg + db * db).toDouble())
     }
 
@@ -93,16 +104,19 @@ object ThemeResolver {
     private fun relativeLuminance(color: Int): Double {
         fun channel(value: Int): Double {
             val normalized = value / 255.0
-            return if (normalized <= 0.03928) normalized / 12.92 else ((normalized + 0.055) / 1.055).let { it * it * it }
+            return if (normalized <= 0.03928) normalized / 12.92 else {
+                val adjusted = (normalized + 0.055) / 1.055
+                adjusted * adjusted * adjusted
+            }
         }
-        return 0.2126 * channel(android.graphics.Color.red(color)) +
-            0.7152 * channel(android.graphics.Color.green(color)) +
-            0.0722 * channel(android.graphics.Color.blue(color))
+        return 0.2126 * channel(red(color)) +
+            0.7152 * channel(green(color)) +
+            0.0722 * channel(blue(color))
     }
 
     internal fun contrastColor(background: Int): Int {
-        val red = (background shr 16) and 0xFF
-        val green = (background shr 8) and 0xFF
+        val red = (background ushr 16) and 0xFF
+        val green = (background ushr 8) and 0xFF
         val blue = background and 0xFF
         val luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0
         return if (luminance > 0.55) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
