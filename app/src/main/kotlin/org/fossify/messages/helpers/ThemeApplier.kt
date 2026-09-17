@@ -45,6 +45,14 @@ object ThemeApplier {
         val tabs = activity.findViewById<View>(R.id.folder_tabs)
         if (tabs is ViewGroup) styleFolderTabs(activity, tabs, tokens)
         val decor = activity.window.decorView
+        if (activity is SettingsActivity) {
+            // Settings is an app utility surface, not a conversation canvas. Make
+            // the window/content background deterministic so a dark conversation
+            // theme cannot leak into the light Settings hierarchy.
+            val content = activity.findViewById<ViewGroup>(android.R.id.content)
+            content?.setBackgroundColor(tokens.background)
+            if (content?.childCount == 1) content.getChildAt(0).setBackgroundColor(tokens.background)
+        }
         applyPaletteToViewTree(activity, decor, tokens)
         clearToolbarBackgrounds(decor, tokens)
     }
