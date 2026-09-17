@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.view.View
 import android.view.ViewGroup
@@ -31,11 +32,9 @@ object ThemeApplier {
     fun apply(activity: Activity) {
         val theme = ThemeManager.themeForActivity(activity)
         val darkMode = (activity.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-        val tokens = if (activity is SettingsActivity) {
-            ThemeResolver.resolveSettings(theme, darkMode)
-        } else {
-            ThemeResolver.resolve(theme)
-        }
+        // Always resolve against the activity's actual UI mode. A conversation
+        // theme owns both palettes; Settings is not a separate color authority.
+        val tokens = ThemeResolver.resolve(theme, darkMode)
         ThemeManager.applyBackground(activity)
         applySystemBars(activity, tokens)
         (activity as? AppCompatActivity)?.supportActionBar?.let { actionBar ->
@@ -46,21 +45,28 @@ object ThemeApplier {
         if (tabs is ViewGroup) styleFolderTabs(activity, tabs, tokens)
         val decor = activity.window.decorView
         if (activity is SettingsActivity) {
-            // Settings is an app utility surface, not a conversation canvas. Make
-            // the window/content background deterministic so a dark conversation
-            // theme cannot leak into the light Settings hierarchy.
             val content = activity.findViewById<ViewGroup>(android.R.id.content)
             content?.setBackgroundColor(tokens.background)
             if (content?.childCount == 1) content.getChildAt(0).setBackgroundColor(tokens.background)
         }
         applyPaletteToViewTree(activity, decor, tokens)
         clearToolbarBackgrounds(decor, tokens)
+        // ConstraintSet changes made by RecyclerView/ViewHolder binding can land
+        // after the theme pass. Re-apply once the layout has settled so an
+        // outgoing bubble can never inherit the incoming bubble's color after
+        // returning from another app.
+        decor.post {
+            if (!activity.isFinishing && !activity.isDestroyed) {
+                applyPaletteToViewTree(activity, decor, tokens)
+                clearToolbarBackgrounds(decor, tokens)
+            }
+        }
     }
 
     /** Applies the same resolved theme to a dialog after its content is inflated. */
     fun apply(dialog: Dialog, activity: Activity? = null) {
         val theme = activity?.let(ThemeManager::themeForActivity) ?: ThemeManager.current(dialog.context)
-        val tokens = ThemeResolver.resolve(theme)
+        val tokens = ThemeResolver.resolve(theme, activity?.let(ThemeManager::contextForDarkMode) ?: false)
         dialog.window?.let { window ->
             window.setBackgroundDrawable(ColorDrawable(tokens.surface))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -139,10 +145,7 @@ object ThemeApplier {
 
         when (view.id) {
             R.id.message_holder, R.id.scheduled_message_holder -> view.setBackgroundColor(tokens.surface)
-            R.id.thread_type_message -> if (view is TextView) {
-                view.setTextColor(tokens.messageText)
-                view.setHintTextColor(tokens.messageSecondaryText)
-            }
+            R.id.thread_type_message -> if (view is EditText) styleMessageComposer(view, tokens)
             R.id.thread_send_message -> {
                 view.backgroundTintList = ColorStateList.valueOf(tokens.fab)
                 if (view is TextView) view.setTextColor(tokens.onPrimary)
@@ -178,6 +181,19 @@ object ThemeApplier {
         }
     }
 
+    private fun styleMessageComposer(view: EditText, tokens: HomaThemeTokens) {
+        val density = view.resources.displayMetrics.density
+        view.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 12f * density
+            setColor(tokens.surfaceVariant)
+            setStroke((1f * density).toInt().coerceAtLeast(1), tokens.outline)
+        }
+        view.setTextColor(tokens.onSurface)
+        view.setHintTextColor(tokens.onSurfaceVariant)
+        view.highlightColor = tokens.secondary
+    }
+
     /** Theme a MaterialButton without flattening its Material 3 variant. */
     private fun applyMaterialButton(view: MaterialButton, tokens: HomaThemeTokens) {
         val hasStroke = view.strokeWidth > 0
@@ -210,7 +226,7 @@ object ThemeApplier {
         val textColor = if (isOutgoing) ThemeResolver.contrastColor(bubbleColor) else tokens.messageText
         view.backgroundTintList = ColorStateList.valueOf(bubbleColor)
         view.setTextColor(textColor)
-        view.setLinkTextColor(tokens.link)
+        view.setLinkTextColor(if (isOutgoing) textColor else tokens.link)
     }
 
     private fun clearToolbarBackgrounds(view: View, tokens: HomaThemeTokens) {
