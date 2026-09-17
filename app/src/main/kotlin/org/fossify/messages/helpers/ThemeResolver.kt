@@ -46,27 +46,28 @@ object ThemeResolver {
         )
     }
 
-    /**
-     * Incoming and outgoing bubbles are semantic surfaces, not just two nearby
-     * shades of the same theme color. If a custom theme makes them too similar,
-     * move the incoming bubble toward the neutral surface/background pair.
-     */
+    /** Incoming and outgoing bubbles are semantic surfaces and must remain visually distinct. */
     private fun resolveIncomingBubble(
         configured: Int,
         outgoing: Int,
         surface: Int,
         background: Int,
     ): Int {
-        if (colorDistance(configured, outgoing) >= 48 && contrastRatio(configured, outgoing) >= 1.22) {
-            return configured
-        }
-        val candidate = mix(surface, background, 0.5f)
-        return if (colorDistance(candidate, outgoing) >= 48 && contrastRatio(candidate, outgoing) >= 1.22) {
-            candidate
-        } else {
-            mix(surface, background, 0.25f)
-        }
+        if (colorDistance(configured, outgoing) >= MIN_BUBBLE_DISTANCE) return configured
+
+        val candidates = listOf(
+            mix(surface, background, 0.5f),
+            background,
+            surface,
+            mix(surface, background, 0.75f),
+            mix(surface, background, 0.25f),
+            mix(outgoing, contrastColor(outgoing), 0.65f),
+        )
+        return candidates.firstOrNull { colorDistance(it, outgoing) >= MIN_BUBBLE_DISTANCE }
+            ?: contrastColor(outgoing)
     }
+
+    private const val MIN_BUBBLE_DISTANCE = 48.0
 
     private fun red(color: Int): Int = (color ushr 16) and 0xFF
     private fun green(color: Int): Int = (color ushr 8) and 0xFF
@@ -93,25 +94,6 @@ object ThemeResolver {
         val dg = green(first) - green(second)
         val db = blue(first) - blue(second)
         return kotlin.math.sqrt((dr * dr + dg * dg + db * db).toDouble())
-    }
-
-    private fun contrastRatio(first: Int, second: Int): Double {
-        val l1 = relativeLuminance(first)
-        val l2 = relativeLuminance(second)
-        return (maxOf(l1, l2) + 0.05) / (minOf(l1, l2) + 0.05)
-    }
-
-    private fun relativeLuminance(color: Int): Double {
-        fun channel(value: Int): Double {
-            val normalized = value / 255.0
-            return if (normalized <= 0.03928) normalized / 12.92 else {
-                val adjusted = (normalized + 0.055) / 1.055
-                adjusted * adjusted * adjusted
-            }
-        }
-        return 0.2126 * channel(red(color)) +
-            0.7152 * channel(green(color)) +
-            0.0722 * channel(blue(color))
     }
 
     internal fun contrastColor(background: Int): Int {
