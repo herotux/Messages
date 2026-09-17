@@ -1,32 +1,28 @@
 package org.fossify.messages.helpers
 
-/** Converts a selected ThemeDefinition into the runtime semantic palette. */
 object ThemeResolver {
+    fun resolve(theme: ThemeManager.ThemeDefinition): HomaThemeTokens =
+        ThemeManager.contextForThemeFiles()?.let { resolve(theme, it) } ?: resolve(theme, false)
+
     fun resolve(theme: ThemeManager.ThemeDefinition, darkMode: Boolean): HomaThemeTokens =
         tokensFromColors(theme.colorsForMode(darkMode))
 
     fun resolve(theme: ThemeManager.ThemeDefinition, context: android.content.Context): HomaThemeTokens =
         resolve(theme, ThemeManager.contextForDarkMode(context))
 
-    /** Compatibility entry point: Settings uses the same selected theme palette, never a global palette. */
     @Deprecated("Use resolve(theme, darkMode)")
-    fun resolveSettings(theme: ThemeManager.ThemeDefinition, darkMode: Boolean): HomaThemeTokens =
-        resolve(theme, darkMode)
+    fun resolveSettings(theme: ThemeManager.ThemeDefinition, darkMode: Boolean): HomaThemeTokens = resolve(theme, darkMode)
 
     private fun tokensFromColors(colors: ThemeManager.ThemeColors): HomaThemeTokens {
-        val onPrimary = contrastColor(colors.primary)
-        val onSecondary = contrastColor(colors.accent)
-        val onBackground = contrastColor(colors.background)
-        val onSurface = contrastColor(colors.surface)
         return HomaThemeTokens(
             primary = colors.primary,
-            onPrimary = onPrimary,
+            onPrimary = contrastColor(colors.primary),
             secondary = colors.accent,
-            onSecondary = onSecondary,
+            onSecondary = contrastColor(colors.accent),
             background = colors.background,
-            onBackground = onBackground,
+            onBackground = contrastColor(colors.background),
             surface = colors.surface,
-            onSurface = onSurface,
+            onSurface = contrastColor(colors.surface),
             surfaceVariant = colors.surface,
             onSurfaceVariant = colors.textSecondary,
             outline = colors.divider,
@@ -38,13 +34,11 @@ object ThemeResolver {
             messageText = colors.textPrimary,
             messageSecondaryText = colors.textSecondary,
             unreadIndicator = colors.accent,
-            selectedItem = withAlpha(colors.primary, 0x24),
+            selectedItem = (colors.primary and 0x00FFFFFF) or 0x24000000,
             link = colors.accent,
             divider = colors.divider
         )
     }
-
-    private fun withAlpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or ((alpha and 0xFF) shl 24)
 
     internal fun contrastColor(background: Int): Int {
         val red = (background shr 16) and 0xFF
