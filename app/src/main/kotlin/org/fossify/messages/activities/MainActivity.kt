@@ -48,8 +48,6 @@ import org.fossify.commons.helpers.PERMISSION_SEND_SMS
 import org.fossify.commons.helpers.SHORT_ANIMATION_DURATION
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isQPlus
-import org.fossify.commons.models.FAQItem
-import org.fossify.commons.models.Release
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.R
 import org.fossify.messages.adapters.ConversationsAdapter
@@ -136,10 +134,6 @@ class MainActivity : SimpleActivity() {
         binding.conversationsProgressBar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
         checkShortcut()
 
-        // CoordinatorLayout/AppBarLayout can keep a stale dependent-view offset when the
-        // activity returns from the background. A fresh layout pass makes the conversation
-        // list honor the current AppBar height immediately instead of waiting for the first
-        // user scroll to trigger the behavior update.
         binding.mainCoordinator.post {
             binding.mainAppbar.requestLayout()
             binding.mainNestedScrollview.requestLayout()
@@ -282,8 +276,6 @@ class MainActivity : SimpleActivity() {
         }
     }
 
-    // while SEND_SMS and READ_SMS permissions are mandatory, READ_CONTACTS is optional.
-    // If we don't have it, we just won't be able to show the contact name in some cases
     private fun askPermissions() {
         handlePermission(PERMISSION_READ_SMS) {
             if (it) {
@@ -381,8 +373,6 @@ class MainActivity : SimpleActivity() {
                 val newConversation =
                     conversations.find { it.phoneNumber == cachedConversation.phoneNumber }
                 if (isTemporaryThread && newConversation != null) {
-                    // delete the original temporary thread and move any scheduled messages
-                    // to the new thread
                     conversationsDB.deleteThreadId(threadId)
                     messagesDB.getScheduledThreadMessages(threadId)
                         .forEach { message ->
@@ -401,8 +391,6 @@ class MainActivity : SimpleActivity() {
                     )
                 }
                 if (conv != null) {
-                    // FIXME: Scheduled message date is being reset here. Conversations with
-                    //  scheduled messages will have their original date.
                     insertOrUpdateConversation(conv)
                 }
             }
@@ -454,8 +442,6 @@ class MainActivity : SimpleActivity() {
             ).toMutableList() as ArrayList<Conversation>
 
         if (cached && config.appRunCount == 1) {
-            // there are no cached conversations on the first run so we show the
-            // loading placeholder and progress until we are done loading from telephony
             showOrHideProgress(conversations.isEmpty())
         } else {
             showOrHideProgress(false)
@@ -506,36 +492,6 @@ class MainActivity : SimpleActivity() {
         }
     }
 
-    private fun launchNewConversation() {
-        hideKeyboard()
-        Intent(this, NewConversationActivity::class.java).apply {
-            startActivity(this)
-        }
-    }
-
-    @SuppressLint("NewApi")
-    private fun checkShortcut() {
-        val appIconColor = config.appIconColor
-        if (config.lastHandledShortcutColor != appIconColor) {
-            val newConversation = getCreateNewContactShortcut(appIconColor)
-            val shortcutManager = getSystemService(ShortcutManager::class.java)
-            shortcutManager?.dynamicShortcuts = listOf(newConversation)
-            config.lastHandledShortcutColor = appIconColor
-        }
-    }
-
-    private fun getCreateNewContactShortcut(appIconColor: Int): ShortcutInfo {
-        val icon = AppCompatResources.getDrawable(this, R.drawable.ic_add_person)?.let {
-            LayerDrawable(arrayOf(it)).convertToBitmap(appIconColor)
-        }
-        return ShortcutInfo.Builder(this, "new_conversation")
-            .setShortLabel(getString(R.string.new_conversation))
-            .setLongLabel(getString(R.string.new_conversation))
-            .setIcon(Icon.createWithBitmap(icon))
-            .setIntent(Intent(this, NewConversationActivity::class.java))
-            .build()
-    }
-
     private fun searchTextChanged(text: String, forceClear: Boolean = false) {
         val query = text.trim()
         if (!forceClear && query == lastSearchedText) {
@@ -564,15 +520,32 @@ class MainActivity : SimpleActivity() {
             }
 
             val results = ArrayList<SearchResult>()
-            messages.forEach { results.add(SearchResult.MessageResult(it)) }
-            conversations.forEach { results.add(SearchResult.ConversationResult(it)) }
-
-            results.sortByDescending {
-                when (it) {
-                    is SearchResult.MessageResult -> it.message.date
-                    is SearchResult.ConversationResult -> it.conversation.date
-                }
+            messages.forEach { message ->
+                results.add(
+                    SearchResult(
+                        messageId = message.id,
+                        title = message.senderName.ifEmpty { message.senderPhoneNumber },
+                        snippet = message.body,
+                        date = message.date.toString(),
+                        threadId = message.threadId,
+                        photoUri = message.senderPhotoUri
+                    )
+                )
             }
+            conversations.forEach { conversation ->
+                results.add(
+                    SearchResult(
+                        messageId = -1L,
+                        title = conversation.title,
+                        snippet = conversation.snippet,
+                        date = conversation.date.toString(),
+                        threadId = conversation.threadId,
+                        photoUri = conversation.photoUri
+                    )
+                )
+            }
+
+            results.sortByDescending { it.date }
 
             runOnUiThread {
                 showSearchResults(results)
@@ -590,22 +563,15 @@ class MainActivity : SimpleActivity() {
         }
 
         binding.searchResultsList.adapter = SearchResultsAdapter(this, results) { result ->
-            when (result) {
-                is SearchResult.MessageResult -> {
-                    Intent(this, ThreadActivity::class.java).apply {
-                        putExtra(THREAD_ID, result.message.threadId)
-                        putExtra(SEARCHED_MESSAGE_ID, result.message.id)
-                        startActivity(this)
-                    }
+            val searchResult = result as SearchResult
+            Intent(this, ThreadActivity::class.java).apply {
+                putExtra(THREAD_ID, searchResult.threadId)
+                if (searchResult.messageId >= 0) {
+                    putExtra(SEARCHED_MESSAGE_ID, searchResult.messageId)
+                } else {
+                    putExtra(THREAD_TITLE, searchResult.title)
                 }
-
-                is SearchResult.ConversationResult -> {
-                    Intent(this, ThreadActivity::class.java).apply {
-                        putExtra(THREAD_ID, result.conversation.threadId)
-                        putExtra(THREAD_TITLE, result.conversation.title)
-                        startActivity(this)
-                    }
-                }
+                startActivity(this)
             }
         }
     }
