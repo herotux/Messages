@@ -8,11 +8,13 @@ import android.widget.EditText
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.google.android.material.R as MaterialR
+import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -26,16 +28,21 @@ import java.util.WeakHashMap
 object HomaViewSystem {
     private data class PaddingSnapshot(val left: Int, val top: Int, val right: Int, val bottom: Int)
     private val installedRoots = WeakHashMap<ViewGroup, Unit>()
+    private val installedMainCoordinators = WeakHashMap<CoordinatorLayout, Unit>()
 
     fun apply(activity: Activity) {
         val root = contentRoot(activity) ?: return
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
         styleTree(root)
         installInsetsOnce(root)
+        repairMainCoordinator(root)
     }
 
     fun style(activity: Activity) {
-        contentRoot(activity)?.let(::styleTree)
+        contentRoot(activity)?.let {
+            styleTree(it)
+            repairMainCoordinator(it)
+        }
     }
 
     private fun contentRoot(activity: Activity): ViewGroup? =
@@ -63,6 +70,41 @@ object HomaViewSystem {
             insets
         }
         ViewCompat.requestApplyInsets(root)
+    }
+
+    /**
+     * Re-syncs the main CoordinatorLayout after theme/lifecycle changes.
+     * The conversation list is hosted below AppBarLayout through a scrolling
+     * behavior; after returning from another Activity the dependency can be
+     * laid out before the AppBar offset is restored, making rows appear under
+     * the Homa header. Dispatching the dependency change after layout restores
+     * the behavior without adding artificial padding to the RecyclerView.
+     */
+    private fun repairMainCoordinator(root: View) {
+        val coordinator = root.findViewById<CoordinatorLayout?>(org.fossify.messages.R.id.main_coordinator) ?: return
+        val appBar = root.findViewById<AppBarLayout?>(org.fossify.messages.R.id.main_appbar) ?: return
+        val scrolling = root.findViewById<View?>(org.fossify.messages.R.id.main_nested_scrollview) ?: return
+
+        synchronized(installedMainCoordinators) {
+            if (!installedMainCoordinators.containsKey(coordinator)) {
+                installedMainCoordinators[coordinator] = Unit
+                appBar.addOnOffsetChangedListener { _, _ ->
+                    coordinator.dispatchDependentViewsChanged(appBar)
+                }
+                coordinator.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                    coordinator.post { coordinator.dispatchDependentViewsChanged(appBar) }
+                }
+            }
+        }
+
+        scrolling.translationY = 0f
+        coordinator.post {
+            if (appBar.parent === coordinator) {
+                coordinator.dispatchDependentViewsChanged(appBar)
+            }
+            scrolling.requestLayout()
+        }
+        ViewCompat.requestApplyInsets(coordinator)
     }
 
     private fun styleTree(view: View) {
@@ -97,13 +139,16 @@ object HomaViewSystem {
     }
 
     private fun styleToolbar(toolbar: Toolbar) {
-        toolbar.minimumHeight = dp(toolbar, 72)
-        toolbar.layoutParams?.let { params -> if (params.height > 0) params.height = maxOf(params.height, dp(toolbar, 72)) }
-        // Keep the Toolbar only as a navigation/action container; Homa does not use a title strip.
+        // Homa pages use the toolbar only for navigation/actions. There is no
+        // separate colored title bar; the title sits lower inside a transparent
+        // header area to keep the top of every page visually calm.
+        toolbar.minimumHeight = dp(toolbar, 88)
+        toolbar.layoutParams?.let { params -> if (params.height > 0) params.height = maxOf(params.height, dp(toolbar, 88)) }
         toolbar.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         toolbar.setTitleTextColor(resolveColor(toolbar, MaterialR.attr.colorOnBackground))
         toolbar.elevation = 0f
         toolbar.translationZ = 0f
+        toolbar.contentInsetStartWithNavigation = 0
     }
 
     private fun styleEditText(editText: EditText) {
