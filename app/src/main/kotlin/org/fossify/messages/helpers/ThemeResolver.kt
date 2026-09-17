@@ -17,19 +17,18 @@ object ThemeResolver {
     /**
      * Resolves colors for app-owned utility screens such as Settings.
      *
-     * Theme definitions historically store conversation palettes, many of which
-     * are intentionally dark. Applying those background/text colors verbatim to
-     * Settings made a light UI inherit a dark surface and dark/low-contrast text.
-     * Settings still uses the selected theme's brand colors, but its surfaces and
-     * foregrounds follow the actual light/dark UI mode.
+     * Conversation themes can intentionally use dark backgrounds even when the
+     * application is currently in light mode. Settings must not inherit those
+     * conversation surfaces. It keeps the selected theme's primary/accent as
+     * branding, while its surfaces and foregrounds follow the actual UI mode.
      */
     fun resolveSettings(theme: ThemeManager.ThemeDefinition, darkMode: Boolean): HomaThemeTokens {
         val colors = theme.colors
         val light = !darkMode
 
-        val background = if (light) 0xFFFFFBFE.toInt() else 0xFF121212.toInt()
+        val background = if (light) blend(colors.primary, 0xFFFFFBFE.toInt(), 0.035f) else 0xFF121212.toInt()
         val surface = if (light) 0xFFFFFBFE.toInt() else 0xFF1E1E1E.toInt()
-        val surfaceVariant = if (light) 0xFFF3EDF7.toInt() else 0xFF2A2A2A.toInt()
+        val surfaceVariant = if (light) blend(colors.primary, 0xFFFFFFFF.toInt(), 0.065f) else 0xFF2A2A2A.toInt()
         val textPrimary = if (light) 0xFF1D1B20.toInt() else 0xFFE6E1E5.toInt()
         val textSecondary = if (light) 0xFF49454F.toInt() else 0xFFCAC4D0.toInt()
         val divider = if (light) 0x1F1D1B20 else 0x33FFFFFF
@@ -52,8 +51,8 @@ object ThemeResolver {
             error = 0xFFB3261E.toInt(),
             toolbar = toolbar,
             fab = colors.fab,
-            incomingMessage = if (light) 0xFFE8DEF8.toInt() else 0xFF4A4458.toInt(),
-            outgoingMessage = if (light) 0xFFD0BCFF.toInt() else 0xFF6750A4.toInt(),
+            incomingMessage = if (light) blend(colors.primary, 0xFFFFFFFF.toInt(), 0.82f) else 0xFF4A4458.toInt(),
+            outgoingMessage = if (light) blend(colors.primary, 0xFFFFFFFF.toInt(), 0.70f) else 0xFF6750A4.toInt(),
             messageText = textPrimary,
             messageSecondaryText = textSecondary,
             unreadIndicator = colors.accent,
@@ -94,6 +93,20 @@ object ThemeResolver {
             link = colors.accent,
             divider = colors.divider
         )
+    }
+
+    private fun blend(foreground: Int, background: Int, amount: Float): Int {
+        val a = amount.coerceIn(0f, 1f)
+        val fr = (foreground shr 16) and 0xFF
+        val fg = (foreground shr 8) and 0xFF
+        val fb = foreground and 0xFF
+        val br = (background shr 16) and 0xFF
+        val bg = (background shr 8) and 0xFF
+        val bb = background and 0xFF
+        val r = (br + ((fr - br) * a)).toInt().coerceIn(0, 255)
+        val g = (bg + ((fg - bg) * a)).toInt().coerceIn(0, 255)
+        val b = (bb + ((fb - bb) * a)).toInt().coerceIn(0, 255)
+        return 0xFF000000.toInt() or (r shl 16) or (g shl 8) or b
     }
 
     private fun withAlpha(color: Int, alpha: Int): Int =
