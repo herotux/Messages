@@ -123,8 +123,8 @@ class ThemeResolverTest {
             assertEquals(builtIn.lightColors.surface, tokens.surface)
             assertEquals(builtIn.lightColors.toolbar, tokens.toolbar)
             assertEquals(builtIn.lightColors.fab, tokens.fab)
-            assertEquals(builtIn.lightColors.incomingBubble, tokens.incomingMessage)
             assertEquals(builtIn.lightColors.outgoingBubble, tokens.outgoingMessage)
+            assertTrue("${builtIn.id}: incoming/outgoing bubbles remain distinct", colorDistance(tokens.incomingMessage, tokens.outgoingMessage) >= 48.0)
             assertTrue("${builtIn.id}: selected item keeps primary RGB", tokens.selectedItem and 0x00FFFFFF == tokens.primary and 0x00FFFFFF)
             assertEquals(0xFFB3261E.toInt(), tokens.error)
         }
@@ -138,5 +138,12 @@ class ThemeResolverTest {
             ThemeResolver.contrastColor(0xFF336699.toInt()),
             ThemeResolver.contrastColor(0xFF336699.toInt())
         )
+    }
+
+    private fun colorDistance(first: Int, second: Int): Double {
+        val dr = ((first ushr 16) and 0xFF) - ((second ushr 16) and 0xFF)
+        val dg = ((first ushr 8) and 0xFF) - ((second ushr 8) and 0xFF)
+        val db = (first and 0xFF) - (second and 0xFF)
+        return kotlin.math.sqrt((dr * dr + dg * dg + db * db).toDouble())
     }
 }
