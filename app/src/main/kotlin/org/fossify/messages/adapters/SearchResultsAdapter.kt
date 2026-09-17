@@ -11,7 +11,6 @@ import org.fossify.commons.extensions.highlightTextPart
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.R
-import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemSearchResultBinding
 import org.fossify.messages.helpers.BankConversationVerificationStore
@@ -34,7 +33,7 @@ class SearchResultsAdapter(
     constructor(activity: SimpleActivity, searchResults: List<SearchResult>, itemClick: (Any) -> Unit) : this(
         activity,
         ArrayList(searchResults),
-        activity.findViewById(R.id.search_results_list),
+        activity.findViewById<MyRecyclerView>(R.id.search_results_list) ?: error("search_results_list is missing"),
         "",
         itemClick
     )
@@ -49,13 +48,11 @@ class SearchResultsAdapter(
     override fun onActionModeCreated() {}
     override fun onActionModeDestroyed() {}
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = createViewHolder(ItemSearchResultBinding.inflate(layoutInflater, parent, false).root)
-
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val searchResult = searchResults[position]
         holder.bindView(searchResult, allowSingleClick = true, allowLongClick = false) { itemView, _ -> setupView(itemView, searchResult) }
         bindViewHolder(holder)
     }
-
     override fun getItemCount() = searchResults.size
 
     fun updateItems(newItems: ArrayList<SearchResult>, highlightText: String = "") {
