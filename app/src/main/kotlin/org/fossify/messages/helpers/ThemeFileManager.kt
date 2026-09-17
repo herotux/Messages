@@ -15,7 +15,7 @@ object ThemeFileManager {
     const val FILE_EXTENSION = ".homa-theme"
     const val MIME_TYPE = "application/json"
     const val SCHEMA = "homa-theme"
-    const val CURRENT_VERSION = 4
+    const val CURRENT_VERSION = 5
     private const val WALLPAPER_FILE_PREFIX = "homa_wallpaper_"
     private const val MAX_EMBEDDED_WALLPAPER_BYTES = 12 * 1024 * 1024
     private val gson = GsonBuilder().setPrettyPrinting().create()
@@ -42,27 +42,13 @@ object ThemeFileManager {
                 }
                 else -> null
             }
-            if (embeddedWallpaper != null) {
-                addProperty("wallpaperBase64", embeddedWallpaper)
-            }
+            if (embeddedWallpaper != null) addProperty("wallpaperBase64", embeddedWallpaper)
             if (theme.backgroundType == ThemeManager.BackgroundType.WALLPAPER && context != null && embeddedWallpaper == null) {
                 require(false) { "تصویر پس‌زمینه قابل خواندن نیست" }
             }
             add("gradientColors", JsonArray().apply { theme.gradientColors.forEach { add(hex(it)) } })
-            add("colors", JsonObject().apply {
-                addProperty("primary", hex(theme.colors.primary))
-                addProperty("accent", hex(theme.colors.accent))
-                addProperty("background", hex(theme.colors.background))
-                addProperty("surface", hex(theme.colors.surface))
-                addProperty("textPrimary", hex(theme.colors.textPrimary))
-                addProperty("textSecondary", hex(theme.colors.textSecondary))
-                addProperty("incomingBubble", hex(theme.colors.incomingBubble))
-                addProperty("outgoingBubble", hex(theme.colors.outgoingBubble))
-                addProperty("toolbar", hex(theme.colors.toolbar))
-                addProperty("tab", hex(theme.colors.tab))
-                addProperty("fab", hex(theme.colors.fab))
-                addProperty("divider", hex(theme.colors.divider))
-            })
+            add("light", paletteObject(theme.lightColors))
+            add("dark", paletteObject(theme.darkColors))
         })
     }.let(gson::toJson)
 
@@ -75,7 +61,9 @@ object ThemeFileManager {
         val formatVersion = root.get("version")?.asInt ?: 0
         require(formatVersion in 1..CURRENT_VERSION) { "نسخه فایل تم پشتیبانی نمی‌شود" }
         val item = root.getAsJsonObject("theme") ?: error("اطلاعات تم وجود ندارد")
-        val colors = item.getAsJsonObject("colors") ?: error("رنگ‌های تم وجود ندارد")
+        val legacyColors = item.getAsJsonObject("colors")
+        val lightObject = item.getAsJsonObject("light") ?: legacyColors ?: error("رنگ‌های تم وجود ندارد")
+        val darkObject = item.getAsJsonObject("dark") ?: lightObject
         val originalId = item.get("id")?.asString?.trim().orEmpty()
         require(originalId.isNotBlank()) { "شناسه تم وجود ندارد" }
         val id = if (originalId !in existingIds) originalId else "imported_${UUID.randomUUID()}"
@@ -89,18 +77,13 @@ object ThemeFileManager {
         val wallpaperBase64 = item.get("wallpaperBase64")?.takeIf { !it.isJsonNull }?.asString?.trim()?.takeIf { it.isNotBlank() }
         require(backgroundType != ThemeManager.BackgroundType.LINEAR_GRADIENT || gradientColors.size >= 2) { "رنگ‌های گرادیان کامل نیستند" }
         require(backgroundType != ThemeManager.BackgroundType.WALLPAPER || !wallpaperUri.isNullOrBlank() || !wallpaperBase64.isNullOrBlank()) { "تصویر پس‌زمینه تم وجود ندارد" }
-        // Keep the embedded payload intact while parsing. Actual Base64 decoding and size validation
-        // happen when the imported theme is materialized/saved, where Android's decoder is available.
         ThemeManager.ThemeDefinition(
             id = id,
             nameFa = item.get("nameFa")?.asString?.trim().orEmpty().ifBlank { "تم واردشده" },
             nameEn = item.get("nameEn")?.asString?.trim().orEmpty().ifBlank { "Imported theme" },
             source = ThemeManager.ThemeSource.IMPORTED,
-            colors = ThemeManager.ThemeColors(
-                parseColor(colors, "primary"), parseColor(colors, "accent"), parseColor(colors, "background"), parseColor(colors, "surface"),
-                parseColor(colors, "textPrimary"), parseColor(colors, "textSecondary"), parseColor(colors, "incomingBubble"), parseColor(colors, "outgoingBubble"),
-                parseColor(colors, "toolbar"), parseColor(colors, "tab"), parseColor(colors, "fab"), parseColor(colors, "divider", "#33808080")
-            ),
+            lightColors = parsePalette(lightObject),
+            darkColors = parsePalette(darkObject),
             version = formatVersion,
             backgroundType = backgroundType,
             gradientColors = gradientColors,
@@ -120,6 +103,27 @@ object ThemeFileManager {
     }
 
     fun saveImported(context: Context, theme: ThemeManager.ThemeDefinition): Boolean = ThemeManager.saveImportedTheme(context, theme)
+
+    private fun paletteObject(colors: ThemeManager.ThemeColors): JsonObject = JsonObject().apply {
+        addProperty("primary", hex(colors.primary))
+        addProperty("accent", hex(colors.accent))
+        addProperty("background", hex(colors.background))
+        addProperty("surface", hex(colors.surface))
+        addProperty("textPrimary", hex(colors.textPrimary))
+        addProperty("textSecondary", hex(colors.textSecondary))
+        addProperty("incomingBubble", hex(colors.incomingBubble))
+        addProperty("outgoingBubble", hex(colors.outgoingBubble))
+        addProperty("toolbar", hex(colors.toolbar))
+        addProperty("tab", hex(colors.tab))
+        addProperty("fab", hex(colors.fab))
+        addProperty("divider", hex(colors.divider))
+    }
+
+    private fun parsePalette(colors: JsonObject): ThemeManager.ThemeColors = ThemeManager.ThemeColors(
+        parseColor(colors, "primary"), parseColor(colors, "accent"), parseColor(colors, "background"), parseColor(colors, "surface"),
+        parseColor(colors, "textPrimary"), parseColor(colors, "textSecondary"), parseColor(colors, "incomingBubble"), parseColor(colors, "outgoingBubble"),
+        parseColor(colors, "toolbar"), parseColor(colors, "tab"), parseColor(colors, "fab"), parseColor(colors, "divider", "#33808080")
+    )
 
     private fun readWallpaperBytes(context: Context, wallpaperUri: String?): ByteArray? = wallpaperUri?.let { uri ->
         runCatching {
