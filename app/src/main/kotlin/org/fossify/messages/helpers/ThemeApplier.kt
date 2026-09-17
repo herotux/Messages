@@ -13,12 +13,12 @@ import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.view.ViewCompat
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -32,8 +32,6 @@ object ThemeApplier {
     fun apply(activity: Activity) {
         val theme = ThemeManager.themeForActivity(activity)
         val darkMode = (activity.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-        // Always resolve against the activity's actual UI mode. A conversation
-        // theme owns both palettes; Settings is not a separate color authority.
         val tokens = ThemeResolver.resolve(theme, darkMode)
         ThemeManager.applyBackground(activity)
         applySystemBars(activity, tokens)
@@ -51,10 +49,6 @@ object ThemeApplier {
         }
         applyPaletteToViewTree(activity, decor, tokens)
         clearToolbarBackgrounds(decor, tokens)
-        // ConstraintSet changes made by RecyclerView/ViewHolder binding can land
-        // after the theme pass. Re-apply once the layout has settled so an
-        // outgoing bubble can never inherit the incoming bubble's color after
-        // returning from another app.
         decor.post {
             if (!activity.isFinishing && !activity.isDestroyed) {
                 applyPaletteToViewTree(activity, decor, tokens)
@@ -63,7 +57,6 @@ object ThemeApplier {
         }
     }
 
-    /** Applies the same resolved theme to a dialog after its content is inflated. */
     fun apply(dialog: Dialog, activity: Activity? = null) {
         val theme = activity?.let(ThemeManager::themeForActivity) ?: ThemeManager.current(dialog.context)
         val tokens = ThemeResolver.resolve(theme, activity?.let(ThemeManager::contextForDarkMode) ?: false)
@@ -153,22 +146,28 @@ object ThemeApplier {
             R.id.thread_add_attachment,
             R.id.thread_select_sim_icon,
             R.id.thread_character_counter -> if (view is TextView) view.setTextColor(tokens.messageSecondaryText)
+            R.id.thread_message_body -> {
+                // Message bubbles are owned by ThreadAdapter. Never apply a
+                // direction-dependent tint here because RecyclerView holders
+                // are recycled and the direction may be stale at this point.
+                // A stale tint is exactly what made bubbles change color after
+                // leaving and returning to the conversation.
+                if (view is TextView) view.backgroundTintList = null
+            }
         }
-
-        styleMessageBubble(view, tokens)
 
         val hasSemanticTextColor = view is MaterialButton ||
             view.id == R.id.thread_type_message ||
             view.id == R.id.thread_send_message ||
             view.id == R.id.thread_add_attachment ||
             view.id == R.id.thread_select_sim_icon ||
-            view.id == R.id.thread_character_counter
+            view.id == R.id.thread_character_counter ||
+            view.id == R.id.thread_message_body
         if (view is TextView &&
             view !is EditText &&
             view !is MaterialButton &&
             !hasSemanticTextColor &&
-            view.id != R.id.folder_tabs &&
-            view.id != R.id.thread_message_body
+            view.id != R.id.folder_tabs
         ) {
             val current = view.currentTextColor
             if (current == Color.WHITE || current == Color.BLACK || current == Color.GRAY) {
@@ -194,12 +193,10 @@ object ThemeApplier {
         view.highlightColor = tokens.secondary
     }
 
-    /** Theme a MaterialButton without flattening its Material 3 variant. */
     private fun applyMaterialButton(view: MaterialButton, tokens: HomaThemeTokens) {
         val hasStroke = view.strokeWidth > 0
         val existingTint = view.backgroundTintList
         val hasVisibleBackground = existingTint?.defaultColor?.let { Color.alpha(it) != 0 } == true
-
         if (hasStroke) {
             view.strokeColor = ColorStateList.valueOf(tokens.primary)
             view.backgroundTintList = ColorStateList.valueOf(Color.TRANSPARENT)
@@ -213,20 +210,6 @@ object ThemeApplier {
             view.setTextColor(tokens.primary)
             view.iconTint = ColorStateList.valueOf(tokens.primary)
         }
-    }
-
-    private fun styleMessageBubble(view: View, tokens: HomaThemeTokens) {
-        if (view.id != R.id.thread_message_body || view !is TextView) return
-        val wrapper = view.parent as? RelativeLayout ?: return
-        val params = wrapper.layoutParams as? ConstraintLayout.LayoutParams ?: return
-        val isOutgoing = params.endToEnd == ConstraintSet.PARENT_ID && params.startToStart != ConstraintSet.PARENT_ID
-        val isIncoming = params.startToStart == ConstraintSet.PARENT_ID && params.endToEnd != ConstraintSet.PARENT_ID
-        if (!isOutgoing && !isIncoming) return
-        val bubbleColor = if (isOutgoing) tokens.outgoingMessage else tokens.incomingMessage
-        val textColor = if (isOutgoing) ThemeResolver.contrastColor(bubbleColor) else tokens.messageText
-        view.backgroundTintList = ColorStateList.valueOf(bubbleColor)
-        view.setTextColor(textColor)
-        view.setLinkTextColor(if (isOutgoing) textColor else tokens.link)
     }
 
     private fun clearToolbarBackgrounds(view: View, tokens: HomaThemeTokens) {
