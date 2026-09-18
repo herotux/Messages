@@ -25,12 +25,10 @@ open class FixedConversationFolderTabsView @JvmOverloads constructor(
 ) : ConversationFolderTabsView(context, attrs) {
     private var lastSelected: String? = null
     private var lastReorder = false
-    private var preDrawInstalled = false
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         syncLayoutDirection()
-        installPreDrawFix()
         post { sync(true) }
     }
 
@@ -53,28 +51,26 @@ open class FixedConversationFolderTabsView @JvmOverloads constructor(
 
     private fun Int?.orZero() = this ?: 0
 
-    private fun installPreDrawFix() {
-        if (preDrawInstalled) return
-        preDrawInstalled = true
-        viewTreeObserver.addOnPreDrawListener {
-            syncLayoutDirection()
-            setBackgroundColor(context.getProperBackgroundColor())
-            styleTabs(ConversationFolderManager.getSelectedFolderId(context))
-            true
-        }
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        syncLayoutDirection()
+        setBackgroundColor(context.getProperBackgroundColor())
+        styleTabs(ConversationFolderManager.getSelectedFolderId(context))
     }
 
     override fun dispatchDraw(canvas: android.graphics.Canvas) {
-        syncLayoutDirection()
-        setBackgroundColor(context.getProperBackgroundColor())
         sync()
         super.dispatchDraw(canvas)
     }
 
     private fun sync(force: Boolean = false) {
         val selected = ConversationFolderManager.getSelectedFolderId(context)
-        if (force || selected != lastSelected) lastSelected = selected
-        styleTabs(selected)
+        val selectionChanged = force || selected != lastSelected
+        if (selectionChanged) {
+            lastSelected = selected
+            setBackgroundColor(context.getProperBackgroundColor())
+            styleTabs(selected)
+        }
 
         val reorder = privateBool("reorderMode")
         if (force || reorder != lastReorder) {
