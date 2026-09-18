@@ -83,8 +83,6 @@ object HomaViewSystem {
     private fun repairMainCoordinator(root: View) {
         val coordinator = root.findViewById<CoordinatorLayout?>(org.fossify.messages.R.id.main_coordinator) ?: return
         val appBar = root.findViewById<AppBarLayout?>(org.fossify.messages.R.id.main_appbar) ?: return
-        val scrolling = root.findViewById<View?>(org.fossify.messages.R.id.main_nested_scrollview) ?: return
-        val folderTabs = root.findViewById<View?>(org.fossify.messages.R.id.folder_tabs)
         val expandedLogo = root.findViewById<View?>(org.fossify.messages.R.id.main_homa_mark)
         val collapsedLogo = root.findViewById<View?>(org.fossify.messages.R.id.main_homa_mark_collapsed)
 
@@ -97,20 +95,17 @@ object HomaViewSystem {
                     // doing so fights nested scrolling and causes tab/scroll jitter.
                     updateMainBrandCollapse(appBar, offset, expandedLogo, collapsedLogo)
                 }
-                coordinator.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                    coordinator.post {
-                        coordinator.dispatchDependentViewsChanged(appBar)
-                    }
-                }
             }
         }
 
-        scrolling.translationY = 0f
+        // Re-sync once after installation/lifecycle re-entry. Never attach a
+        // layout-change listener or requestLayout() here: those callbacks can
+        // fire while the user scrolls and move the conversation list repeatedly.
         coordinator.post {
             if (appBar.parent === coordinator) {
                 coordinator.dispatchDependentViewsChanged(appBar)
             }
-            scrolling.requestLayout()
+            updateMainBrandCollapse(appBar, appBar.offset, expandedLogo, collapsedLogo)
         }
         ViewCompat.requestApplyInsets(coordinator)
     }
