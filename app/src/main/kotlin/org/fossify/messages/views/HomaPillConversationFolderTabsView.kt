@@ -35,7 +35,4 @@ class HomaPillConversationFolderTabsView @JvmOverloads constructor(
         }
     }
 
-    private fun resolveSurfaceColor(): Int {
-        return Color.TRANSPARENT
-    }
 }
