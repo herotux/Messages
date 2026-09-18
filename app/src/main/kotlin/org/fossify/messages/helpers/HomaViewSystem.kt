@@ -98,7 +98,6 @@ object HomaViewSystem {
                 coordinator.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                     coordinator.post {
                         coordinator.dispatchDependentViewsChanged(appBar)
-                        updateMainBrandCollapse(appBar, appBar.top, expandedLogo, collapsedLogo)
                     }
                 }
                 folderTabs?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
@@ -114,7 +113,6 @@ object HomaViewSystem {
         coordinator.post {
             if (appBar.parent === coordinator) {
                 coordinator.dispatchDependentViewsChanged(appBar)
-                updateMainBrandCollapse(appBar, appBar.top, expandedLogo, collapsedLogo)
             }
             scrolling.requestLayout()
         }
