@@ -91,37 +91,30 @@ object HomaViewSystem {
         synchronized(installedMainCoordinators) {
             if (!installedMainCoordinators.containsKey(coordinator)) {
                 installedMainCoordinators[coordinator] = Unit
-                // Keep CoordinatorLayout/AppBarLayout in charge of nested-scroll
-                // bookkeeping. Forcing dependency dispatch on every offset or tab
-                // relayout makes the conversation list jump and can hide the
-                // pinned title/tabs during tab changes and activity resume.
                 appBar.addOnOffsetChangedListener { _, offset ->
+                    coordinator.dispatchDependentViewsChanged(appBar)
                     updateMainBrandCollapse(appBar, offset, expandedLogo, collapsedLogo)
+                }
+                coordinator.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                    coordinator.post {
+                        coordinator.dispatchDependentViewsChanged(appBar)
+                    }
+                }
+                folderTabs?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                    coordinator.post {
+                        coordinator.dispatchDependentViewsChanged(appBar)
+                        scrolling.requestLayout()
+                    }
                 }
             }
         }
 
-        // Restore only the neutral translation after returning from another
-        // Activity. Do not request a RecyclerView layout on every tab change.
         scrolling.translationY = 0f
         coordinator.post {
             if (appBar.parent === coordinator) {
-                coordinator.requestLayout()
+                coordinator.dispatchDependentViewsChanged(appBar)
             }
-        }
-
-        // The main Homa header is edge-to-edge on colorPrimaryContainer.
-        // Match the system status bar to that exact surface so there is no
-        // visible color seam above the title.
-        val headerColor = resolveColor(coordinator, MaterialR.attr.colorPrimaryContainer)
-        (coordinator.context as? Activity)?.window?.let { window ->
-            window.statusBarColor = headerColor
-            window.navigationBarColor = resolveColor(coordinator, MaterialR.attr.colorSurface)
-            androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
-                .isAppearanceLightStatusBars =
-                (coordinator.resources.configuration.uiMode and
-                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) !=
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES
+            scrolling.requestLayout()
         }
         ViewCompat.requestApplyInsets(coordinator)
     }
@@ -181,9 +174,6 @@ object HomaViewSystem {
     }
 
     private fun styleToolbar(toolbar: Toolbar) {
-        // Homa pages use the toolbar only for navigation/actions. There is no
-        // separate colored title bar; the title sits lower inside a transparent
-        // header area to keep the top of every page visually calm.
         toolbar.minimumHeight = dp(toolbar, 88)
         toolbar.layoutParams?.let { params -> if (params.height > 0) params.height = maxOf(params.height, dp(toolbar, 88)) }
         toolbar.setBackgroundColor(android.graphics.Color.TRANSPARENT)
