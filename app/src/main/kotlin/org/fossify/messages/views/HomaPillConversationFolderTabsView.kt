@@ -17,7 +17,6 @@ class HomaPillConversationFolderTabsView @JvmOverloads constructor(
 
     init {
         setBackgroundColor(resolveSurfaceColor())
-        isOpaque = true
     }
 
     override fun styleTabs(selected: String) {
