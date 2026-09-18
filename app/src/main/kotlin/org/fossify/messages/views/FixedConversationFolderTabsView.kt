@@ -25,7 +25,6 @@ open class FixedConversationFolderTabsView @JvmOverloads constructor(
 ) : ConversationFolderTabsView(context, attrs) {
     private var lastSelected: String? = null
     private var lastReorder = false
-    private var preDrawInstalled = false
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -60,7 +59,6 @@ open class FixedConversationFolderTabsView @JvmOverloads constructor(
     }
 
     override fun dispatchDraw(canvas: android.graphics.Canvas) {
-        syncLayoutDirection()
         sync()
         super.dispatchDraw(canvas)
     }
