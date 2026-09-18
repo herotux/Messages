@@ -77,7 +77,7 @@
     <RelativeLayout
         android:id="@+id/main_nested_scrollview"
         android:layout_height="match_parent"
-        android:background="@drawable/homa_conversation_surface"
+        android:background="?attr/colorSurface"
         android:clipToOutline="false"
         android:elevation="1dp"
         android:layout_width="match_parent"
