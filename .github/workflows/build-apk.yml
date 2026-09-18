@@ -84,7 +84,7 @@ jobs:
 
   build-apk:
     name: Build FOSS release APK
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'workflow_dispatch' && inputs.build_apk == true)
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fix/home-ui-stability')) || (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'workflow_dispatch' && inputs.build_apk == true)
     needs:
       - unit-tests
       - lint
