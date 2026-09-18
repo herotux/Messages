@@ -2,19 +2,18 @@ package org.fossify.messages.views
 
 import android.app.Activity
 import android.content.Context
-import android.graphics.Color
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.RelativeLayout
+import com.google.android.material.R as MaterialR
 import com.google.android.material.appbar.MaterialToolbar
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.getContrastColor
-import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.hideKeyboard
 import org.fossify.commons.extensions.onTextChangeListener
@@ -133,10 +132,10 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
     }
 
     fun updateColors() {
-        val backgroundColor = context.getProperBackgroundColor()
-        val contrastColor = backgroundColor.getContrastColor()
+        val headerColor = resolveColor(MaterialR.attr.colorPrimaryContainer)
+        val contrastColor = headerColor.getContrastColor()
 
-        setBackgroundColor(Color.TRANSPARENT)
+        setBackgroundColor(headerColor)
         topToolbar.background = null
         searchIcon.applyColorFilter(contrastColor)
         toolbarContainer.background?.applyColorFilter(
@@ -144,7 +143,7 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
         )
         searchField.setTextColor(contrastColor)
         searchField.setHintTextColor(contrastColor.adjustAlpha(MEDIUM_ALPHA))
-        (context as? BaseSimpleActivity)?.updateTopBarColors(this, backgroundColor)
+        (context as? BaseSimpleActivity)?.updateTopBarColors(this, headerColor)
     }
 
     private fun setClosedLayout() {
@@ -182,6 +181,12 @@ class HomaMainSearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout
             addRule(RelativeLayout.ALIGN_PARENT_END)
             marginEnd = dp(2)
         }
+    }
+
+    private fun resolveColor(attr: Int): Int {
+        val value = android.util.TypedValue()
+        context.theme.resolveAttribute(attr, value, true)
+        return if (value.resourceId != 0) context.getColor(value.resourceId) else value.data
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
