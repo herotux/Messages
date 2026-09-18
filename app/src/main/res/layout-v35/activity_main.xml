@@ -30,18 +30,6 @@
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
             app:title="Homa"
             app:toolbarId="@+id/main_collapsing_toolbar_bar">
-            <ImageView
-                android:id="@+id/main_homa_mark"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_gravity="bottom|start"
-                android:layout_marginStart="20dp"
-                android:layout_marginBottom="12dp"
-                android:contentDescription="Homa"
-                android:src="@drawable/ic_homa_mark"
-                app:layout_collapseMode="parallax"
-                app:layout_collapseParallaxMultiplier="0.5" />
-
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/main_collapsing_toolbar_bar"
                 android:layout_width="match_parent"
@@ -49,16 +37,16 @@
                 android:background="@android:color/transparent"
                 android:contentInsetStart="0dp"
                 app:layout_collapseMode="pin">
+
                 <ImageView
-                    android:id="@+id/main_homa_mark_collapsed"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:id="@+id/main_homa_mark"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:layout_gravity="start|center_vertical"
                     android:layout_marginStart="16dp"
-                    android:contentDescription="@null"
-                    android:alpha="0"
+                    android:contentDescription="Homa"
                     android:src="@drawable/ic_homa_mark" />
-            </androidx.appcompat.widget.Toolbar>
+</androidx.appcompat.widget.Toolbar>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
         <org.fossify.messages.views.HomaPillConversationFolderTabsView
             android:id="@+id/folder_tabs"
