@@ -5,7 +5,7 @@
     android:id="@+id/main_coordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorPrimaryContainer">
+    android:background="?attr/colorSurface">
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/main_appbar"
         android:layout_width="match_parent"
@@ -64,8 +64,8 @@
             android:id="@+id/folder_tabs"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:background="?attr/colorSurface"
-            android:clipToPadding="false"
+            android:background="@drawable/homa_conversation_surface"
+            android:clipToPadding="true"
             android:paddingStart="8dp"
             android:paddingEnd="8dp" />
     </com.google.android.material.appbar.AppBarLayout>
@@ -73,7 +73,7 @@
         android:id="@+id/main_nested_scrollview"
         android:layout_height="match_parent"
         android:background="@drawable/homa_conversation_surface"
-        android:clipToOutline="true"
+        android:clipToOutline="false"
         android:elevation="1dp"
         android:layout_width="match_parent"
         android:fillViewport="true"
