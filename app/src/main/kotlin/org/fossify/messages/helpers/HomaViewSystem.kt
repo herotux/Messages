@@ -105,7 +105,6 @@ object HomaViewSystem {
             if (appBar.parent === coordinator) {
                 coordinator.dispatchDependentViewsChanged(appBar)
             }
-            updateMainBrandCollapse(appBar, appBar.offset, expandedLogo, collapsedLogo)
         }
         ViewCompat.requestApplyInsets(coordinator)
     }
