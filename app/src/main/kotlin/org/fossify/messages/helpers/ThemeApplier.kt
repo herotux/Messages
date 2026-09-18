@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.view.View
 import android.view.ViewGroup
@@ -12,24 +13,26 @@ import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.view.ViewCompat
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputLayout
 import org.fossify.messages.R
+import org.fossify.messages.activities.SettingsActivity
 
 /** Single runtime application point for the app-owned visual theme. */
 object ThemeApplier {
     fun apply(activity: Activity) {
         val theme = ThemeManager.themeForActivity(activity)
-        val tokens = ThemeResolver.resolve(theme)
+        val darkMode = (activity.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val tokens = ThemeResolver.resolve(theme, darkMode)
         ThemeManager.applyBackground(activity)
         applySystemBars(activity, tokens)
         (activity as? AppCompatActivity)?.supportActionBar?.let { actionBar ->
@@ -39,14 +42,24 @@ object ThemeApplier {
         val tabs = activity.findViewById<View>(R.id.folder_tabs)
         if (tabs is ViewGroup) styleFolderTabs(activity, tabs, tokens)
         val decor = activity.window.decorView
+        if (activity is SettingsActivity) {
+            val content = activity.findViewById<ViewGroup>(android.R.id.content)
+            content?.setBackgroundColor(tokens.background)
+            if (content?.childCount == 1) content.getChildAt(0).setBackgroundColor(tokens.background)
+        }
         applyPaletteToViewTree(activity, decor, tokens)
         clearToolbarBackgrounds(decor, tokens)
+        decor.post {
+            if (!activity.isFinishing && !activity.isDestroyed) {
+                applyPaletteToViewTree(activity, decor, tokens)
+                clearToolbarBackgrounds(decor, tokens)
+            }
+        }
     }
 
-    /** Applies the same resolved theme to a dialog after its content is inflated. */
     fun apply(dialog: Dialog, activity: Activity? = null) {
         val theme = activity?.let(ThemeManager::themeForActivity) ?: ThemeManager.current(dialog.context)
-        val tokens = ThemeResolver.resolve(theme)
+        val tokens = ThemeResolver.resolve(theme, activity?.let(ThemeManager::contextForDarkMode) ?: false)
         dialog.window?.let { window ->
             window.setBackgroundDrawable(ColorDrawable(tokens.surface))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -82,10 +95,10 @@ object ThemeApplier {
         when (view) {
             is Toolbar -> {
                 view.setBackgroundColor(tokens.toolbar)
-                view.setTitleTextColor(tokens.onPrimary)
+                view.setTitleTextColor(tokens.onSurface)
                 view.setSubtitleTextColor(tokens.messageSecondaryText)
-                view.navigationIcon?.setTint(tokens.onPrimary)
-                for (index in 0 until view.menu.size()) view.menu.getItem(index).icon?.setTint(tokens.onPrimary)
+                view.navigationIcon?.setTint(tokens.onSurface)
+                for (index in 0 until view.menu.size()) view.menu.getItem(index).icon?.setTint(tokens.onSurface)
             }
             is AppBarLayout -> view.setBackgroundColor(tokens.toolbar)
             is FloatingActionButton -> {
@@ -93,7 +106,7 @@ object ThemeApplier {
                 view.imageTintList = ColorStateList.valueOf(tokens.onPrimary)
             }
             is MaterialCardView -> {
-                view.setCardBackgroundColor(tokens.surface)
+                view.setCardBackgroundColor(tokens.surfaceVariant)
                 view.strokeColor = tokens.divider
             }
             is MaterialButton -> applyMaterialButton(view, tokens)
@@ -125,10 +138,7 @@ object ThemeApplier {
 
         when (view.id) {
             R.id.message_holder, R.id.scheduled_message_holder -> view.setBackgroundColor(tokens.surface)
-            R.id.thread_type_message -> if (view is TextView) {
-                view.setTextColor(tokens.messageText)
-                view.setHintTextColor(tokens.messageSecondaryText)
-            }
+            R.id.thread_type_message -> if (view is EditText) styleMessageComposer(view, tokens)
             R.id.thread_send_message -> {
                 view.backgroundTintList = ColorStateList.valueOf(tokens.fab)
                 if (view is TextView) view.setTextColor(tokens.onPrimary)
@@ -136,22 +146,28 @@ object ThemeApplier {
             R.id.thread_add_attachment,
             R.id.thread_select_sim_icon,
             R.id.thread_character_counter -> if (view is TextView) view.setTextColor(tokens.messageSecondaryText)
+            R.id.thread_message_body -> {
+                // Message bubbles are owned by ThreadAdapter. Never apply a
+                // direction-dependent tint here because RecyclerView holders
+                // are recycled and the direction may be stale at this point.
+                // A stale tint is exactly what made bubbles change color after
+                // leaving and returning to the conversation.
+                if (view is TextView) view.backgroundTintList = null
+            }
         }
-
-        styleMessageBubble(view, tokens)
 
         val hasSemanticTextColor = view is MaterialButton ||
             view.id == R.id.thread_type_message ||
             view.id == R.id.thread_send_message ||
             view.id == R.id.thread_add_attachment ||
             view.id == R.id.thread_select_sim_icon ||
-            view.id == R.id.thread_character_counter
+            view.id == R.id.thread_character_counter ||
+            view.id == R.id.thread_message_body
         if (view is TextView &&
             view !is EditText &&
             view !is MaterialButton &&
             !hasSemanticTextColor &&
-            view.id != R.id.folder_tabs &&
-            view.id != R.id.thread_message_body
+            view.id != R.id.folder_tabs
         ) {
             val current = view.currentTextColor
             if (current == Color.WHITE || current == Color.BLACK || current == Color.GRAY) {
@@ -164,12 +180,23 @@ object ThemeApplier {
         }
     }
 
-    /** Theme a MaterialButton without flattening its Material 3 variant. */
+    private fun styleMessageComposer(view: EditText, tokens: HomaThemeTokens) {
+        val density = view.resources.displayMetrics.density
+        view.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 12f * density
+            setColor(tokens.surfaceVariant)
+            setStroke((1f * density).toInt().coerceAtLeast(1), tokens.outline)
+        }
+        view.setTextColor(tokens.onSurface)
+        view.setHintTextColor(tokens.onSurfaceVariant)
+        view.highlightColor = tokens.secondary
+    }
+
     private fun applyMaterialButton(view: MaterialButton, tokens: HomaThemeTokens) {
         val hasStroke = view.strokeWidth > 0
         val existingTint = view.backgroundTintList
         val hasVisibleBackground = existingTint?.defaultColor?.let { Color.alpha(it) != 0 } == true
-
         if (hasStroke) {
             view.strokeColor = ColorStateList.valueOf(tokens.primary)
             view.backgroundTintList = ColorStateList.valueOf(Color.TRANSPARENT)
@@ -183,20 +210,6 @@ object ThemeApplier {
             view.setTextColor(tokens.primary)
             view.iconTint = ColorStateList.valueOf(tokens.primary)
         }
-    }
-
-    private fun styleMessageBubble(view: View, tokens: HomaThemeTokens) {
-        if (view.id != R.id.thread_message_body || view !is TextView) return
-        val wrapper = view.parent as? RelativeLayout ?: return
-        val params = wrapper.layoutParams as? ConstraintLayout.LayoutParams ?: return
-        val isOutgoing = params.endToEnd == ConstraintSet.PARENT_ID && params.startToStart != ConstraintSet.PARENT_ID
-        val isIncoming = params.startToStart == ConstraintSet.PARENT_ID && params.endToEnd != ConstraintSet.PARENT_ID
-        if (!isOutgoing && !isIncoming) return
-        val bubbleColor = if (isOutgoing) tokens.outgoingMessage else tokens.incomingMessage
-        val textColor = if (isOutgoing) ThemeResolver.contrastColor(bubbleColor) else tokens.messageText
-        view.backgroundTintList = ColorStateList.valueOf(bubbleColor)
-        view.setTextColor(textColor)
-        view.setLinkTextColor(tokens.link)
     }
 
     private fun clearToolbarBackgrounds(view: View, tokens: HomaThemeTokens) {

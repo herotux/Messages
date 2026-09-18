@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Higher-contrast Homa brand accent for dark surfaces. -->
+    <color name="homa_brand_teal">#5DD6D3</color>
+    <color name="homa_brand_teal_dark">#00A6A6</color>
+    <color name="homa_brand_teal_light">#9AE8E5</color>
+    <color name="homa_brand_teal_surface">#123B3B</color>
+    <color name="homa_brand_on_teal">#003737</color>
+    <color name="homa_brand_selected">@color/homa_brand_teal</color>
+    <color name="homa_brand_accent">@color/homa_brand_teal</color>
+</resources>

@@ -4,40 +4,89 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main_coordinator"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <org.fossify.commons.views.MySearchMenu
-        android:id="@+id/main_menu"
+    android:layout_height="match_parent"
+    android:background="?attr/colorPrimaryContainer">
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/main_appbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:elevation="4dp"
+        app:elevation="4dp">
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:id="@+id/main_collapsing_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:background="@android:color/transparent"
+            app:collapsedTitleGravity="bottom|start"
+            app:collapsedTitleTextAppearance="@style/HomaMainBrandTitleCollapsed"
+            app:contentScrim="?attr/colorPrimaryContainer"
+            app:expandedTitleGravity="bottom|start"
+            app:expandedTitleMarginBottom="20dp"
+            app:expandedTitleMarginEnd="16dp"
+            app:expandedTitleMarginStart="68dp"
+            app:expandedTitleMarginTop="24dp"
+            app:expandedTitleTextAppearance="@style/HomaMainBrandTitleExpanded"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:title="Homa"
+            app:toolbarId="@+id/main_collapsing_toolbar_bar">
+            <ImageView
+                android:id="@+id/main_homa_mark"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|start"
+                android:layout_marginStart="20dp"
+                android:layout_marginBottom="12dp"
+                android:contentDescription="Homa"
+                android:src="@drawable/ic_homa_mark"
+                app:layout_collapseMode="parallax"
+                app:layout_collapseParallaxMultiplier="0.5" />
 
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/main_collapsing_toolbar_bar"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:background="@android:color/transparent"
+                android:contentInsetStart="0dp"
+                app:layout_collapseMode="pin">
+                <ImageView
+                    android:id="@+id/main_homa_mark_collapsed"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:layout_marginStart="16dp"
+                    android:contentDescription="@null"
+                    android:alpha="0"
+                    android:src="@drawable/ic_homa_mark" />
+            </androidx.appcompat.widget.Toolbar>
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+        <org.fossify.messages.views.HomaPillConversationFolderTabsView
+            android:id="@+id/folder_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="?attr/colorSurface"
+            android:clipToPadding="false"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp" />
+    </com.google.android.material.appbar.AppBarLayout>
     <RelativeLayout
         android:id="@+id/main_nested_scrollview"
+        android:background="@drawable/homa_conversation_surface"
+        android:clipToOutline="true"
+        android:elevation="1dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fillViewport="true"
         android:scrollbars="none"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <org.fossify.messages.views.HomaPillConversationFolderTabsView
-            android:id="@+id/folder_tabs"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:clipToPadding="false"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp" />
-
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:id="@+id/main_coordinator_wrapper"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/folder_tabs">
-
+            android:layout_height="match_parent">
             <RelativeLayout
                 android:id="@+id/main_holder"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/conversations_progress_bar"
                     android:layout_width="match_parent"
@@ -49,7 +98,6 @@
                     app:showAnimationBehavior="inward"
                     app:showDelay="250"
                     tools:visibility="visible" />
-
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/no_conversations_placeholder"
                     android:layout_width="match_parent"
@@ -58,13 +106,12 @@
                     android:layout_marginTop="@dimen/bigger_margin"
                     android:alpha="0.8"
                     android:gravity="center"
-                    android:paddingLeft="@dimen/activity_margin"
-                    android:paddingRight="@dimen/activity_margin"
+                    android:paddingStart="@dimen/activity_margin"
+                    android:paddingEnd="@dimen/activity_margin"
                     android:text="@string/no_conversations_found"
                     android:textSize="@dimen/bigger_text_size"
                     android:textStyle="italic"
                     android:visibility="gone" />
-
                 <org.fossify.commons.views.MyTextView
                     android:id="@+id/no_conversations_placeholder_2"
                     android:layout_width="wrap_content"
@@ -77,12 +124,10 @@
                     android:text="@string/start_conversation"
                     android:textSize="@dimen/bigger_text_size"
                     android:visibility="gone" />
-
                 <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
                     android:id="@+id/conversations_fastscroller"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
-
                     <org.fossify.commons.views.MyRecyclerView
                         android:id="@+id/conversations_list"
                         android:layout_width="match_parent"
@@ -92,19 +137,15 @@
                         android:overScrollMode="ifContentScrolls"
                         android:scrollbars="none"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
                 </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
             </RelativeLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
         <RelativeLayout
             android:id="@+id/search_holder"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_below="@id/folder_tabs"
             android:alpha="0"
             android:visibility="gone">
-
             <org.fossify.commons.views.MyTextView
                 android:id="@+id/search_placeholder"
                 android:layout_width="match_parent"
@@ -118,15 +159,12 @@
                 android:text="@string/no_items_found"
                 android:textSize="@dimen/bigger_text_size"
                 android:textStyle="italic" />
-
             <org.fossify.commons.views.MyTextView
                 android:id="@+id/search_placeholder_2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/search_placeholder"
                 android:layout_centerHorizontal="true"
-                android:alpha="0.8"
-                android:gravity="center"
                 android:paddingStart="@dimen/activity_margin"
                 android:paddingTop="@dimen/medium_margin"
                 android:paddingEnd="@dimen/activity_margin"
@@ -134,7 +172,6 @@
                 android:text="@string/type_2_characters"
                 android:textSize="@dimen/bigger_text_size"
                 android:textStyle="italic" />
-
             <org.fossify.commons.views.MyRecyclerView
                 android:id="@+id/search_results_list"
                 android:layout_width="match_parent"
@@ -142,10 +179,13 @@
                 android:clipToPadding="false"
                 android:scrollbars="vertical"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
         </RelativeLayout>
     </RelativeLayout>
-
+    <org.fossify.messages.views.HomaMainSearchMenu
+        android:id="@+id/main_menu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:elevation="4dp" />
     <org.fossify.commons.views.MyFloatingActionButton
         android:id="@+id/conversations_fab"
         android:layout_width="wrap_content"
@@ -154,5 +194,4 @@
         android:layout_margin="@dimen/activity_margin"
         android:src="@drawable/ic_plus_vector"
         app:applyWindowInsets="true" />
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

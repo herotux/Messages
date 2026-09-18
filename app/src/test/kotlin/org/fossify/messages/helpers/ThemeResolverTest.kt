@@ -25,7 +25,8 @@ class ThemeResolverTest {
         id = "test",
         nameFa = "آزمایشی",
         nameEn = "Test",
-        colors = colors
+        lightColors = colors,
+        darkColors = colors
     )
 
     @Test
@@ -69,13 +70,15 @@ class ThemeResolverTest {
 
     @Test
     fun resolve_usesDarkForegroundOnLightSemanticSurfaces() {
+        val lightColors = colors.copy(
+            primary = 0xFFE8F5E9.toInt(),
+            accent = 0xFFFFF59D.toInt(),
+            background = 0xFFFFFFFF.toInt(),
+            surface = 0xFFF7F7F7.toInt()
+        )
         val lightTheme = theme.copy(
-            colors = colors.copy(
-                primary = 0xFFE8F5E9.toInt(),
-                accent = 0xFFFFF59D.toInt(),
-                background = 0xFFFFFFFF.toInt(),
-                surface = 0xFFF7F7F7.toInt()
-            )
+            lightColors = lightColors,
+            darkColors = lightColors
         )
 
         val tokens = ThemeResolver.resolve(lightTheme)
@@ -88,12 +91,14 @@ class ThemeResolverTest {
 
     @Test
     fun resolve_handlesOpaqueAndTransparentArgbWithoutAndroidColorApis() {
+        val transparentColors = colors.copy(
+            primary = 0x00112233,
+            background = 0x00FFFFFF,
+            surface = 0x00000000
+        )
         val transparentTheme = theme.copy(
-            colors = colors.copy(
-                primary = 0x00112233,
-                background = 0x00FFFFFF,
-                surface = 0x00000000
-            )
+            lightColors = transparentColors,
+            darkColors = transparentColors
         )
 
         val tokens = ThemeResolver.resolve(transparentTheme)
@@ -112,14 +117,14 @@ class ThemeResolverTest {
     fun resolve_allBuiltInThemesProducesCompleteSemanticTokens() {
         ThemeManager.builtInThemes.forEach { builtIn ->
             val tokens = ThemeResolver.resolve(builtIn)
-            assertEquals(builtIn.colors.primary, tokens.primary)
-            assertEquals(builtIn.colors.accent, tokens.secondary)
-            assertEquals(builtIn.colors.background, tokens.background)
-            assertEquals(builtIn.colors.surface, tokens.surface)
-            assertEquals(builtIn.colors.toolbar, tokens.toolbar)
-            assertEquals(builtIn.colors.fab, tokens.fab)
-            assertEquals(builtIn.colors.incomingBubble, tokens.incomingMessage)
-            assertEquals(builtIn.colors.outgoingBubble, tokens.outgoingMessage)
+            assertEquals(builtIn.lightColors.primary, tokens.primary)
+            assertEquals(builtIn.lightColors.accent, tokens.secondary)
+            assertEquals(builtIn.lightColors.background, tokens.background)
+            assertEquals(builtIn.lightColors.surface, tokens.surface)
+            assertEquals(builtIn.lightColors.toolbar, tokens.toolbar)
+            assertEquals(builtIn.lightColors.fab, tokens.fab)
+            assertEquals(builtIn.lightColors.outgoingBubble, tokens.outgoingMessage)
+            assertTrue("${builtIn.id}: incoming/outgoing bubbles remain distinct", colorDistance(tokens.incomingMessage, tokens.outgoingMessage) >= 48.0)
             assertTrue("${builtIn.id}: selected item keeps primary RGB", tokens.selectedItem and 0x00FFFFFF == tokens.primary and 0x00FFFFFF)
             assertEquals(0xFFB3261E.toInt(), tokens.error)
         }
@@ -133,5 +138,12 @@ class ThemeResolverTest {
             ThemeResolver.contrastColor(0xFF336699.toInt()),
             ThemeResolver.contrastColor(0xFF336699.toInt())
         )
+    }
+
+    private fun colorDistance(first: Int, second: Int): Double {
+        val dr = ((first ushr 16) and 0xFF) - ((second ushr 16) and 0xFF)
+        val dg = ((first ushr 8) and 0xFF) - ((second ushr 8) and 0xFF)
+        val db = (first and 0xFF) - (second and 0xFF)
+        return kotlin.math.sqrt((dr * dr + dg * dg + db * db).toDouble())
     }
 }

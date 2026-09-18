@@ -26,19 +26,8 @@ class ThemeManagerTest {
     @Test
     fun builtInThemes_haveCompleteColorPalettes() {
         ThemeManager.builtInThemes.forEach { theme ->
-            val colors = theme.colors
-            assertTrue("${theme.id}: primary", colors.primary != 0)
-            assertTrue("${theme.id}: accent", colors.accent != 0)
-            assertTrue("${theme.id}: background", colors.background != 0)
-            assertTrue("${theme.id}: surface", colors.surface != 0)
-            assertTrue("${theme.id}: textPrimary", colors.textPrimary != 0)
-            assertTrue("${theme.id}: textSecondary", colors.textSecondary != 0)
-            assertTrue("${theme.id}: incomingBubble", colors.incomingBubble != 0)
-            assertTrue("${theme.id}: outgoingBubble", colors.outgoingBubble != 0)
-            assertTrue("${theme.id}: toolbar", colors.toolbar != 0)
-            assertTrue("${theme.id}: tab", colors.tab != 0)
-            assertTrue("${theme.id}: fab", colors.fab != 0)
-            assertTrue("${theme.id}: divider", colors.divider != 0)
+            assertCompletePalette(theme.id, theme.lightColors)
+            assertCompletePalette(theme.id, theme.darkColors)
         }
     }
 
@@ -54,14 +43,31 @@ class ThemeManagerTest {
 
     @Test
     fun customThemeDefinition_defaultsToSolidBackground() {
+        val colors = ThemeManager.builtInThemes.first().lightColors
         val theme = ThemeManager.ThemeDefinition(
             id = "test",
             nameFa = "آزمایشی",
             nameEn = "Test",
-            colors = ThemeManager.builtInThemes.first().colors
+            lightColors = colors,
+            darkColors = colors
         )
         assertEquals(ThemeManager.ThemeSource.BUILT_IN, theme.source)
         assertEquals(ThemeManager.BackgroundType.SOLID, theme.backgroundType)
         assertTrue(theme.gradientColors.isEmpty())
+    }
+
+    private fun assertCompletePalette(id: String, colors: ThemeManager.ThemeColors) {
+        assertTrue("$id: primary", colors.primary != 0)
+        assertTrue("$id: accent", colors.accent != 0)
+        assertTrue("$id: background", colors.background != 0)
+        assertTrue("$id: surface", colors.surface != 0)
+        assertTrue("$id: textPrimary", colors.textPrimary != 0)
+        assertTrue("$id: textSecondary", colors.textSecondary != 0)
+        assertTrue("$id: incomingBubble", colors.incomingBubble != 0)
+        assertTrue("$id: outgoingBubble", colors.outgoingBubble != 0)
+        assertTrue("$id: toolbar", colors.toolbar != 0)
+        assertTrue("$id: tab", colors.tab != 0)
+        assertTrue("$id: fab", colors.fab != 0)
+        assertTrue("$id: divider", colors.divider != 0)
     }
 }
