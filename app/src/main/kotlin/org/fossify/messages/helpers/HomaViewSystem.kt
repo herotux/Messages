@@ -92,18 +92,14 @@ object HomaViewSystem {
             if (!installedMainCoordinators.containsKey(coordinator)) {
                 installedMainCoordinators[coordinator] = Unit
                 appBar.addOnOffsetChangedListener { _, offset ->
-                    coordinator.dispatchDependentViewsChanged(appBar)
+                    // AppBarLayout can dispatch this callback for every scroll frame.
+                    // Do not force CoordinatorLayout dependency/layout work here;
+                    // doing so fights nested scrolling and causes tab/scroll jitter.
                     updateMainBrandCollapse(appBar, offset, expandedLogo, collapsedLogo)
                 }
                 coordinator.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                     coordinator.post {
                         coordinator.dispatchDependentViewsChanged(appBar)
-                    }
-                }
-                folderTabs?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                    coordinator.post {
-                        coordinator.dispatchDependentViewsChanged(appBar)
-                        scrolling.requestLayout()
                     }
                 }
             }
