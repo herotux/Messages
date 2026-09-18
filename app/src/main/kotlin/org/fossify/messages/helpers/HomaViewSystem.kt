@@ -15,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.google.android.material.R as MaterialR
 import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -73,16 +74,14 @@ object HomaViewSystem {
     }
 
     /**
-     * Re-syncs the main CoordinatorLayout after theme/lifecycle changes.
-     * The conversation list is hosted below AppBarLayout through a scrolling
-     * behavior; after returning from another Activity the dependency can be
-     * laid out before the AppBar offset is restored, making rows appear under
-     * the Homa header. Dispatching the dependency change after layout restores
-     * the behavior without adding artificial padding to the RecyclerView.
+     * Keeps the Homa header stable across tab changes and lifecycle re-entry.
+     * Coordinator/AppBar dependency dispatch is intentionally not forced here:
+     * the normal CoordinatorLayout nested-scroll contract owns that state.
      */
     private fun repairMainCoordinator(root: View) {
         val coordinator = root.findViewById<CoordinatorLayout?>(org.fossify.messages.R.id.main_coordinator) ?: return
         val appBar = root.findViewById<AppBarLayout?>(org.fossify.messages.R.id.main_appbar) ?: return
+        val collapsing = root.findViewById<CollapsingToolbarLayout?>(org.fossify.messages.R.id.main_collapsing_toolbar)
         val mainMenu = root.findViewById<View?>(org.fossify.messages.R.id.main_menu)
 
         synchronized(installedMainCoordinators) {
@@ -91,19 +90,20 @@ object HomaViewSystem {
             }
         }
 
-        // The action/search menu must stay above the collapsing AppBar. Keeping it
-        // pinned in the Coordinator prevents the search and overflow actions from
-        // being covered when the header collapses.
+        val headerColor = resolveColor(coordinator, MaterialR.attr.colorPrimaryContainer)
+        appBar.setBackgroundColor(headerColor)
+        collapsing?.setBackgroundColor(headerColor)
+        collapsing?.setContentScrimColor(headerColor)
 
         keepMainMenuAboveAppBar(mainMenu)
 
-        // Re-sync once after installation/lifecycle re-entry. Never attach a
-        // layout-change listener or requestLayout() here: those callbacks can
-        // fire while the user scrolls and move the conversation list repeatedly.
-        coordinator.post {
-            if (appBar.parent === coordinator) {
-                coordinator.dispatchDependentViewsChanged(appBar)
-            }
+        (coordinator.context as? Activity)?.window?.let { window ->
+            window.statusBarColor = headerColor
+            androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+                .isAppearanceLightStatusBars =
+                (coordinator.resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) !=
+                    android.content.res.Configuration.UI_MODE_NIGHT_YES
         }
         ViewCompat.requestApplyInsets(coordinator)
     }
@@ -147,11 +147,13 @@ object HomaViewSystem {
     }
 
     private fun styleToolbar(toolbar: Toolbar) {
-        // Homa pages use the toolbar only for navigation/actions. There is no
-        // separate colored title bar; the title sits lower inside a transparent
-        // header area to keep the top of every page visually calm.
-        toolbar.minimumHeight = dp(toolbar, 88)
-        toolbar.layoutParams?.let { params -> if (params.height > 0) params.height = maxOf(params.height, dp(toolbar, 88)) }
+        // Keep the pinned toolbar at its XML height. Changing it to 88dp during
+        // every Homa style pass can invalidate the CollapsingToolbarLayout and
+        // make the title/tabs disappear during tab changes or activity resume.
+        toolbar.minimumHeight = dp(toolbar, 64)
+        toolbar.layoutParams?.let { params ->
+            if (params.height > 0) params.height = maxOf(params.height, dp(toolbar, 64))
+        }
         toolbar.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         toolbar.setTitleTextColor(resolveColor(toolbar, MaterialR.attr.colorOnBackground))
         toolbar.elevation = 0f
