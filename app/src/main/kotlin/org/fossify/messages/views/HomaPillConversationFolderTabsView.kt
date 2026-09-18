@@ -1,9 +1,9 @@
 package org.fossify.messages.views
 
 import android.content.Context
+import android.graphics.Color
 import android.util.AttributeSet
 import android.widget.TextView
-import android.util.TypedValue
 
 /**
  * Presentation-only variant of the existing conversation-folder tabs.
@@ -16,11 +16,11 @@ class HomaPillConversationFolderTabsView @JvmOverloads constructor(
 ) : Android16SafeFixedConversationFolderTabsView(context, attrs) {
 
     init {
-        setBackgroundColor(resolveSurfaceColor())
+        setBackgroundColor(Color.TRANSPARENT)
     }
 
     override fun styleTabs(selected: String) {
-        setBackgroundColor(resolveSurfaceColor())
+        setBackgroundColor(Color.TRANSPARENT)
         val tabs = tabContainer() ?: return
         val folders = folderMap()
         val primary = primaryTabColor()
@@ -36,8 +36,6 @@ class HomaPillConversationFolderTabsView @JvmOverloads constructor(
     }
 
     private fun resolveSurfaceColor(): Int {
-        val value = TypedValue()
-        context.theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, value, true)
-        return if (value.resourceId != 0) context.getColor(value.resourceId) else value.data
+        return Color.TRANSPARENT
     }
 }
