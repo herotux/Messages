@@ -84,15 +84,28 @@ object HomaViewSystem {
         val coordinator = root.findViewById<CoordinatorLayout?>(org.fossify.messages.R.id.main_coordinator) ?: return
         val appBar = root.findViewById<AppBarLayout?>(org.fossify.messages.R.id.main_appbar) ?: return
         val scrolling = root.findViewById<View?>(org.fossify.messages.R.id.main_nested_scrollview) ?: return
+        val folderTabs = root.findViewById<View?>(org.fossify.messages.R.id.folder_tabs)
+        val expandedLogo = root.findViewById<View?>(org.fossify.messages.R.id.main_homa_mark)
+        val collapsedLogo = root.findViewById<View?>(org.fossify.messages.R.id.main_homa_mark_collapsed)
 
         synchronized(installedMainCoordinators) {
             if (!installedMainCoordinators.containsKey(coordinator)) {
                 installedMainCoordinators[coordinator] = Unit
-                appBar.addOnOffsetChangedListener { _, _ ->
+                appBar.addOnOffsetChangedListener { _, offset ->
                     coordinator.dispatchDependentViewsChanged(appBar)
+                    updateMainBrandCollapse(appBar, offset, expandedLogo, collapsedLogo)
                 }
                 coordinator.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                    coordinator.post { coordinator.dispatchDependentViewsChanged(appBar) }
+                    coordinator.post {
+                        coordinator.dispatchDependentViewsChanged(appBar)
+                        updateMainBrandCollapse(appBar, appBar.top, expandedLogo, collapsedLogo)
+                    }
+                }
+                folderTabs?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                    coordinator.post {
+                        coordinator.dispatchDependentViewsChanged(appBar)
+                        scrolling.requestLayout()
+                    }
                 }
             }
         }
@@ -101,10 +114,34 @@ object HomaViewSystem {
         coordinator.post {
             if (appBar.parent === coordinator) {
                 coordinator.dispatchDependentViewsChanged(appBar)
+                updateMainBrandCollapse(appBar, appBar.top, expandedLogo, collapsedLogo)
             }
             scrolling.requestLayout()
         }
         ViewCompat.requestApplyInsets(coordinator)
+    }
+
+    private fun updateMainBrandCollapse(
+        appBar: AppBarLayout,
+        offset: Int,
+        expandedLogo: View?,
+        collapsedLogo: View?,
+    ) {
+        val range = appBar.totalScrollRange
+        if (range <= 0) return
+        val progress = (-offset.toFloat() / range.toFloat()).coerceIn(0f, 1f)
+        expandedLogo?.let {
+            val scale = 1f - (0.22f * progress)
+            it.alpha = 1f - progress
+            it.scaleX = scale
+            it.scaleY = scale
+        }
+        collapsedLogo?.let {
+            it.alpha = progress
+            val scale = 0.9f + (0.1f * progress)
+            it.scaleX = scale
+            it.scaleY = scale
+        }
     }
 
     private fun styleTree(view: View) {
