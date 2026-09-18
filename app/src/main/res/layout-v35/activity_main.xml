@@ -48,7 +48,17 @@
                 android:layout_height="64dp"
                 android:background="@android:color/transparent"
                 android:contentInsetStart="0dp"
-                app:layout_collapseMode="pin" />
+                app:layout_collapseMode="pin">
+                <ImageView
+                    android:id="@+id/main_homa_mark_collapsed"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:layout_marginStart="16dp"
+                    android:contentDescription="@null"
+                    android:alpha="0"
+                    android:src="@drawable/ic_homa_mark" />
+            </androidx.appcompat.widget.Toolbar>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
         <org.fossify.messages.views.HomaPillConversationFolderTabsView
             android:id="@+id/folder_tabs"
