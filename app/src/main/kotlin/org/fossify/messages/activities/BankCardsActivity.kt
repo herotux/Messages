@@ -23,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
@@ -53,6 +54,10 @@ class BankCardsActivity : AppCompatActivity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.navigationBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
         repository = BankCardsRepository(this)
         buildUi()
         loadCards()
@@ -65,14 +70,16 @@ class BankCardsActivity : AppCompatActivity() {
             setBackgroundColor(resolveColor(com.google.android.material.R.attr.colorSurface, Color.WHITE))
         }
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(dp(16), bars.top + dp(8), dp(16), bars.bottom + dp(16))
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            v.setPadding(dp(16), bars.top + dp(20), dp(16), bars.bottom + dp(12))
             insets
         }
         val toolbar = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
-        toolbar.addView(iconButton(android.R.drawable.ic_menu_revert, "بازگشت") { finish() }, lp(48, 48))
+        toolbar.addView(iconButton(R.drawable.ic_homa_arrow_back, "بازگشت") { finish() }.also { tint(it, onSurface()) }, lp(48, 48))
         toolbar.addView(TextView(this).apply { text = "کارت‌های بانکی"; textSize = 21f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER_VERTICAL; setTextColor(onSurface()) }, LinearLayout.LayoutParams(0, dp(56), 1f))
-        toolbar.addView(iconButton(android.R.drawable.ic_menu_more, "گزینه‌ها") { showTopMenu() }, lp(48, 48))
+        toolbar.addView(iconButton(R.drawable.ic_homa_search, "جستجوی کارت") { showSearch() }.also { tint(it, onSurface()) }, lp(48, 48))
+        toolbar.addView(iconButton(R.drawable.ic_homa_add, "افزودن کارت") { showWizard(null) }.also { tint(it, onSurface()) }, lp(48, 48))
+        toolbar.addView(iconButton(R.drawable.ic_homa_settings, "تنظیمات کارت‌ها") { showTopMenu() }.also { tint(it, onSurface()) }, lp(48, 48))
         root.addView(toolbar, lp(-1, 56))
 
         pager = ViewPager2(this).apply {
@@ -147,7 +154,8 @@ class BankCardsActivity : AppCompatActivity() {
         tint(more, Color.WHITE)
         top.addView(more, lp(38, 38))
         body.addView(top)
-        body.addView(TextView(this).apply {
+        val numberRow = FrameLayout(this).apply { layoutDirection = View.LAYOUT_DIRECTION_LTR }
+        numberRow.addView(TextView(this).apply {
             text = formatCardNumber(card.cardNumber)
             textSize = 18f
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
@@ -159,7 +167,9 @@ class BankCardsActivity : AppCompatActivity() {
             ellipsize = null
             setTextColor(Color.WHITE)
             setPadding(0, dp(2), 0, dp(2))
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
+        }, FrameLayout.LayoutParams(-1, -1).apply { gravity = Gravity.CENTER })
+        numberRow.addView(iconButton(R.drawable.ic_homa_content_copy, "کپی شماره کارت") { copy(repository.normalizeCard(card.cardNumber)) }.also { tint(it, Color.WHITE) }, FrameLayout.LayoutParams(dp(44), dp(44)).apply { gravity = Gravity.END or Gravity.CENTER_VERTICAL })
+        body.addView(numberRow, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
         val bottom = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
         bottom.addView(TextView(this).apply { text = card.holderName.ifBlank { "نام صاحب کارت" }; textSize = 12f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE); maxLines = 1 }, LinearLayout.LayoutParams(0, dp(24), 1f))
         if (card.iban.isNotBlank()) bottom.addView(TextView(this).apply { text = "شبا"; textSize = 9f; gravity = Gravity.CENTER; setTextColor(0xBFFFFFFF.toInt()) }, lp(32, 24))
@@ -170,14 +180,40 @@ class BankCardsActivity : AppCompatActivity() {
 
     private fun formatCardNumber(value: String): String {
         val digits = repository.normalizeCard(value).filter(Char::isDigit).take(16)
-        return digits.chunked(4).joinToString("   ").padEnd(25, ' ')
+        return digits.chunked(4).joinToString("   ")
+    }
+
+    private fun showSearch() {
+        val input = EditText(this).apply {
+            hint = "نام بانک، صاحب کارت یا شماره کارت"
+            inputType = InputType.TYPE_CLASS_TEXT
+            singleLine = true
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("جستجوی کارت")
+            .setView(input)
+            .setNegativeButton("انصراف", null)
+            .setPositiveButton("جستجو") { _, _ ->
+                val q = input.text?.toString()?.trim().orEmpty()
+                if (q.isBlank()) return@setPositiveButton
+                val normalized = repository.normalizeCard(q)
+                val index = cards.indexOfFirst { card ->
+                    val number = repository.normalizeCard(card.cardNumber)
+                    val bank = card.visual?.persianName.orEmpty()
+                    number.contains(normalized) || bank.contains(q, true) || card.holderName.contains(q, true)
+                }
+                if (index >= 0) pager.setCurrentItem(index, true)
+                else Toast.makeText(this, "کارتی پیدا نشد", Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     private fun showTopMenu() {
         val sheet = BottomSheetDialog(this)
         val root = sheetRoot("مدیریت کارت‌ها")
-        root.addView(actionTile(android.R.drawable.ic_input_add, "افزودن کارت جدید", "ثبت کارت بانکی") { sheet.dismiss(); showWizard(null) }, lp(-1, 68).apply { topMargin = dp(10) })
-        root.addView(actionTile(android.R.drawable.ic_menu_sort_by_size, "مرتب‌سازی کارت‌ها", "تغییر ترتیب نمایش") { sheet.dismiss(); showSort() }, lp(-1, 68).apply { topMargin = dp(8) })
+        root.addView(actionTile(R.drawable.ic_homa_add, "افزودن کارت جدید", "ثبت کارت بانکی") { sheet.dismiss(); showWizard(null) }, lp(-1, 68).apply { topMargin = dp(10) })
+        root.addView(actionTile(R.drawable.ic_homa_settings, "مرتب‌سازی کارت‌ها", "تغییر ترتیب نمایش") { sheet.dismiss(); showSort() }, lp(-1, 68).apply { topMargin = dp(8) })
         sheet.setContentView(root); sheet.show()
     }
 
@@ -204,12 +240,12 @@ class BankCardsActivity : AppCompatActivity() {
     private fun showCardActions(card: BankCard) {
         val sheet = BottomSheetDialog(this)
         val root = sheetRoot(card.visual?.persianName ?: "کارت بانکی")
-        root.addView(actionTile(android.R.drawable.ic_menu_edit, "ویرایش کارت", "تغییر اطلاعات کارت") { sheet.dismiss(); showWizard(card) }, lp(-1, 66).apply { topMargin = dp(10) })
-        root.addView(actionTile(android.R.drawable.ic_menu_save, "کپی شماره کارت", repository.normalizeCard(card.cardNumber)) { copy(repository.normalizeCard(card.cardNumber)); sheet.dismiss() }, lp(-1, 66).apply { topMargin = dp(8) })
-        if (card.iban.isNotBlank()) root.addView(actionTile(android.R.drawable.ic_menu_save, "کپی شماره شبا", repository.normalizeIban(card.iban)) { copy(repository.normalizeIban(card.iban)); sheet.dismiss() }, lp(-1, 66).apply { topMargin = dp(8) })
-        if (card.holderName.isNotBlank()) root.addView(actionTile(android.R.drawable.ic_menu_save, "کپی نام صاحب کارت", card.holderName) { copy(card.holderName); sheet.dismiss() }, lp(-1, 66).apply { topMargin = dp(8) })
-        root.addView(actionTile(android.R.drawable.ic_menu_share, "اشتراک‌گذاری", "ارسال اطلاعات کارت") { sheet.dismiss(); share(card) }, lp(-1, 66).apply { topMargin = dp(8) })
-        root.addView(actionTile(android.R.drawable.ic_menu_delete, "حذف کارت", "حذف از برنامه") { sheet.dismiss(); confirmDelete(card) }, lp(-1, 66).apply { topMargin = dp(8) })
+        root.addView(actionTile(R.drawable.ic_homa_edit, "ویرایش کارت", "تغییر اطلاعات کارت") { sheet.dismiss(); showWizard(card) }, lp(-1, 66).apply { topMargin = dp(10) })
+        root.addView(actionTile(R.drawable.ic_homa_content_copy, "کپی شماره کارت", repository.normalizeCard(card.cardNumber)) { copy(repository.normalizeCard(card.cardNumber)); sheet.dismiss() }, lp(-1, 66).apply { topMargin = dp(8) })
+        if (card.iban.isNotBlank()) root.addView(actionTile(R.drawable.ic_homa_content_copy, "کپی شماره شبا", repository.normalizeIban(card.iban)) { copy(repository.normalizeIban(card.iban)); sheet.dismiss() }, lp(-1, 66).apply { topMargin = dp(8) })
+        if (card.holderName.isNotBlank()) root.addView(actionTile(R.drawable.ic_homa_content_copy, "کپی نام صاحب کارت", card.holderName) { copy(card.holderName); sheet.dismiss() }, lp(-1, 66).apply { topMargin = dp(8) })
+        root.addView(actionTile(R.drawable.ic_homa_share, "اشتراک‌گذاری", "ارسال اطلاعات کارت") { sheet.dismiss(); share(card) }, lp(-1, 66).apply { topMargin = dp(8) })
+        root.addView(actionTile(R.drawable.ic_homa_delete, "حذف کارت", "حذف از برنامه") { sheet.dismiss(); confirmDelete(card) }, lp(-1, 66).apply { topMargin = dp(8) })
         sheet.setContentView(root); sheet.show()
     }
 
